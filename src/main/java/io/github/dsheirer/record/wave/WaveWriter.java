@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 
-public class WaveWriter implements AutoCloseable
+public class WaveWriter implements IBasebandRecordingWriter
 {
     private final static Logger mLog = LoggerFactory.getLogger(WaveWriter.class);
 

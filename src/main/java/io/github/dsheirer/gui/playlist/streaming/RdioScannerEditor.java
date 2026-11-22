@@ -119,6 +119,22 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         return BroadcastServerType.RDIOSCANNER_CALL;
     }
 
+    /**
+     * Label for the server URL field. Subclasses can override this for another product that uses the same API.
+     */
+    protected String getHostLabel()
+    {
+        return "RdioScanner URL";
+    }
+
+    /**
+     * Label for the credential field.
+     */
+    protected String getApiKeyLabel()
+    {
+        return "API Key";
+    }
+
     protected GridPane getEditorPane()
     {
         if(mEditorPane == null)
@@ -131,6 +147,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             int row = 0;
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, row);
             mEditorPane.getChildren().add(formatLabel);
@@ -139,6 +156,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, row);
             mEditorPane.getChildren().add(enabledLabel);
@@ -147,6 +165,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, ++row);
             mEditorPane.getChildren().add(systemLabel);
@@ -154,7 +173,8 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(getNameTextField(), 1, row);
             mEditorPane.getChildren().add(getNameTextField());
 
-            Label apiKeyLabel = new Label("API Key");
+            Label apiKeyLabel = new Label(getApiKeyLabel());
+            apiKeyLabel.setLabelFor(getApiKeyTextField());
             GridPane.setHalignment(apiKeyLabel, HPos.RIGHT);
             GridPane.setConstraints(apiKeyLabel, 0, ++row);
             mEditorPane.getChildren().add(apiKeyLabel);
@@ -163,6 +183,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             mEditorPane.getChildren().add(getApiKeyTextField());
 
             Label systemIdLabel = new Label("System ID");
+            systemIdLabel.setLabelFor(getSystemIdTextField());
             GridPane.setHalignment(systemIdLabel, HPos.RIGHT);
             GridPane.setConstraints(systemIdLabel, 0, ++row);
             mEditorPane.getChildren().add(systemIdLabel);
@@ -170,7 +191,8 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             GridPane.setConstraints(getSystemIdTextField(), 1, row);
             mEditorPane.getChildren().add(getSystemIdTextField());
 
-            Label hostLabel = new Label("RdioScanner URL");
+            Label hostLabel = new Label(getHostLabel());
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, ++row);
             mEditorPane.getChildren().add(hostLabel);
@@ -184,6 +206,7 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
             mEditorPane.getChildren().add(apiPath);
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, ++row);
             mEditorPane.getChildren().add(maxAgeLabel);

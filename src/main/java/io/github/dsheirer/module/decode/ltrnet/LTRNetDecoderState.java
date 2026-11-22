@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.ltrnet;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -479,110 +480,82 @@ public class LTRNetDecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("LTR-Net");
+        summary.section("Site");
+        summary.field("Site", mCurrentSite != null ? mCurrentSite.getSiteID() : null);
 
-        sb.append("Activity Summary\n");
-        sb.append("Decoder:\tLTR-Net\n\n");
-        sb.append("Site:\t").append(mCurrentSite != null ? mCurrentSite.getSiteID() : "Unknown").append("\n");
-
-        sb.append("\nLCNs (transmit / receive)\n");
+        summary.section("LCNs");
+        ActivitySummary.Table lcns = summary.table("LCN", "Transmit / Receive", "Current");
 
         if(mChannelMapLow != null)
         {
-            for(int channel: mChannelMapLow.getChannels())
-            {
-                LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
-                sb.append("  ").append(channel).append(": ").append(ltrNetChannel != null ? ltrNetChannel.description() :
-                    "Unknown").append(mCurrentChannelNumber == channel ? " (Current)\n" : "\n");
-            }
+            addChannels(lcns, mChannelMapLow.getChannels());
         }
         else
         {
-            sb.append("Channel Map 1-10: Unknown\n");
+            lcns.row("1-10", ActivitySummary.UNKNOWN);
         }
 
         if(mChannelMapHigh != null)
         {
-            for(int channel: mChannelMapHigh.getChannels())
-            {
-                LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
-                sb.append("  ").append(channel).append(": ").append(ltrNetChannel != null ? ltrNetChannel.description() :
-                    "Unknown").append(mCurrentChannelNumber == channel ? " (Current)\n" : "\n");
-            }
+            addChannels(lcns, mChannelMapHigh.getChannels());
         }
         else
         {
-            sb.append("Channel Map 11-20: Unknown\n");
+            lcns.row("11-20", ActivitySummary.UNKNOWN);
         }
 
-        sb.append("\nNeighbor Sites (Rank: ID)\n");
+        summary.section("Neighbor Sites");
+        ActivitySummary.Table neighbors = summary.table("Rank", "Site ID");
+        List<Integer> ranks = new ArrayList<>(mNeighborMap.keySet());
+        Collections.sort(ranks);
 
-        if(mNeighborMap.isEmpty())
+        for(Integer rank: ranks)
         {
-            sb.append("  None\n");
+            neighbors.row(rank, mNeighborMap.get(rank).getNeighborID());
         }
-        else
+
+        summary.section("Active Talkgroups");
+        List<LTRTalkgroup> talkgroups = new ArrayList<>(mTalkgroups);
+        talkgroups.sort(Comparator.comparingInt(Identifier::getValue));
+
+        for(LTRTalkgroup talkgroup: talkgroups)
         {
-            List<Integer> ranks = new ArrayList<>(mNeighborMap.keySet());
-            Collections.sort(ranks);
-            for(Integer rank: ranks)
-            {
-                sb.append("  ").append(rank).append(": ").append(mNeighborMap.get(rank).getNeighborID()).append("\n");
-            }
+            summary.text(talkgroup.formatted());
         }
 
-        sb.append("\nActive Talkgroups\n");
+        summary.section("Active Radio Unique IDs");
+        List<LtrNetRadioIdentifier> ltrNetRadioIdentifiers = new ArrayList<>(mLtrNetRadioIdentifiers);
+        ltrNetRadioIdentifiers.sort(Comparator.comparingInt(Identifier::getValue));
 
-        if(mTalkgroups.isEmpty())
+        for(LtrNetRadioIdentifier ltrNetRadioIdentifier : ltrNetRadioIdentifiers)
         {
-            sb.append("  None\n");
+            summary.text(ltrNetRadioIdentifier);
         }
-        else
+
+        summary.section("Active ESNs");
+        List<ESNIdentifier> esnIdentifiers = new ArrayList<>(mESNIdentifiers);
+        Collections.sort(esnIdentifiers);
+
+        for(ESNIdentifier esnIdentifier: esnIdentifiers)
         {
-            List<LTRTalkgroup> talkgroups = new ArrayList<>(mTalkgroups);
-            talkgroups.sort(Comparator.comparingInt(Identifier::getValue));
-
-            for(LTRTalkgroup talkgroup: talkgroups)
-            {
-                sb.append("  ").append(talkgroup.formatted()).append("\n");
-            }
+            summary.text(esnIdentifier);
         }
 
-        sb.append("\nActive Radio Unique IDs\n");
+        return summary.toString();
+    }
 
-        if(mLtrNetRadioIdentifiers.isEmpty())
+    /**
+     * Adds a row for each channel to the LCN table.
+     */
+    private void addChannels(ActivitySummary.Table table, List<Integer> channels)
+    {
+        for(int channel: channels)
         {
-            sb.append("  None\n");
+            LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
+            table.row(channel, ltrNetChannel != null ? ltrNetChannel.description() : ActivitySummary.UNKNOWN,
+                mCurrentChannelNumber == channel ? "Yes" : null);
         }
-        else
-        {
-            List<LtrNetRadioIdentifier> ltrNetRadioIdentifiers = new ArrayList<>(mLtrNetRadioIdentifiers);
-            ltrNetRadioIdentifiers.sort(Comparator.comparingInt(Identifier::getValue));
-
-            for(LtrNetRadioIdentifier ltrNetRadioIdentifier : ltrNetRadioIdentifiers)
-            {
-                sb.append("  ").append(ltrNetRadioIdentifier).append("\n");
-            }
-        }
-
-        sb.append("\nActive ESNs\n");
-
-        if(mESNIdentifiers.isEmpty())
-        {
-            sb.append("  None\n");
-        }
-        else
-        {
-            List<ESNIdentifier> esnIdentifiers = new ArrayList<>(mESNIdentifiers);
-            Collections.sort(esnIdentifiers);
-
-            for(ESNIdentifier esnIdentifier: esnIdentifiers)
-            {
-                sb.append("  ").append(esnIdentifier).append("\n");
-            }
-        }
-
-        return sb.toString();
     }
 
     @Override

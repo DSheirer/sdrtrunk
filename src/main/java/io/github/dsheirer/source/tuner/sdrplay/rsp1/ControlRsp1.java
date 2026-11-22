@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,10 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rsp1;
 
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.Rsp1Device;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Rsp1Device;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,15 +31,15 @@ import org.slf4j.LoggerFactory;
  */
 public class ControlRsp1 extends ControlRsp<Rsp1Device> implements IControlRsp1
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRsp1.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRsp1.class);
 
     /**
      * Constructs an instance
-     * @param device for the device
+     * @param deviceInfo for the device
      */
-    public ControlRsp1(Rsp1Device device)
+    public ControlRsp1(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo, Rsp1Device.class);
     }
 
     /**
@@ -64,9 +65,8 @@ public class ControlRsp1 extends ControlRsp<Rsp1Device> implements IControlRsp1
             {
                 return 8;
             }
-
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

@@ -126,6 +126,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setVgap(10);
 
             Label channelMapLabel = new Label("Channel Map");
+            channelMapLabel.setLabelFor(getChannelMapComboBox());
             GridPane.setHalignment(channelMapLabel, HPos.RIGHT);
             GridPane.setConstraints(channelMapLabel, 0, 0);
             gridPane.getChildren().add(channelMapLabel);
@@ -138,6 +139,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getChannelMapEditButton());
 
             Label poolSizeLabel = new Label("Max Traffic Channels");
+            poolSizeLabel.setLabelFor(getTrafficChannelPoolSizeSpinner());
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
             GridPane.setConstraints(poolSizeLabel, 0, 1);
             gridPane.getChildren().add(poolSizeLabel);
@@ -146,6 +148,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
             Label callTimeoutLabel = new Label("Call Timeout Seconds");
+            callTimeoutLabel.setLabelFor(getCallTimeoutSpinner());
             GridPane.setHalignment(callTimeoutLabel, HPos.RIGHT);
             GridPane.setConstraints(callTimeoutLabel, 2, 1);
             gridPane.getChildren().add(callTimeoutLabel);

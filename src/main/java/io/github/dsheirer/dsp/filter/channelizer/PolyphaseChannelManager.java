@@ -35,13 +35,12 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.util.Dispatcher;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +54,9 @@ import org.slf4j.LoggerFactory;
  * notifications received from active DDC polyphase channel sources to adjust sample streams as required.
  *
  * Channel bandwidth and channel count are determined by the sample rate of the baseband buffer stream provider.  This
- * class is currently designed to provide channels each with a minimum usable bandwidth of 12.5 kHz and oversampled by
- * 2.0 to a minimum of 25.0 kHz channel sample rate.  If the baseband stream provider sample rate is not evenly
- * divisible by 12.5 kHz channels for an even number of channels, the channel bandwidth will be increased.
+ * class is currently designed to provide channels each with a minimum bandwidth of 25 kHz and oversampled by 2.0 to a
+ * minimum of 50 kHz channel sample rate.  If the baseband stream provider sample rate is not evenly divisible by 25 kHz
+ * channels for an even number of channels with an efficient IFFT size, the channel bandwidth will be increased.
  *
  * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
  * adapts to changes in source frequency and sample rate.
@@ -67,9 +66,14 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private static final LoggingSuppressor LOGGING_SUPPRESSOR = new LoggingSuppressor(LoggerFactory.getLogger(PolyphaseChannelManager.class));
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
-    private static final double MINIMUM_CHANNEL_BANDWIDTH = 25000.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
     private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 9;
+    /**
+     * Maximum duration of queued native buffers awaiting the channelizer.  The queue is bounded by sample count instead
+     * of buffer count because tuner buffer sizes vary widely, for example about 1,000 samples per RSP buffer and 32,768
+     * samples per RTL-SDR buffer, so that each tuner can absorb a processing delay of the same duration.
+     */
+    private static final double MAXIMUM_QUEUED_SECONDS = 1.0;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private TunerController mTunerController;
@@ -79,8 +83,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
     private NativeBufferReceiver mNativeBufferReceiver = new NativeBufferReceiver();
-    private Dispatcher mBufferDispatcher;
-    private Map<Integer,float[]> mOutputProcessorFilters = new HashMap<>();
+    private Dispatcher<INativeBuffer> mBufferDispatcher;
     private boolean mRunning = true;
 
     /**
@@ -97,18 +100,23 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         mTunerController = tunerController;
 
-        int channelCount = (int)(tunerController.getSampleRate() / MINIMUM_CHANNEL_BANDWIDTH);
-
-        //Ensure channel count is an even integer since we're using a 2x oversampling polyphase channelizer
-        if(channelCount % 2 != 0)
-        {
-            channelCount--;
-        }
+        int channelCount = ComplexPolyphaseChannelizerM2.getChannelCount(tunerController.getSampleRate());
 
         mChannelCalculator = new ChannelCalculator(tunerController.getSampleRate(), channelCount,
                 tunerController.getFrequency(), CHANNEL_OVERSAMPLING);
-        mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 10);
+        mBufferDispatcher = new Dispatcher<>("sdrtrunk polyphase buffer processor", 10, INativeBuffer::sampleCount,
+                getMaximumQueuedSamples(tunerController.getSampleRate()));
         mBufferDispatcher.setListener(mNativeBufferReceiver);
+    }
+
+    /**
+     * Calculates the maximum number of queued samples for the buffer dispatcher.
+     * @param sampleRate of the tuner
+     * @return maximum queued samples, at least one
+     */
+    private static long getMaximumQueuedSamples(double sampleRate)
+    {
+        return Math.max(1, (long)(sampleRate * MAXIMUM_QUEUED_SECONDS));
     }
 
     /**
@@ -286,6 +294,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 double sampleRate = sourceEvent.getValue().doubleValue();
                 int channelCount = ComplexPolyphaseChannelizerM2.getChannelCount(sampleRate);
                 mChannelCalculator.setRates(sampleRate, channelCount);
+                mBufferDispatcher.setMaximumQueuedWeight(getMaximumQueuedSamples(sampleRate));
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
@@ -343,9 +352,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             {
                 mLog.error("Could not create filter for polyphase channelizer for sample rate [" + tunerSampleRate + "]", fde);
             }
-
-            //Clear any previous channel synthesis filters so they can be recreated for the new channel sample rate
-            mOutputProcessorFilters.clear();
         }
     }
 
@@ -358,16 +364,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     {
         for(PolyphaseChannelSource channelSource: mChannelSources)
         {
-            try
-            {
-                channelSource.updateOutputProcessor(mChannelCalculator, mFilterManager);
-            }
-            catch(IllegalArgumentException iae)
-            {
-                mLog.error("Error updating polyphase channel source output processor following tuner frequency or " +
-                        "sample rate change");
-                stopChannelSource(channelSource);
-            }
+            channelSource.updateOutputProcessor(mChannelCalculator, mFilterManager);
         }
     }
 
@@ -460,13 +457,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * Processes the incoming buffer stream from the provider and transfers the buffers to the polyphase channelizer.
      *
      * This monitor incorporates a source event handler that queues a center frequency update so that it can be
-     * handled on the buffer processing thread, avoiding having to lock on the output processor thread.  Since we
-     * anticipate that these two threads will contend for access to this update required flag, we use an update lock
-     * to protect access to the flag.
+     * handled on the buffer processing thread, avoiding having to lock on the output processor thread.  The update
+     * required flag is cleared before the update is applied so that a change that arrives during an update is not lost.
      */
     public class NativeBufferReceiver implements Listener<INativeBuffer>
     {
-        private boolean mOutputProcessorUpdateRequired = false;
+        private final AtomicBoolean mOutputProcessorUpdateRequired = new AtomicBoolean();
 
         /**
          * Processes tuner center frequency change source events to flag when output processors need updating.
@@ -480,7 +476,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             {
                 //Update the channel calculator frequency so that it's ready when the output processor update occurs
                 mChannelCalculator.setCenterFrequency(frequency);
-                mOutputProcessorUpdateRequired = true;
+                mOutputProcessorUpdateRequired.set(true);
             }
         }
 
@@ -492,7 +488,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
-            if(mOutputProcessorUpdateRequired)
+            if(mOutputProcessorUpdateRequired.compareAndSet(true, false))
             {
                 try
                 {
@@ -502,7 +498,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 {
                     mLog.error("Error updating polyphase channel output processors");
                 }
-                mOutputProcessorUpdateRequired = false;
             }
 
             if(mPolyphaseChannelizer != null)

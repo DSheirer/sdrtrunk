@@ -62,6 +62,27 @@ public class JavaFxPreferences
     }
 
     /**
+     * Indicates if a size and location is stored for the stage key.
+     */
+    public boolean hasStoredLocation(String key)
+    {
+        return mPreferences.get(PREFERENCE_STAGE_WIDTH_PREFIX + key, null) != null;
+    }
+
+    /**
+     * Stores a size and location for the stage key, for example to migrate a window's location from an older
+     * preference.  Call before {@link #monitor(Stage, String)}.
+     */
+    public void storeLocation(String key, double x, double y, double width, double height, boolean maximized)
+    {
+        mPreferences.putDouble(PREFERENCE_STAGE_X_PREFIX + key, x);
+        mPreferences.putDouble(PREFERENCE_STAGE_Y_PREFIX + key, y);
+        mPreferences.putDouble(PREFERENCE_STAGE_WIDTH_PREFIX + key, width);
+        mPreferences.putDouble(PREFERENCE_STAGE_HEIGHT_PREFIX + key, height);
+        mPreferences.putBoolean(PREFERENCE_STAGE_MAXIMIZED + key, maximized);
+    }
+
+    /**
      * Removes monitoring for the specified stage
      */
     public void unmonitor(Stage stage)
@@ -116,10 +137,10 @@ public class JavaFxPreferences
             //Position the stage before we add the coordinate monitoring
             reposition(stage);
 
-            mX = new NumberMonitor(PREFERENCE_STAGE_X_PREFIX + key);
-            mY = new NumberMonitor(PREFERENCE_STAGE_Y_PREFIX + key);
-            mHeight = new NumberMonitor(PREFERENCE_STAGE_HEIGHT_PREFIX + key);
-            mWidth = new NumberMonitor(PREFERENCE_STAGE_WIDTH_PREFIX + key);
+            mX = new NumberMonitor(PREFERENCE_STAGE_X_PREFIX + key, stage);
+            mY = new NumberMonitor(PREFERENCE_STAGE_Y_PREFIX + key, stage);
+            mHeight = new NumberMonitor(PREFERENCE_STAGE_HEIGHT_PREFIX + key, stage);
+            mWidth = new NumberMonitor(PREFERENCE_STAGE_WIDTH_PREFIX + key, stage);
             mMaximized = new BooleanMonitor(PREFERENCE_STAGE_MAXIMIZED + key);
 
             mStage.xProperty().addListener(mX);
@@ -151,7 +172,7 @@ public class JavaFxPreferences
             double y = mPreferences.getDouble(PREFERENCE_STAGE_Y_PREFIX + mKey, stage.getY());
             double height = mPreferences.getDouble(PREFERENCE_STAGE_HEIGHT_PREFIX + mKey, stage.getHeight());
             double width = mPreferences.getDouble(PREFERENCE_STAGE_WIDTH_PREFIX + mKey, stage.getWidth());
-            boolean maximized = mPreferences.getBoolean(PREFERENCE_STAGE_MAXIMIZED, stage.isMaximized());
+            boolean maximized = mPreferences.getBoolean(PREFERENCE_STAGE_MAXIMIZED + mKey, stage.isMaximized());
 
             //If there is a screen (ie monitor) available to display the stage at these coordinates, then move the
             // stage, otherwise let the stage display in the default coordinates
@@ -174,16 +195,24 @@ public class JavaFxPreferences
     public class NumberMonitor implements ChangeListener<Number>
     {
         private String mKey;
+        private Stage mStage;
 
-        public NumberMonitor(String key)
+        /**
+         * Constructs an instance
+         * @param key for the stored value
+         * @param stage that is monitored.  Values aren't stored while the stage is maximized, so that the stage
+         * returns to its normal size and location when the user restores it.
+         */
+        public NumberMonitor(String key, Stage stage)
         {
             mKey = key;
+            mStage = stage;
         }
 
         @Override
         public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue)
         {
-            if(newValue != null)
+            if(newValue != null && (mStage == null || !mStage.isMaximized()))
             {
                 mPreferences.putDouble(mKey, newValue.doubleValue());
             }

@@ -22,7 +22,6 @@ package io.github.dsheirer.source.tuner.sdrplay.rsp2;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2AntennaSelection;
 
 /**
  * RSP2 tuner configuration

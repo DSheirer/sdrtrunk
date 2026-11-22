@@ -39,7 +39,7 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
     private List<Long> mFrequencies = new ArrayList<>();
     private String mPreferredTuner;
     private Long mPreferredFrequency;
-    private int mFrequencyRotationDelay = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
+    private int mFrequencyRotationDelay = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_DEFAULT;
 
     public SourceConfigTunerMultipleFrequency()
     {

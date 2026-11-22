@@ -39,7 +39,6 @@ import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -56,6 +55,8 @@ public class AgencyEditor extends VBox
     private ListView<Agency> mAgencyListView;
     private AgencyFrequencyEditor mAgencyFrequencyEditor;
     private IntegerProperty mAgencyCountProperty = new SimpleIntegerProperty();
+    private Integer mPendingAgencyId;
+    private AgencyFrequencyEditor.FrequencyTarget mPendingFrequency;
 
     /**
      * Constructs an instance
@@ -92,8 +93,9 @@ public class AgencyEditor extends VBox
 
         if(agencies != null && !agencies.isEmpty())
         {
-            Collections.sort(agencies, new AgencyComparator());
+            //The agencies list belongs to a cached state or county info shared with other callers, so sort the items
             getAgencyListView().getItems().addAll(agencies);
+            getAgencyListView().getItems().sort(new AgencyComparator());
 
             int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId(mLevel);
 
@@ -107,6 +109,56 @@ public class AgencyEditor extends VBox
                 }
             }
         }
+    }
+
+    /**
+     * Prepares to show the agency with the frequency selected when the agencies are next set
+     * @param agencyId of the agency, or the negative county id for a county's own frequencies
+     * @param frequency to select, or null
+     */
+    public void prepareView(int agencyId, AgencyFrequencyEditor.FrequencyTarget frequency)
+    {
+        mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agencyId, mLevel);
+        mPendingAgencyId = agencyId;
+        mPendingFrequency = frequency;
+    }
+
+    /**
+     * Shows the agency with the frequency selected
+     * @param agencyId of the agency, or the negative county id for a county's own frequencies
+     * @param frequency to select, or null
+     * @return false when the editor doesn't list the agency
+     */
+    public boolean view(int agencyId, AgencyFrequencyEditor.FrequencyTarget frequency)
+    {
+        prepareView(agencyId, frequency);
+
+        for(Agency agency: getAgencyListView().getItems())
+        {
+            if(agency.getAgencyId() == agencyId)
+            {
+                if(getAgencyListView().getSelectionModel().getSelectedItem() == agency)
+                {
+                    //Already shown - select the frequency in the shown categories
+                    mPendingAgencyId = null;
+                    mPendingFrequency = null;
+
+                    if(frequency != null)
+                    {
+                        getAgencyFrequencyEditor().viewFrequency(frequency);
+                    }
+                }
+                else
+                {
+                    getAgencyListView().getSelectionModel().select(agency);
+                }
+
+                getAgencyListView().scrollTo(agency);
+                return true;
+            }
+        }
+
+        return getAgencyListView().getItems().isEmpty();
     }
 
     public void clear()
@@ -138,6 +190,7 @@ public class AgencyEditor extends VBox
         if(mAgencyListView == null)
         {
             mAgencyListView = new ListView<>();
+            mAgencyListView.setAccessibleText("Agencies");
             mAgencyListView.setPrefHeight(200);
             mAgencyListView.setCellFactory(param -> new AgencyListCell());
             mAgencyListView.getSelectionModel().selectedItemProperty()
@@ -153,6 +206,17 @@ public class AgencyEditor extends VBox
         if(agency != null)
         {
             getAgencyFrequencyEditor().clearAndSetLoading();
+
+            if(mPendingAgencyId != null && mPendingAgencyId == agency.getAgencyId())
+            {
+                if(mPendingFrequency != null)
+                {
+                    getAgencyFrequencyEditor().viewFrequency(mPendingFrequency);
+                }
+
+                mPendingAgencyId = null;
+                mPendingFrequency = null;
+            }
 
             mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId(), mLevel);
 

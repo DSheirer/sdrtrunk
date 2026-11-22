@@ -19,8 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDuoAmPort;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 
 /**
  * Control interface for RSPduo Tuner 1 device
@@ -32,26 +31,26 @@ public interface IControlRspDuoTuner1 extends IControlRspDuo
      * @return true if enabled.
      * @throws exception if the device is not started (selected).
      */
-    boolean isAmNotch() throws SDRPlayException;
+    boolean isAmNotch() throws RspException;
 
     /**
      * Sets the enabled state of the AM notch filter.
      * @param enabled true to enable
      * @throws exception if the device is not started (selected).
      */
-    void setAmNotch(boolean enabled) throws SDRPlayException;
+    void setAmNotch(boolean enabled) throws RspException;
 
     /**
      * Current port selection setting for the AM port.
      * @return selected AM port
      * @throws exception if the device is not started (selected).
      */
-    RspDuoAmPort getAmPort() throws SDRPlayException;
+    RspDuoAmPortSelection getAmPort() throws RspException;
 
     /**
      * Sets the AM port.
      * @param amPort to use.
      * @throws exception if the device is not started (selected).
      */
-    void setAmPort(RspDuoAmPort amPort) throws SDRPlayException;
+    void setAmPort(RspDuoAmPortSelection amPort) throws RspException;
 }

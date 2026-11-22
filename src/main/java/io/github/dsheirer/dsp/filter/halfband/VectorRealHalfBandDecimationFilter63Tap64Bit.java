@@ -67,6 +67,12 @@ public class VectorRealHalfBandDecimationFilter63Tap64Bit implements IRealDecima
 
     public float[] decimateReal(float[] samples)
     {
+        return decimateReal(samples, new float[samples.length / 2]);
+    }
+
+    @Override
+    public float[] decimateReal(float[] samples, float[] filtered)
+    {
         if(samples.length % 2 != 0)
         {
             throw new IllegalArgumentException("Samples array length must be an integer multiple of 2");
@@ -93,8 +99,6 @@ public class VectorRealHalfBandDecimationFilter63Tap64Bit implements IRealDecima
 
         //Copy new sample array into end of buffer
         System.arraycopy(samples, 0, mBuffer, mBufferOverlap, samples.length);
-
-        float[] filtered = new float[samples.length / 2];
 
         FloatVector accumulator, buffer, filter;
 

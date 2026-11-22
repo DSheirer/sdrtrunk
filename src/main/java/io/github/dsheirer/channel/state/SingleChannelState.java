@@ -26,6 +26,7 @@ import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -46,6 +47,7 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
@@ -217,28 +219,45 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      */
     private void createConfigurationIdentifiers(Channel channel)
     {
-        mIdentifierCollection.update(DecoderTypeConfigurationIdentifier.create(channel.getDecodeConfiguration().getDecoderType()));
+        List<Identifier<?>> identifiers = createChannelIdentifiers(channel);
+
+        for(Identifier<?> identifier : identifiers)
+        {
+            mIdentifierCollection.update(identifier);
+        }
+    }
+
+    /**
+     * Creates channel metadata identifiers.
+     * @param channel to process
+     * @return list of identifiers
+     */
+    public static List<Identifier<?>> createChannelIdentifiers(Channel channel)
+    {
+        List<Identifier<?>> identifiers = new ArrayList<>();
+
+        identifiers.add(DecoderTypeConfigurationIdentifier.create(channel.getDecodeConfiguration().getDecoderType()));
 
         if(channel.hasSystem())
         {
-            mIdentifierCollection.update(SystemConfigurationIdentifier.create(channel.getSystem()));
+            identifiers.add(SystemConfigurationIdentifier.create(channel.getSystem()));
         }
         if(channel.hasSite())
         {
-            mIdentifierCollection.update(SiteConfigurationIdentifier.create(channel.getSite()));
+            identifiers.add(SiteConfigurationIdentifier.create(channel.getSite()));
         }
         if(channel.getName() != null && !channel.getName().isEmpty())
         {
-            mIdentifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
+            identifiers.add(ChannelNameConfigurationIdentifier.create(channel.getName()));
         }
         if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
         {
-            mIdentifierCollection.update(AliasListConfigurationIdentifier.create(channel.getAliasListName()));
+            identifiers.add(AliasListConfigurationIdentifier.create(channel.getAliasListName()));
         }
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
             long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-            mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequency));
+            identifiers.add(FrequencyConfigurationIdentifier.create(frequency));
         }
         else if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER_MULTIPLE_FREQUENCIES)
         {
@@ -246,9 +265,11 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
 
             if(frequencies.size() > 0)
             {
-                mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequencies.get(0)));
+                identifiers.add(FrequencyConfigurationIdentifier.create(frequencies.get(0)));
             }
         }
+
+        return identifiers;
     }
 
     /**

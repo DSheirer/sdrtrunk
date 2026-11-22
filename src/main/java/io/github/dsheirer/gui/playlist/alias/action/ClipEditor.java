@@ -71,6 +71,7 @@ public class ClipEditor extends ActionEditor<ClipAction>
         int row = 0;
 
         Label fileLabel = new Label("Audio File");
+        fileLabel.setLabelFor(getFilePath());
         GridPane.setHalignment(fileLabel, HPos.RIGHT);
         GridPane.setConstraints(fileLabel, 0, row);
         gridPane.getChildren().add(fileLabel);
@@ -83,6 +84,7 @@ public class ClipEditor extends ActionEditor<ClipAction>
         gridPane.getChildren().add(getFileChooser());
 
         Label intervalLabel = new Label(("Play Audio Clip"));
+        intervalLabel.setLabelFor(getIntervalComboBox());
         GridPane.setHalignment(intervalLabel, HPos.RIGHT);
         GridPane.setConstraints(intervalLabel, 0, ++row);
         gridPane.getChildren().add(intervalLabel);
@@ -97,6 +99,7 @@ public class ClipEditor extends ActionEditor<ClipAction>
         GridPane.setConstraints(getSecondsLabel(), 3, row);
         GridPane.setHgrow(getSecondsLabel(), Priority.ALWAYS);
         gridPane.getChildren().add(getSecondsLabel());
+        getSecondsLabel().setLabelFor(getPeriodTextField());
 
         GridPane.setConstraints(getTestButton(), 4, row);
         gridPane.getChildren().add(getTestButton());
@@ -223,6 +226,7 @@ public class ClipEditor extends ActionEditor<ClipAction>
         if(mTestButton == null)
         {
             mTestButton = new Button("Test");
+            mTestButton.setAccessibleText("Test audio clip");
             mTestButton.setMaxWidth(Double.MAX_VALUE);
             mTestButton.setDisable(true);
             mTestButton.setOnAction(event -> test());
@@ -236,6 +240,7 @@ public class ClipEditor extends ActionEditor<ClipAction>
         if(mFileChooser == null)
         {
             mFileChooser = new Button(("Select ..."));
+            mFileChooser.setAccessibleText("Select audio file");
             mFileChooser.setMaxWidth(Double.MAX_VALUE);
             mFileChooser.setDisable(true);
             mFileChooser.setOnAction(event -> {
@@ -278,7 +283,8 @@ public class ClipEditor extends ActionEditor<ClipAction>
         if(mFilePath == null)
         {
             mFilePath = new TextField(PLEASE_SELECT_A_FILE);
-            mFilePath.setDisable(true);
+            //Read-only rather than disabled so that the selected file remains focusable for screen readers
+            mFilePath.setEditable(false);
             mFilePath.setMaxWidth(Double.MAX_VALUE);
             mFilePath.textProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue != null && !newValue.isEmpty() && !newValue.contentEquals(PLEASE_SELECT_A_FILE))

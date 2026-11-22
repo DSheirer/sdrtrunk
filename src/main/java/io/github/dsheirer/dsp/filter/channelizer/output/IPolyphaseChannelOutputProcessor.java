@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
+import io.github.dsheirer.dsp.filter.channelizer.ChannelResultsBatch;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import java.util.List;
@@ -41,9 +42,8 @@ public interface IPolyphaseChannelOutputProcessor
     /**
      * Receive and enqueue output results from the polyphase analysis channelizer
      * @param channelResults to enqueue
-     * @param timestamp for the first channel results buffer
      */
-    void receiveChannelResults(List<float[]> channelResults, long timestamp);
+    void receiveChannelResults(ChannelResultsBatch channelResults);
 
     /**
      * Listener to receive assembled complex samples buffers

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -133,6 +133,7 @@ public class ApplicationLog
             Attributes atts = findManifestAttributes();
             if (atts != null) {
                 mLog.info("SDRTrunk Version  : " + atts.getValue("Implementation-Version"));
+                mLog.info("Git Describe      : " + atts.getValue("Git-Describe"));
                 mLog.info("Gradle Version    : " + atts.getValue("Created-By"));
                 mLog.info("Build Timestamp   : " + atts.getValue("Build-Timestamp"));
                 mLog.info("Build-JDK         : " + atts.getValue("Build-JDK"));

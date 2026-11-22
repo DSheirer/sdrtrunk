@@ -33,6 +33,7 @@ public class HackRFTunerConfiguration extends TunerConfiguration
     private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;  // We can see some signal at this gain
     private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_16;  // We can see some signal at this gain
     private boolean mAmplifierEnabled = false;  //Probably should start off disabled
+    private boolean mBiasTEnabled = false;
 
     /**
      * Default constructor for JAXB
@@ -63,6 +64,23 @@ public class HackRFTunerConfiguration extends TunerConfiguration
     public void setAmplifierEnabled(boolean enabled)
     {
         mAmplifierEnabled = enabled;
+    }
+
+    /**
+     * Indicates if the Bias-T antenna port power is enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasTEnabled;
+    }
+
+    /**
+     * Enables or disables the Bias-T antenna port power.
+     */
+    public void setBiasT(boolean enabled)
+    {
+        mBiasTEnabled = enabled;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "lna_gain")

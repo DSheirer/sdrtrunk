@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,16 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +45,8 @@ import org.slf4j.LoggerFactory;
 public class Dispatcher<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Dispatcher.class);
-    private final LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<>();
+    private static final long OVERFLOW_LOG_INTERVAL_MILLISECONDS = 10000;
+    private final BlockingQueue<E> mQueue;
     private Listener<E> mListener;
     private final AtomicBoolean mRunning = new AtomicBoolean();
     private String mThreadName;
@@ -49,6 +54,11 @@ public class Dispatcher<E> implements Listener<E>
     private ScheduledFuture<?> mScheduledFuture;
     private final long mInterval;
     private HeartbeatManager mHeartbeatManager;
+    private long mDroppedCount = 0;
+    private long mLastOverflowLogTimestamp = 0;
+    private final ToLongFunction<E> mWeigher;
+    private volatile long mMaximumQueuedWeight = Long.MAX_VALUE;
+    private final AtomicLong mQueuedWeight = new AtomicLong();
 
     /**
      * Constructs an instance of a Dispatcher with integrated heartbeat support.
@@ -63,7 +73,20 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
-     * Constructs an instance
+     * Constructs an instance of a bounded Dispatcher with integrated heartbeat support.
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param heartbeatManager to receive a heartbeat command at each processing interval.
+     * @param maximumQueueSize for queued elements.  Elements received while the queue is full are dropped.
+     */
+    public Dispatcher(String threadName, long interval, HeartbeatManager heartbeatManager, int maximumQueueSize)
+    {
+        this(threadName, interval, maximumQueueSize);
+        mHeartbeatManager = heartbeatManager;
+    }
+
+    /**
+     * Constructs an instance with an unbounded queue.
      * @param threadName to name the dispatcher thread
      * @param interval for processing each batch in milliseconds.
      */
@@ -71,6 +94,61 @@ public class Dispatcher<E> implements Listener<E>
     {
         mThreadName = threadName;
         mInterval = interval;
+        mQueue = new LinkedTransferQueue<>();
+        mWeigher = null;
+    }
+
+    /**
+     * Constructs a bounded instance.
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param maximumQueueSize for queued elements.  Elements received while the queue is full are dropped.
+     */
+    public Dispatcher(String threadName, long interval, int maximumQueueSize)
+    {
+        mThreadName = threadName;
+        mInterval = interval;
+        mQueue = new LinkedBlockingQueue<>(maximumQueueSize);
+        mWeigher = null;
+    }
+
+    /**
+     * Constructs an instance that is bounded by the total weight of the queued elements instead of the element count,
+     * for when element sizes vary widely, for example sample buffers from different tuners.  An element is dropped
+     * when adding it would exceed the maximum weight, except when nothing is queued, so that an element heavier than
+     * the maximum is still delivered.  Elements count toward the weight until the listener has processed them.
+     *
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param weigher to calculate the weight of each element, for example a sample count.
+     * @param maximumQueuedWeight for the queued elements.
+     */
+    public Dispatcher(String threadName, long interval, ToLongFunction<E> weigher, long maximumQueuedWeight)
+    {
+        if(weigher == null)
+        {
+            throw new IllegalArgumentException("Weigher cannot be null");
+        }
+
+        mThreadName = threadName;
+        mInterval = interval;
+        mQueue = new LinkedTransferQueue<>();
+        mWeigher = weigher;
+        setMaximumQueuedWeight(maximumQueuedWeight);
+    }
+
+    /**
+     * Sets the maximum total weight of the queued elements, for a dispatcher that was constructed with a weigher.
+     * @param maximumQueuedWeight for the queued elements.
+     */
+    public void setMaximumQueuedWeight(long maximumQueuedWeight)
+    {
+        if(maximumQueuedWeight <= 0)
+        {
+            throw new IllegalArgumentException("Maximum queued weight must be positive: " + maximumQueuedWeight);
+        }
+
+        mMaximumQueuedWeight = maximumQueuedWeight;
     }
 
     /**
@@ -94,16 +172,66 @@ public class Dispatcher<E> implements Listener<E>
     /**
      * Primary input method for adding buffers to this processor.  Note: incoming buffers will be ignored if this
      * processor is in a stopped state.  You must invoke start() to allow incoming buffers and initiate buffer
-     * processing.
+     * processing.  If this processor has a bounded queue and the queue is full, the incoming buffer is dropped.
      *
      * @param e to enqueue for distribution to a registered listener
      */
     public void receive(E e)
     {
-        if(mRunning.get())
+        offer(e);
+    }
+
+    /**
+     * Adds the element to this processor's queue, for when the caller has to take action on an element that isn't
+     * accepted.
+     *
+     * @param e to enqueue for distribution to a registered listener
+     * @return true if the element was queued, or false if this processor is stopped or a bounded queue is full.
+     */
+    public boolean offer(E e)
+    {
+        if(!mRunning.get())
         {
-            mQueue.add(e);
+            return false;
         }
+
+        boolean queued;
+
+        if(mWeigher != null)
+        {
+            long weight = mWeigher.applyAsLong(e);
+            long queuedWeight = mQueuedWeight.addAndGet(weight);
+
+            if(queuedWeight > mMaximumQueuedWeight && queuedWeight > weight)
+            {
+                mQueuedWeight.addAndGet(-weight);
+                queued = false;
+            }
+            else
+            {
+                queued = mQueue.offer(e);
+            }
+        }
+        else
+        {
+            queued = mQueue.offer(e);
+        }
+
+        if(!queued)
+        {
+            mDroppedCount++;
+            long now = System.currentTimeMillis();
+
+            if(now - mLastOverflowLogTimestamp >= OVERFLOW_LOG_INTERVAL_MILLISECONDS)
+            {
+                mLog.warn("Dispatcher [" + mThreadName + "] queue is full, consumer is not keeping up - dropped [" +
+                    mDroppedCount + "] elements");
+                mLastOverflowLogTimestamp = now;
+                mDroppedCount = 0;
+            }
+        }
+
+        return queued;
     }
 
     /**
@@ -127,6 +255,7 @@ public class Dispatcher<E> implements Listener<E>
             }
 
             mQueue.clear();
+            mQueuedWeight.set(0);
             mExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(mThreadName));
 
             Runnable r = (mHeartbeatManager != null ? new ProcessorWithHeartbeat() : new Processor());
@@ -148,6 +277,7 @@ public class Dispatcher<E> implements Listener<E>
                 mScheduledFuture.cancel(false);
                 mScheduledFuture = null;
                 mQueue.clear();
+                mQueuedWeight.set(0);
             }
 
             if(mExecutorService != null)
@@ -197,6 +327,8 @@ public class Dispatcher<E> implements Listener<E>
                                 mListener.getClass() + "]", t);
                     }
                 }
+
+                release(element);
             }
         }
     }
@@ -232,6 +364,19 @@ public class Dispatcher<E> implements Listener<E>
                             mListener.getClass() + "]", t);
                 }
             }
+
+            release(element);
+        }
+    }
+
+    /**
+     * Removes the weight of a dequeued element from the queued weight, once the element is processed.
+     */
+    private void release(E element)
+    {
+        if(mWeigher != null)
+        {
+            mQueuedWeight.addAndGet(-mWeigher.applyAsLong(element));
         }
     }
 

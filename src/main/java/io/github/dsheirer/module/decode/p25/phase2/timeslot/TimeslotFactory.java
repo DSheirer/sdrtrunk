@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,35 @@ public class TimeslotFactory
      */
     public static Timeslot getTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence,
                                        int timeslot, long timestamp)
+    {
+        return getTimeslot(message, null, scramblingSequence, timeslot, timestamp);
+    }
+
+    /**
+     * Creates a timeslot parser instance with soft symbols for soft decision decoding of signaling timeslots.
+     *
+     * @param message containing 320-bit timeslot data
+     * @param softSymbols (radians) for each of the 160 dibits in the timeslot, or null
+     * @param scramblingSequence to unscramble the transmitted message
+     * @param timeslot to retrieve
+     * @param timestamp for the message
+     * @return timeslot parser
+     */
+    public static Timeslot getTimeslot(CorrectedBinaryMessage message, float[] softSymbols,
+                                       BinaryMessage scramblingSequence, int timeslot, long timestamp)
+    {
+        Timeslot instance = createTimeslot(message, scramblingSequence, timeslot, timestamp);
+
+        if(softSymbols != null && instance instanceof AbstractSignalingTimeslot signalingTimeslot)
+        {
+            signalingTimeslot.setSoftSymbols(softSymbols);
+        }
+
+        return instance;
+    }
+
+    private static Timeslot createTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence,
+                                           int timeslot, long timestamp)
     {
         DataUnitID dataUnitID = Timeslot.getDuid(message);
 

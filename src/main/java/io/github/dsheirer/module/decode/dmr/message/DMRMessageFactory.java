@@ -60,6 +60,22 @@ public class DMRMessageFactory
     public IMessage create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, CACH cach, long timestamp,
                            int timeslot)
     {
+        return create(syncPattern, binaryMessage, null, cach, timestamp, timeslot);
+    }
+
+    /**
+     * Creates a DMR message wrapper for the binary message.  DMR message type is specified by the sync pattern.
+     * Data messages use soft decision decoding when the soft bits are provided.
+     * @param syncPattern for the message
+     * @param binaryMessage containing the raw DMR message burst
+     * @param softBits for the DMR burst (one per message bit) where a positive value favors a 1 bit, or null.
+     * @param timestamp for the burst
+     * @param timeslot for the burst
+     * @return DMRMessage instance or null for UNKNOWN sync pattern
+     */
+    public IMessage create(DMRSyncPattern syncPattern, CorrectedBinaryMessage binaryMessage, float[] softBits, CACH cach,
+                           long timestamp, int timeslot)
+    {
         switch(syncPattern)
         {
             case BASE_STATION_VOICE, MOBILE_STATION_VOICE:
@@ -67,18 +83,18 @@ public class DMRMessageFactory
             case MS_VOICE_FRAME_B, MS_VOICE_FRAME_C, MS_VOICE_FRAME_D, MS_VOICE_FRAME_E, MS_VOICE_FRAME_F:
             case DIRECT_VOICE_FRAME_B, DIRECT_VOICE_FRAME_C, DIRECT_VOICE_FRAME_D, DIRECT_VOICE_FRAME_E,
                  DIRECT_VOICE_FRAME_F:
-                return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, timeslot);
+                return createVoiceMessage(syncPattern, binaryMessage, softBits, cach, timestamp, timeslot);
             case DIRECT_VOICE_TIMESLOT_1:
-                return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, 1);
+                return createVoiceMessage(syncPattern, binaryMessage, softBits, cach, timestamp, 1);
             case DIRECT_VOICE_TIMESLOT_2:
-                return createVoiceMessage(syncPattern, binaryMessage, cach, timestamp, 2);
+                return createVoiceMessage(syncPattern, binaryMessage, softBits, cach, timestamp, 2);
             case BASE_STATION_DATA:
             case MOBILE_STATION_DATA:
-                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, timeslot);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, softBits, cach, timestamp, timeslot);
             case DIRECT_DATA_TIMESLOT_1:
-                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 1);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, softBits, cach, timestamp, 1);
             case DIRECT_DATA_TIMESLOT_2:
-                return mDataMessageFactory.create(syncPattern, binaryMessage, cach, timestamp, 2);
+                return mDataMessageFactory.create(syncPattern, binaryMessage, softBits, cach, timestamp, 2);
             case DIRECT_EMPTY_TIMESLOT:
                 return new EmptyTimeslotPlaceholderMessage(timestamp, 288, Protocol.DMR, timeslot);
             case UNKNOWN:
@@ -94,13 +110,14 @@ public class DMRMessageFactory
      * Creates a voice message from the raw transmitted DMR burst frame
      * @param syncPattern for the frame
      * @param message containing the DMR burst
+     * @param softBits for the DMR burst, or null
      * @param cach extracted from the first 24 bits of the message
      * @param timestamp the message was received
      * @param timeslot for the DMR burst
      * @return constructed voice message
      */
-    private static VoiceMessage createVoiceMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach,
-                                                  long timestamp, int timeslot)
+    private static VoiceMessage createVoiceMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message,
+                                                  float[] softBits, CACH cach, long timestamp, int timeslot)
     {
         switch(syncPattern)
         {
@@ -114,7 +131,7 @@ public class DMRMessageFactory
             case DIRECT_VOICE_FRAME_B, DIRECT_VOICE_FRAME_C, DIRECT_VOICE_FRAME_D, DIRECT_VOICE_FRAME_E,
                  DIRECT_VOICE_FRAME_F:
             default:
-                return new VoiceEMBMessage(syncPattern, message, cach, timestamp, timeslot);
+                return new VoiceEMBMessage(syncPattern, message, softBits, cach, timestamp, timeslot);
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * ******************************************************************************
- * Copyright (C) 2015-2020 Dennis Sheirer
+ * Copyright (C) 2015-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.jmbe.github;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -33,6 +32,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Utilities for accessing GitHub repositories and releases
@@ -40,6 +41,12 @@ import java.nio.file.StandardOpenOption;
 public class GitHub
 {
     private final static Logger mLog = LoggerFactory.getLogger(GitHub.class);
+
+    /**
+     * Query suffix to request the maximum page size.  GitHub returns 30 releases per page by default, which could
+     * eventually push older major version releases off of the first page.
+     */
+    private static final String RELEASES_PAGE_SIZE = "?per_page=100";
 
     private GitHub()
     {
@@ -82,14 +89,17 @@ public class GitHub
     }
 
     /**
-     * Obtain the latest release object from the repository.
+     * Obtains the latest release from the repository whose major version matches the specified major version.  Newer
+     * releases with a different major version are ignored so that the downloaded JMBE creator produces a library that
+     * is compatible with the JMBE API that this application was compiled against.
      * @param repositoryURL for the GitHub api
-     * @return the latest release or null
+     * @param majorVersion that the release must match.
+     * @return the latest matching release or null
      */
-    public static Release getLatestRelease(String repositoryURL)
+    public static Release getLatestRelease(String repositoryURL, int majorVersion)
     {
         HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(repositoryURL)).build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(repositoryURL + RELEASES_PAGE_SIZE)).build();
 
         try
         {
@@ -97,7 +107,7 @@ public class GitHub
 
             if(response.statusCode() == 200)
             {
-                return parseResponse(response.body());
+                return getLatestRelease(parseReleases(response.body()), majorVersion);
             }
             else
             {
@@ -113,13 +123,38 @@ public class GitHub
     }
 
     /**
-     * Parses a json string containing an array or GitHub release objects and returns the latest release.
-     * @param json string returned from URL call
-     * @return latest release version
+     * Finds the latest release in the list whose major version matches the specified major version.
+     * @param releases to search
+     * @param majorVersion that the release must match
+     * @return latest matching release or null
      */
-    private static Release parseResponse(String json)
+    public static Release getLatestRelease(List<Release> releases, int majorVersion)
     {
-        Release release = null;
+        Release latest = null;
+
+        for(Release release: releases)
+        {
+            Version version = release.getVersion();
+
+            if(version.hasMajor() && version.getMajor() == majorVersion &&
+                (latest == null || latest.getVersion().compareTo(version) < 0))
+            {
+                latest = release;
+            }
+        }
+
+        return latest;
+    }
+
+    /**
+     * Parses a json string containing an array of GitHub release objects.  Release objects that don't have a
+     * parsable version tag are ignored.
+     * @param json string returned from URL call
+     * @return list of releases, possibly empty
+     */
+    public static List<Release> parseReleases(String json)
+    {
+        List<Release> releases = new ArrayList<>();
 
         if(json != null)
         {
@@ -127,9 +162,7 @@ public class GitHub
 
             if(element.isJsonArray())
             {
-                JsonArray array = element.getAsJsonArray();
-
-                for(JsonElement child: array)
+                for(JsonElement child: element.getAsJsonArray())
                 {
                     if(child.isJsonObject())
                     {
@@ -138,17 +171,14 @@ public class GitHub
 
                         if(version != null)
                         {
-                            if(release == null || release.getVersion().compareTo(version) < 0)
-                            {
-                                release = new Release(version, releaseObject);
-                            }
+                            releases.add(new Release(version, releaseObject));
                         }
                     }
                 }
             }
         }
 
-        return release;
+        return releases;
     }
 
     /**

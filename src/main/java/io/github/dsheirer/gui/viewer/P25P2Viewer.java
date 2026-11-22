@@ -225,7 +225,8 @@ public class P25P2Viewer extends VBox
 
             ThreadPool.CACHED.submit(() -> {
                 List<MessagePackage> messages = new ArrayList<>();
-                P25P2MessageFramer messageFramer = new P25P2MessageFramer(null);
+                P25P2MessageFramer messageFramer = new P25P2MessageFramer();
+                messageFramer.start();
                 messageFramer.setScrambleParameters(scrambleParameters);
                 P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
                 messageFramer.setListener(messageProcessor);

@@ -173,6 +173,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
         {
             Iterator<AudioSegment> it = mAudioSegments.iterator();
             AudioSegment audioSegment;
+            List<AudioSegment> displaced = new ArrayList<>();
 
             //Remove any audio segments flagged as do not monitor.  Don't remove completed segments yet, because
             //we want to give them a brief chance at playback.  Automatically assign linked audio segments to the
@@ -200,6 +201,16 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                                 if(audioOutput.isLinkedTo(audioSegment))
                                 {
                                     it.remove();
+
+                                    //Linked audio continues the current call, so it goes ahead of anything queued
+                                    AudioSegment queued = audioOutput.pollQueuedAudioSegment();
+
+                                    while(queued != null)
+                                    {
+                                        displaced.add(queued);
+                                        queued = audioOutput.pollQueuedAudioSegment();
+                                    }
+
                                     audioOutput.play(audioSegment);
                                 }
                             }
@@ -211,6 +222,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     }
                 }
             }
+
+            mAudioSegments.addAll(displaced);
 
             //Sort audio segments by playback priority and assign to empty audio outputs
             if(!mAudioSegments.isEmpty() && mAudioOutput != null)
@@ -232,6 +245,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                             }
                         }
                     }
+
+                    replaceLowerPriorityQueuedSegments(mAudioSegments, mAudioOutput.getAudioProvider().getAudioChannels());
                 }
                 finally
                 {
@@ -250,6 +265,40 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 {
                     it.remove();
                     audioSegment.decrementConsumerCount();
+                }
+            }
+        }
+    }
+
+    /**
+     * Swaps audio segments queued on the audio channels for waiting audio segments that have a higher playback priority,
+     * so that a segment queued behind the current playback can't hold a higher priority segment out of the channel.
+     * Audio that is currently playing is not interrupted.  Displaced segments are returned to the waiting list.
+     *
+     * @param waiting audio segments, sorted by playback priority.
+     * @param audioChannels to evaluate.
+     */
+    static void replaceLowerPriorityQueuedSegments(List<AudioSegment> waiting, List<AudioChannel> audioChannels)
+    {
+        for(AudioChannel audioChannel: audioChannels)
+        {
+            if(waiting.isEmpty())
+            {
+                return;
+            }
+
+            AudioSegment queued = audioChannel.peekQueuedAudioSegment();
+
+            if(queued != null &&
+               waiting.getFirst().monitorPriorityProperty().get() < queued.monitorPriorityProperty().get())
+            {
+                //The audio thread may have taken the queued segment since the peek, so only return what we removed.
+                queued = audioChannel.pollQueuedAudioSegment();
+                audioChannel.play(waiting.removeFirst());
+
+                if(queued != null)
+                {
+                    waiting.add(queued);
                 }
             }
         }

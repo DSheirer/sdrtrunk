@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,184 +19,104 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDx;
 
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.RspDxDevice;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDxDevice;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.HdrModeBandwidth;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDxAntenna;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Control wrapper for an RSPdx Device
+ * Control wrapper for an RSPdx and RSPdx-R2 Device
  */
 public class ControlRspDx extends ControlRsp<RspDxDevice> implements IControlRspDx
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRspDx.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRspDx.class);
 
     /**
      * Constructs an instance
-     * @param device for the device
+     * @param deviceInfo for the device
      */
-    public ControlRspDx(RspDxDevice device)
+    public ControlRspDx(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo, RspDxDevice.class);
     }
 
     @Override
-    public boolean isBiasT() throws SDRPlayException
+    public boolean isBiasT() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isBiasT();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get Bias-T", RspDxDevice::isBiasT);
     }
 
     @Override
-    public void setBiasT(boolean enabled) throws SDRPlayException
+    public void setBiasT(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setBiasT(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set Bias-T", device -> device.setBiasT(enabled));
     }
 
     @Override
-    public boolean isRfNotch() throws SDRPlayException
+    public boolean isRfNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF notch", RspDxDevice::isRfNotch);
     }
 
     @Override
-    public void setRfNotch(boolean enabled) throws SDRPlayException
+    public void setRfNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF notch", device -> device.setRfNotch(enabled));
     }
 
     @Override
-    public boolean isRfDabNotch() throws SDRPlayException
+    public boolean isRfDabNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isRfDabNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF DAB notch", RspDxDevice::isRfDabNotch);
     }
 
     @Override
-    public void setRfDabNotch(boolean enabled) throws SDRPlayException
+    public void setRfDabNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setRfDabNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF DAB notch", device -> device.setRfDabNotch(enabled));
     }
 
     @Override
-    public boolean isHighDynamicRange() throws SDRPlayException
+    public boolean isHighDynamicRange() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().isHdrMode();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get HDR mode", RspDxDevice::isHdr);
     }
 
     @Override
-    public void setHighDynamicRange(boolean enabled) throws SDRPlayException
+    public void setHighDynamicRange(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setHdrMode(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set HDR mode", device -> device.setHdr(enabled));
     }
 
     @Override
-    public RspDxAntenna getAntenna() throws SDRPlayException
+    public RspDxAntennaSelection getAntenna() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().getAntenna();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get antenna", device -> RspDxAntennaSelection.fromAntenna(device.antenna()));
     }
 
     @Override
-    public void setAntenna(RspDxAntenna antenna) throws SDRPlayException
+    public void setAntenna(RspDxAntennaSelection antenna) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().getTuner().setAntenna(antenna);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set antenna " + antenna, device -> device.setAntenna(antenna.getAntenna()));
     }
 
     @Override
-    public void setHdrModeBandwidth(HdrModeBandwidth bandwidth) throws SDRPlayException
+    public void setHdrModeBandwidth(HdrModeBandwidth bandwidth) throws RspException
     {
-        if(hasDevice())
+        if(bandwidth == null || bandwidth.getBandwidth() == null)
         {
-            getDevice().getTuner().setHdrModeBandwidth(bandwidth);
+            throw new RspException("Invalid HDR mode bandwidth: " + bandwidth);
         }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+
+        command("set HDR mode bandwidth " + bandwidth, device -> device.setHdrBandwidth(bandwidth.getBandwidth()));
     }
 
     @Override
-    public HdrModeBandwidth getHdrModeBandwidth() throws SDRPlayException
+    public HdrModeBandwidth getHdrModeBandwidth() throws RspException
     {
-        if(hasDevice())
-        {
-            return getDevice().getTuner().getHdrModeBandwidth();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get HDR mode bandwidth", device -> HdrModeBandwidth.fromBandwidth(device.hdrBandwidth()));
     }
 
     /**
@@ -239,7 +159,7 @@ public class ControlRspDx extends ControlRsp<RspDxDevice> implements IControlRsp
                 return 18;
             }
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

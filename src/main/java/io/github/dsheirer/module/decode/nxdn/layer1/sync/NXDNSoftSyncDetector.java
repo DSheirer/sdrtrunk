@@ -19,15 +19,16 @@
 
 package io.github.dsheirer.module.decode.nxdn.layer1.sync;
 
+import io.github.dsheirer.dsp.c4fm.ISoftC4FMSyncDetector;
 import java.util.Arrays;
 
 /**
  * NXDN Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
  */
-public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
+public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector implements ISoftC4FMSyncDetector
 {
     //symbol buffer is extended by 6x to support SIMD 512 calculations
-    protected float[] mSymbols = new float[SYNC_DIBIT_LENGTH * 2 + 6];
+    protected float[] mSymbols = new float[getDibitLength() * 2 + 6];
     protected int mSymbolPointer = 0;
 
     /**
@@ -63,9 +64,9 @@ public abstract class NXDNSoftSyncDetector extends NXDNSyncDetector
     public float process(float dibitSymbol)
     {
         mSymbols[mSymbolPointer] = dibitSymbol;
-        mSymbols[mSymbolPointer + SYNC_DIBIT_LENGTH] = dibitSymbol;
+        mSymbols[mSymbolPointer + getDibitLength()] = dibitSymbol;
         mSymbolPointer++;
-        mSymbolPointer %= SYNC_DIBIT_LENGTH;
+        mSymbolPointer %= getDibitLength();
         return calculate();
     }
 }

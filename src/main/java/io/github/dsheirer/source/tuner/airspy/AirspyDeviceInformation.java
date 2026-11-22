@@ -1,157 +1,102 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.source.tuner.airspy;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.airspy.PartIdSerialNumber;
 
-import java.util.Arrays;
-
+/**
+ * Airspy device information, read from the device by libairspy.
+ */
 public class AirspyDeviceInformation
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AirspyDeviceInformation.class );
-
-	private AirspyTunerController.BoardID mBoardID = AirspyTunerController.BoardID.UNKNOWN;
-	private String mFirmwareVersion = "Unknown";
-	private String mPartNumber = "Unknown";
-	private String mSerialNumber = "Unknown";
+	private final String mBoardName;
+	private final String mFirmwareVersion;
+	private final PartIdSerialNumber mPartIdSerialNumber;
 
 	/**
-	 * Airspy Device Information - provides parsing and access to device
-	 * information components.
+	 * Constructs an instance
+	 * @param boardName from the device
+	 * @param firmwareVersion string from the device
+	 * @param partIdSerialNumber from the device
 	 */
-	public AirspyDeviceInformation()
+	public AirspyDeviceInformation(String boardName, String firmwareVersion, PartIdSerialNumber partIdSerialNumber)
 	{
+		mBoardName = boardName;
+		mFirmwareVersion = firmwareVersion;
+		mPartIdSerialNumber = partIdSerialNumber;
 	}
-	
-	public void setBoardID( int boardID )
+
+	public String getBoardName()
 	{
-		mBoardID = AirspyTunerController.BoardID.fromValue( boardID );
+		return mBoardName;
 	}
-	
-	public AirspyTunerController.BoardID getBoardID()
-	{
-		return mBoardID;
-	}
-	
-	public void setVersion( byte[] data )
-	{
-		if( data != null && data.length > 0 )
-		{
-			/* Truncate the version string if we have a line break - ASCII 10 */
-			for( int x = 0; x < data.length; x++ )
-			{
-				if( data[ x ] == (byte)10 )
-				{
-					mFirmwareVersion = new String( Arrays.copyOf( data, x ) );
-					mFirmwareVersion = mFirmwareVersion.replace( "AirSpy NOS ", "" );
-					return;
-				}
-			}
-			
-			mFirmwareVersion = new String( data );
-			mFirmwareVersion = mFirmwareVersion.replace( "AirSpy NOS ", "" );
-		}
-		else
-		{
-			mLog.error( "Error setting airspy version byte data - null:" + 
-				( data == null ? " TRUE" : " FALSE length:" + data.length ) );
-		}
-	}
-	
+
+	/**
+	 * Firmware version, without the "AirSpy NOS " prefix and truncated at the first line break.
+	 */
 	public String getVersion()
 	{
-		return mFirmwareVersion;
-	}
-	
-	public void setPartAndSerialNumber( byte[] data )
-	{
-		if( data != null && data.length == 24 )
+		if(mFirmwareVersion == null)
 		{
-			//Note: values are byte-reversed (big-endian) 32-bit chunks
-			StringBuilder part = new StringBuilder();
-			
-			part.append( format( data[ 3 ] ) );
-			part.append( format( data[ 2 ] ) );
-			part.append( format( data[ 1 ] ) );
-			part.append( format( data[ 0 ] ) );
-			part.append( format( data[ 7 ] ) );
-			part.append( format( data[ 6 ] ) );
-			part.append( format( data[ 5 ] ) );
-			part.append( format( data[ 4 ] ) );
-
-			mPartNumber = part.toString();
-			
-			StringBuilder serial = new StringBuilder();
-
-			//Note: current airspy library only exposes 64-bits of serial number
-			//address space, but appears to have room for 128-bits.  We won't
-			//add the first 64 bits if it's zeros
-			if( !( data[ 8 ] == 0 && data[ 9 ] == 0 && data[ 10 ] == 0 && data[ 11 ] == 0 ) )
-			{
-				serial.append( format( data[ 11 ] ) );
-				serial.append( format( data[ 10 ] ) );
-				serial.append( format( data[ 9 ] ) );
-				serial.append( format( data[ 8 ] ) );
-				serial.append( "-" );
-			}
-
-			if( !( data[ 12 ] == 0 && data[ 13 ] == 0 && data[ 14 ] == 0 && data[ 15 ] == 0 ) )
-			{
-				serial.append( format( data[ 15 ] ) );
-				serial.append( format( data[ 14 ] ) );
-				serial.append( format( data[ 13 ] ) );
-				serial.append( format( data[ 12 ] ) );
-				serial.append( "-" );
-			}
-			
-			serial.append( format( data[ 19 ] ) );
-			serial.append( format( data[ 18 ] ) );
-			serial.append( format( data[ 17 ] ) );
-			serial.append( format( data[ 16 ] ) );
-			serial.append( "-" );
-			serial.append( format( data[ 23 ] ) );
-			serial.append( format( data[ 22 ] ) );
-			serial.append( format( data[ 21 ] ) );
-			serial.append( format( data[ 20 ] ) );
-
-			mSerialNumber = serial.toString();
+			return "Unknown";
 		}
-		else
+
+		String version = mFirmwareVersion;
+		int lineBreak = version.indexOf('\n');
+
+		if(lineBreak >= 0)
 		{
-			mLog.error( "Error setting airspy part and serial byte data - null:" + 
-					( data == null ? " TRUE" : " FALSE length:" + data.length ) );
+			version = version.substring(0, lineBreak);
 		}
+
+		return version.replace("AirSpy NOS ", "").trim();
 	}
-	
-	private String format( byte value )
-	{
-		return String.format( "%02X", value );
-	}
-	
+
+	/**
+	 * Serial number, formatted as the identifier that tuner configurations are saved under.
+	 */
 	public String getSerialNumber()
 	{
-		return mSerialNumber;
+		long serial = mPartIdSerialNumber.serialNumber();
+		return String.format("%08X-%08X", serial >>> 32, serial & 0xFFFFFFFFL);
 	}
-	
+
 	public String getPartNumber()
 	{
-		return mPartNumber;
+		return String.format("%08X%08X", mPartIdSerialNumber.partId1(), mPartIdSerialNumber.partId2());
 	}
-	
+
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( "Airspy Device Information\n" );
-		sb.append( "Board: " );
-		sb.append( getBoardID().getLabel() );
-		sb.append( "\nPart Number: " );
-		sb.append( getPartNumber() );
-		sb.append( "\nSerial Number: " );
-		sb.append( getSerialNumber() );
-		sb.append( "\nFirmware: " );
-		sb.append( getVersion() );
-		
+		sb.append("Airspy Device Information\n");
+		sb.append("Board: ");
+		sb.append(getBoardName());
+		sb.append("\nPart Number: ");
+		sb.append(getPartNumber());
+		sb.append("\nSerial Number: ");
+		sb.append(getSerialNumber());
+		sb.append("\nFirmware: ");
+		sb.append(getVersion());
+
 		return sb.toString();
 	}
 }

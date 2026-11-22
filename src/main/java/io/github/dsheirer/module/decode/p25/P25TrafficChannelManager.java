@@ -19,25 +19,30 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
+import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.log.LoggingSuppressor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
+import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventDuplicateDetector;
@@ -118,14 +123,15 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private Map<Integer, IFrequencyBand> mFrequencyBandMap = new ConcurrentHashMap<>();
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
-    private TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
-    private Channel mParentChannel;
+    private final TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
+    private final Channel mParentChannel;
     private ScrambleParameters mPhase2ScrambleParameters;
     private Listener<IMessage> mMessageListener;
     private boolean mIgnoreDataCalls;
+    private boolean mIgnoreEncryptedCalls;
     //Used only for data calls
-    private DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
-    private TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
+    private final DecodeEventDuplicateDetector mDuplicateDetector = new DecodeEventDuplicateDetector();
+    private final TalkerAliasManager mTalkerAliasManager = new TalkerAliasManager();
 
     /**
      * Constructs an instance.
@@ -138,13 +144,19 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 phase1)
         {
             mIgnoreDataCalls = phase1.getIgnoreDataCalls();
+            mIgnoreEncryptedCalls = phase1.getIgnoreEncryptedCalls();
             createPhase1TrafficChannels(phase1.getTrafficChannelPoolSize(), phase1);
-            createPhase2TrafficChannels(phase1.getTrafficChannelPoolSize(), new DecodeConfigP25Phase2());
+            DecodeConfigP25Phase2 phase2 = new DecodeConfigP25Phase2();
+            DecoderFactory.transferJMBESettings(phase1, phase2);
+            createPhase2TrafficChannels(phase1.getTrafficChannelPoolSize(), phase2);
         }
         else if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase2 phase2)
         {
             mIgnoreDataCalls = phase2.getIgnoreDataCalls();
-            createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), new DecodeConfigP25Phase1());
+            mIgnoreEncryptedCalls = phase2.getIgnoreEncryptedCalls();
+            DecodeConfigP25Phase1 phase1 = new DecodeConfigP25Phase1();
+            DecoderFactory.transferJMBESettings(phase2, phase1);
+            createPhase1TrafficChannels(phase2.getTrafficChannelPoolSize(), phase1);
             createPhase2TrafficChannels(phase2.getTrafficChannelPoolSize(), phase2);
         }
     }
@@ -153,6 +165,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
      * Talker alias manager
      * @return manager
      */
+    @Override
     public TalkerAliasManager getTalkerAliasManager()
     {
         return mTalkerAliasManager;
@@ -614,7 +627,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                 //update the ending timestamp so that the duration value is correctly calculated
                 trackerTS2.updateDurationTraffic(timestamp);
-                broadcast(trackerTS1);
+                broadcast(trackerTS2);
             }
             finally
             {
@@ -935,6 +948,43 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Adds a talker alias that completed after the call ended (e.g. a P25 Phase 1 L3Harris talker alias in the TDULC
+     * messages) to the call event that just ended on the frequency and timeslot, when that event's FROM radio is the
+     * talker.  The event duration isn't changed.
+     *
+     * @param frequency of the traffic channel
+     * @param timeslot of the traffic channel (TIMESLOT_1 for Phase 1)
+     * @param radio that the talker alias belongs to
+     * @param talkerAlias to add
+     */
+    public void processTrafficTalkerAliasAfterCall(long frequency, int timeslot, RadioIdentifier radio,
+                                                   Identifier talkerAlias)
+    {
+        mLock.lock();
+
+        try
+        {
+            P25ChannelEventTracker tracker = getTracker(frequency, timeslot);
+
+            if(tracker != null && tracker.isComplete() && radio != null && talkerAlias != null)
+            {
+                Identifier from = tracker.getEvent().getIdentifierCollection()
+                        .getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
+
+                if(from instanceof RadioIdentifier eventRadio && eventRadio.getValue().equals(radio.getValue()))
+                {
+                    tracker.addIdentifierIfMissing(talkerAlias);
+                    broadcast(tracker);
+                }
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+    }
+
+    /**
      * Updates all current identifiers for an ongoing call event on the frequency and updates the event duration timestamp.
      *
      * Note: if this manager does not have an existing call event for the frequency, the update is ignored
@@ -1145,6 +1195,30 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
+     * Indicates if the service options identify the call as encrypted.
+     * @param serviceOptions to check, optional null
+     * @return true if encrypted
+     */
+    private static boolean isEncrypted(ServiceOptions serviceOptions)
+    {
+        return serviceOptions != null && serviceOptions.isEncrypted();
+    }
+
+    /**
+     * Updates the tracker's encrypted flag from the current service options.  When the talker changed (ie a new
+     * tracker was created from a channel grant that carries service options) the tracker takes the current value.
+     * Otherwise, the encrypted flag is only ever set (never cleared) since many update messages carry empty service
+     * options, which would otherwise make a known-encrypted call look unencrypted.
+     */
+    private static void updateEncrypted(P25ChannelEventTracker tracker, ServiceOptions serviceOptions)
+    {
+        if(isEncrypted(serviceOptions))
+        {
+            tracker.setEncrypted(true);
+        }
+    }
+
+    /**
      * Sends a channel start request to the ChannelProcessingManager.
      *
      * Note: this method is not thread safe and the calling method must protect access using mLock.
@@ -1177,6 +1251,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,
                     apco25Channel, identifierCollection, this);
+            startChannelRequest.setStartTimestamp(timestamp);
             startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection, timestamp));
             startChannelRequest.addPreloadDataContent(new P25FrequencyBandPreloadDataContent(mFrequencyBandMap.values()));
             getInterModuleEventBus().post(startChannelRequest);
@@ -1232,6 +1307,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
             }
 
+            updateEncrypted(tracker, serviceOptions);
+
             //The tracked event can have an empty FROM identifier at start of call ... update here
             tracker.addIdentifierIfMissing(from);
 
@@ -1242,7 +1319,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
-            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant))
+            if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant) &&
+                !(mIgnoreEncryptedCalls && tracker.isEncrypted()))
             {
                 Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
 
@@ -1287,6 +1365,22 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
+        //Don't allocate a traffic channel for an encrypted call, unless a traffic channel is already allocated for the
+        //frequency in which case the call will be processed by the running traffic channel.
+        if(mIgnoreEncryptedCalls && isEncrypted(serviceOptions) && !mAllocatedTrafficChannelMap.containsKey(frequency))
+        {
+            P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                    .channelDescriptor(apco25Channel)
+                    .details("IGNORED: ENCRYPTED - PHASE 1 CHANNEL GRANT " + serviceOptions)
+                    .identifiers(ic)
+                    .build();
+            tracker = new P25ChannelEventTracker(event);
+            tracker.setEncrypted(true);
+            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+            broadcast(tracker);
+            return;
+        }
+
         String details = isDataChannelGrant ? "PHASE 1 DATA CHANNEL GRANT " : "PHASE 1 CHANNEL GRANT " +
                 (serviceOptions != null ? serviceOptions : "");
 
@@ -1296,6 +1390,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             .identifiers(ic)
             .build();
         tracker = new P25ChannelEventTracker(event);
+        updateEncrypted(tracker, serviceOptions);
         addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
@@ -1361,14 +1456,19 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 broadcast(tracker);
             }
 
+            updateEncrypted(tracker, serviceOptions);
+
             //update the ending timestamp so that the duration value is correctly calculated
             tracker.updateDurationControl(timestamp);
             broadcast(tracker);
 
             //Even though we have a tracked event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
+            //Note: a phase 2 traffic channel carries two timeslots.  An encrypted call on this timeslot doesn't cause
+            //the channel to be allocated, but a clear call on the other timeslot will allocate the channel through
+            //its own tracker and then both timeslots are processed by the traffic channel.
             if(!mAllocatedTrafficChannelMap.containsKey(frequency) && !(mIgnoreDataCalls && isDataChannelGrant) &&
-                (getCurrentControlFrequency() != frequency))
+                !(mIgnoreEncryptedCalls && tracker.isEncrypted()) && (getCurrentControlFrequency() != frequency))
             {
                 Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
 
@@ -1398,7 +1498,25 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 .build();
 
             tracker = new P25ChannelEventTracker(event);
-            addTracker(tracker, frequency, P25P1Message.TIMESLOT_1);
+            addTracker(tracker, frequency, timeslot);
+            broadcast(tracker);
+            return;
+        }
+
+        //Don't allocate a traffic channel for an encrypted call.  If the frequency is already allocated (ie there's a
+        //call on the other timeslot), the running traffic channel will process this timeslot as well.
+        if(mIgnoreEncryptedCalls && isEncrypted(serviceOptions) && !mAllocatedTrafficChannelMap.containsKey(frequency))
+        {
+            P25ChannelGrantEvent event = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
+                .channelDescriptor(apco25Channel)
+                .details("IGNORED: ENCRYPTED - PHASE 2 CHANNEL GRANT " + serviceOptions)
+                .identifiers(ic)
+                .timeslot(timeslot)
+                .build();
+
+            tracker = new P25ChannelEventTracker(event);
+            tracker.setEncrypted(true);
+            addTracker(tracker, frequency, timeslot);
             broadcast(tracker);
             return;
         }
@@ -1411,6 +1529,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             .build();
 
         tracker = new P25ChannelEventTracker(event);
+        updateEncrypted(tracker, serviceOptions);
         addTracker(tracker, frequency, timeslot);
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated

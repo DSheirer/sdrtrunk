@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
+import io.github.dsheirer.sdrplay.Tuner;
 
 /**
  * Listener interface to receive notifications of gain overload in the RSP device.
@@ -28,9 +28,9 @@ public interface ITunerStatusListener
 {
     /**
      * Notify that there is a gain overload event in the specified tuner
-     * @param tunerSelect to id the tuner
+     * @param tuner to id the tuner
      */
-    void notifyGainOverload(TunerSelect tunerSelect);
+    void notifyGainOverload(Tuner tuner);
 
     /**
      * Notify that the tuner's frequency has changed.

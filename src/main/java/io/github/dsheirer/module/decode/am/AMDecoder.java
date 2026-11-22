@@ -21,20 +21,14 @@ package io.github.dsheirer.module.decode.am;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.dsp.am.ISquelchingDemodulator;
 import io.github.dsheirer.dsp.am.SquelchingAMDemodulator;
+import io.github.dsheirer.dsp.filter.ChannelFilterDesigner;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
-import io.github.dsheirer.dsp.fm.ISquelchingDemodulator;
-import io.github.dsheirer.dsp.gain.AudioGainAndDcFilter;
-import io.github.dsheirer.dsp.squelch.INoiseSquelchController;
-import io.github.dsheirer.dsp.squelch.NoiseSquelch;
-import io.github.dsheirer.dsp.squelch.NoiseSquelchState;
-import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.SquelchControlDecoder;
 import io.github.dsheirer.sample.Listener;
@@ -52,15 +46,9 @@ import org.slf4j.LoggerFactory;
  */
 public class AMDecoder extends SquelchControlDecoder implements ISourceEventListener, ISourceEventProvider,
         IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider,
-        IDecoderStateEventProvider, INoiseSquelchController
+        IDecoderStateEventProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(AMDecoder.class);
-    private static final float DEMODULATOR_GAIN = 150.0f;
-    private static final float SQUELCH_ALPHA_DECAY = 0.0004f;
-    private static final float MINIMUM_GAIN = 0.5f;
-    private static final float MAXIMUM_GAIN = 16.0f;
-    private static final float OBJECTIVE_AUDIO_AMPLITUDE = 0.75f;
-    private AudioGainAndDcFilter mAGC = new AudioGainAndDcFilter(MINIMUM_GAIN, MAXIMUM_GAIN, OBJECTIVE_AUDIO_AMPLITUDE);
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
@@ -73,7 +61,6 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     private Listener<DecoderStateEvent> mDecoderStateEventListener;
     private final double mChannelBandwidth;
     protected boolean mSquelch = true;
-    private final NoiseSquelch mNoiseSquelch = new NoiseSquelch(0.1f, 0.2f, 4, 6);
 
     /**
      * Constructs an instance
@@ -83,8 +70,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     public AMDecoder(DecodeConfigAM config)
     {
         super(config);
-        mDemodulator = new SquelchingAMDemodulator(DEMODULATOR_GAIN, SQUELCH_ALPHA_DECAY, config.getSquelchThreshold(),
-                config.isSquelchAutoTrack());
+        mDemodulator = new SquelchingAMDemodulator(config.getSquelchThreshold(), config.isSquelchAutoTrack(),
+                config.getBandwidth().getValue());
 		mChannelBandwidth = config.getBandwidth().getValue();
     }
 
@@ -92,30 +79,6 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     public DecoderType getDecoderType()
     {
         return DecoderType.AM;
-    }
-
-    @Override
-    public void setSquelchOverride(boolean override)
-    {
-        mNoiseSquelch.setSquelchOverride(override);
-    }
-
-    @Override
-    public void setHysteresisThreshold(int open, int close)
-    {
-        mNoiseSquelch.setHysteresisThreshold(open, close);
-    }
-
-    @Override
-    public void setNoiseThreshold(float open, float close)
-    {
-        mNoiseSquelch.setNoiseThreshold(open, close);
-    }
-
-    @Override
-    public void setNoiseSquelchStateListener(Listener<NoiseSquelchState> listener)
-    {
-        mNoiseSquelch.setNoiseSquelchStateListener(listener);
     }
 
     /**
@@ -154,8 +117,6 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
         if(mResampledBufferListener != null)
         {
             mResampledBufferListener.receive(demodulatedSamples);
-//            //Apply audio gain and rebroadcast
-//            super.broadcast(mAGC.process(demodulatedSamples));
         }
     }
 
@@ -196,7 +157,7 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     {
         if(mIDecimationFilter == null || mQDecimationFilter == null)
         {
-            throw new IllegalStateException("NBFM demodulator module must receive a sample rate change source " +
+            throw new IllegalStateException("AM demodulator module must receive a sample rate change source " +
                     "event before it can process complex sample buffers");
         }
 
@@ -207,8 +168,6 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
         float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
 
         float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
-
-        mNoiseSquelch.process(demodulated);
 
         if(mResampler != null)
         {
@@ -225,6 +184,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
                     //Demodulator says to mute and we are unmuted = Squelch and End Call
                     else
                     {
+                        //Process the final audio and flush the resampler so that audio doesn't carry into the next call
+                        mResampler.resample(demodulated, true);
                         mSquelch = true;
                         notifyCallEnd();
                     }
@@ -275,7 +236,6 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
      */
     protected void notifyCallStart()
     {
-        mAGC.reset();
         broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.START, State.CALL, 0));
     }
 
@@ -398,53 +358,17 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
                     mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
                     mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
 
-                    if((decimatedSampleRate < (2.0 * mChannelBandwidth)))
+                    //The complex sample rate must span the two-sided channel bandwidth.
+                    if(decimatedSampleRate < mChannelBandwidth)
                     {
                         throw new IllegalStateException(getDecoderType().name() + " demodulator with channel bandwidth [" +
-                                mChannelBandwidth + "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth +
-                                "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
+                                mChannelBandwidth + "] requires a channel sample rate of at least [" + mChannelBandwidth +
+                                "] - sample rate of [" + decimatedSampleRate + "] is not supported");
                     }
 
                     mDemodulator.setSampleRate((int) decimatedSampleRate);
 
-                    mNoiseSquelch.setSampleRate(decimatedSampleRate);
-
-                    int passBandStop = (int) (mChannelBandwidth * .8);
-                    int stopBandStart = (int) mChannelBandwidth;
-
-                    float[] coefficients = null;
-
-                    FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                            .sampleRate(decimatedSampleRate * 2)
-                            .gridDensity(16)
-                            .oddLength(true)
-                            .passBandCutoff(passBandStop)
-                            .passBandAmplitude(1.0)
-                            .passBandRipple(0.01)
-                            .stopBandStart(stopBandStart)
-                            .stopBandAmplitude(0.0)
-                            .stopBandRipple(0.005) //Approximately 90 dB attenuation
-                            .build();
-
-                    try
-                    {
-                        coefficients = FilterFactory.getTaps(specification);
-                    }
-                    catch(FilterDesignException fde)
-                    {
-                        mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate +
-                                "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
-                                "] - will proceed using sinc (low-pass) filter");
-                    }
-
-                    if(coefficients == null)
-                    {
-                        mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate +
-                                "] pass band stop [" + passBandStop +
-                                "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
-                        coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60,
-                                WindowType.HAMMING, true);
-                    }
+                    float[] coefficients = ChannelFilterDesigner.design(decimatedSampleRate, mChannelBandwidth);
 
                     mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
                     mQBasebandFilter = FilterFactory.getRealFilter(coefficients);

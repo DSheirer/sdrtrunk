@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.fleetsync2;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
@@ -170,37 +171,27 @@ public class Fleetsync2DecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("Fleetsync II");
+        summary.section("From Idents");
+        ActivitySummary.Table from = summary.table("Ident", "Count");
+        List<FleetsyncIdentifier> fromIdents = new ArrayList<>(mFromIdentCountsMap.keySet());
+        Collections.sort(fromIdents);
 
-        sb.append("=============================\n");
-        sb.append("Decoder:\tFleetsync II\n\n");
-
-        if(mFromIdentCountsMap.isEmpty() && mToIdentCountsMap.isEmpty())
+        for(FleetsyncIdentifier ident: fromIdents)
         {
-            sb.append("Fleetsync Idents\n");
-            sb.append("  None\n");
-        }
-        else
-        {
-            sb.append("Fleetsync From Idents\n");
-
-            List<FleetsyncIdentifier> fromIdents = new ArrayList<>(mFromIdentCountsMap.keySet());
-            Collections.sort(fromIdents);
-            for(FleetsyncIdentifier from: fromIdents)
-            {
-                sb.append("  ").append(from.formatted()).append(" - Count:").append(mFromIdentCountsMap.get(from)).append("\n");
-            }
-
-            sb.append("\nFleetsync To Idents\n");
-
-            List<FleetsyncIdentifier> toIdents = new ArrayList<>(mToIdentCountsMap.keySet());
-            Collections.sort(toIdents);
-            for(FleetsyncIdentifier to: toIdents)
-            {
-                sb.append("  ").append(to.formatted()).append(" - Count:").append(mToIdentCountsMap.get(to)).append("\n");
-            }
+            from.row(ident.formatted(), mFromIdentCountsMap.get(ident));
         }
 
-        return sb.toString();
+        summary.section("To Idents");
+        ActivitySummary.Table to = summary.table("Ident", "Count");
+        List<FleetsyncIdentifier> toIdents = new ArrayList<>(mToIdentCountsMap.keySet());
+        Collections.sort(toIdents);
+
+        for(FleetsyncIdentifier ident: toIdents)
+        {
+            to.row(ident.formatted(), mToIdentCountsMap.get(ident));
+        }
+
+        return summary.toString();
     }
 }

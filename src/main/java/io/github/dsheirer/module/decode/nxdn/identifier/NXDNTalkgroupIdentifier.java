@@ -50,6 +50,13 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
         return Protocol.NXDN;
     }
 
+    @Override
+    public boolean isValid()
+    {
+        //NXDN conventional repeaters use a value of zero for the TO talkgroup value.
+        return getValue() >= 0;
+    }
+
     /**
      * Indicates if the identifier is for a Type-D system.
      */
@@ -84,7 +91,6 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
         return getValue() & 0x7FF;
     }
 
-
     @Override
     public String toString()
     {
@@ -93,13 +99,7 @@ public class NXDNTalkgroupIdentifier extends TalkgroupIdentifier
             return REPEATER_FORMAT.format(getTypeDHomeRepeater()) + "-" + TALKGROUP_FORMAT.format(getTypeDTalkgroup());
         }
 
-        return switch(getValue())
-        {
-            case 0x0 -> "0x0000 NULL GROUP";
-            case 0xFFF0 -> "0xFFF0 RESERVED GROUP";
-            case 0xFFFF -> "0xFFFF ALL GROUPS";
-            default -> super.toString();
-        };
+        return super.toString();
     }
 
     /**

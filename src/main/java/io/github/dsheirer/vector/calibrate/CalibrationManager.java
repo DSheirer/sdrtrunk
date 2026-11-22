@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ package io.github.dsheirer.vector.calibrate;
 import io.github.dsheirer.dsp.am.AmDemodulatorCalibration;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
+import io.github.dsheirer.vector.calibrate.channelizer.ChannelDFTCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.DifferentialDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
@@ -38,12 +39,10 @@ import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
-import io.github.dsheirer.vector.calibrate.sample.PackedSampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.sample.UnpackedInterleavedSampleConverterCalibration;
-import io.github.dsheirer.vector.calibrate.sample.UnpackedSampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.NXDNSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
+import io.github.dsheirer.vector.calibrate.sync.P25P2SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,10 +100,8 @@ public class CalibrationManager
 
             sInstance = new CalibrationManager();
 
-            sInstance.add(new PackedSampleConverterCalibration());
-            sInstance.add(new UnpackedSampleConverterCalibration());
-            sInstance.add(new UnpackedInterleavedSampleConverterCalibration());
             sInstance.add(new AmDemodulatorCalibration());
+            sInstance.add(new ChannelDFTCalibration());
             sInstance.add(new ComplexGainCalibration());
             sInstance.add(new ComplexGainControlCalibration());
             sInstance.add(new ComplexOscillatorCalibration());
@@ -117,6 +114,7 @@ public class CalibrationManager
             sInstance.add(new MagnitudeCalibration());
             sInstance.add(new NXDNSoftSyncCalibration());
             sInstance.add(new P25P1SoftSyncCalibration());
+            sInstance.add(new P25P2SoftSyncCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());
             sInstance.add(new RealHalfBand15TapFilterCalibration());

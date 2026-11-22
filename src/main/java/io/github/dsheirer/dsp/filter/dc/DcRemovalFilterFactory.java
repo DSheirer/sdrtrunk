@@ -42,6 +42,7 @@ public class DcRemovalFilterFactory
             case VECTOR_SIMD_PREFERRED:
                 return new VectorDcRemovalFilter(gain);
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarDcRemovalFilter(gain);
         }

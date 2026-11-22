@@ -51,6 +51,7 @@ public class UserStatusEditor extends IdentifierEditor<UserStatusID>
         gridPane.setVgap(3);
 
         Label valueLabel = new Label("User Status");
+        valueLabel.setLabelFor(getUserStatusField());
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 0, 0);
         gridPane.getChildren().add(valueLabel);

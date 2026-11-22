@@ -52,6 +52,7 @@ public class MagnitudeFactory
             case VECTOR_SIMD_512:
                 return new VectorMagnitudeCalculator512();
             case SCALAR:
+            case UNCALIBRATED:
             default:
                 return new ScalarMagnitudeCalculator();
         }

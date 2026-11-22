@@ -1,0 +1,9 @@
+# Nuand bladeRF udev rules
+# Grants access to the logged-in user (uaccess) and to the plugdev group.
+
+# bladeRF 2.0 micro
+SUBSYSTEM=="usb", ATTR{idVendor}=="2cf0", ATTR{idProduct}=="5250", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+# bladeRF x40/x115
+SUBSYSTEM=="usb", ATTR{idVendor}=="2cf0", ATTR{idProduct}=="5246", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+# bladeRF x40/x115 with the legacy vendor and product ID
+SUBSYSTEM=="usb", ATTR{idVendor}=="1d50", ATTR{idProduct}=="6066", MODE="0660", GROUP="plugdev", TAG+="uaccess"

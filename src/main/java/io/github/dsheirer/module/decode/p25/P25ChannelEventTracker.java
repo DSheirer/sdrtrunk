@@ -28,6 +28,8 @@ import io.github.dsheirer.module.decode.event.ChannelEventTracker;
  */
 public class P25ChannelEventTracker extends ChannelEventTracker<P25ChannelGrantEvent>
 {
+    private boolean mEncrypted;
+
     /**
      * Constructs an instance
      *
@@ -36,5 +38,25 @@ public class P25ChannelEventTracker extends ChannelEventTracker<P25ChannelGrantE
     public P25ChannelEventTracker(P25ChannelGrantEvent event)
     {
         super(event);
+    }
+
+    /**
+     * Indicates if this call is known to be encrypted.  Once a call is flagged as encrypted, the flag persists for the
+     * lifetime of this tracker because many channel grant update messages don't carry service options and those
+     * updates are processed with empty (ie unencrypted) service options.
+     * @return true if the call is known to be encrypted.
+     */
+    public boolean isEncrypted()
+    {
+        return mEncrypted;
+    }
+
+    /**
+     * Flags this call as encrypted.
+     * @param encrypted true if encrypted.
+     */
+    public void setEncrypted(boolean encrypted)
+    {
+        mEncrypted = encrypted;
     }
 }

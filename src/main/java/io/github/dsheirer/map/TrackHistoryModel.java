@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,16 @@
 
 package io.github.dsheirer.map;
 
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import javax.swing.table.AbstractTableModel;
-
 /**
- * Track history table model.
+ * Location history of a plottable entity, newest first.  Thread safe: positions are added on the decode event thread
+ * and read on the JavaFX thread.
  */
-public class TrackHistoryModel extends AbstractTableModel
+public class TrackHistoryModel
 {
     public static final int MAX_LOCATION_HISTORY = 10;
-    private static final String[] COLUMNS = new String[]{"Time", "Latitude", "Longitude"};
-    private final SimpleDateFormat mSimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final DecimalFormat mDegreeFormat = new DecimalFormat("0.00000");
     private final List<TimestampedGeoPosition> mTimestampedGeoPositions = new ArrayList<>();
 
     /**
@@ -46,48 +39,46 @@ public class TrackHistoryModel extends AbstractTableModel
     }
 
     /**
-     * Complete history for this entity.
+     * Snapshot of the history for this entity, newest first.
      */
-    public List<TimestampedGeoPosition> getTrackHistory()
+    public synchronized List<TimestampedGeoPosition> getTrackHistory()
     {
-        return Collections.unmodifiableList(mTimestampedGeoPositions);
+        return List.copyOf(mTimestampedGeoPositions);
     }
 
     /**
      * Adds the position to the history if it is unique and trims the history to MAX_LOCATION_HISTORY size.
      * @param latest position to add.
+     * @return true if the position was added
      */
-    public void add(TimestampedGeoPosition latest)
+    public synchronized boolean add(TimestampedGeoPosition latest)
     {
-        TimestampedGeoPosition mostRecentPosition = null;
-
-        if(!mTimestampedGeoPositions.isEmpty())
-        {
-            mostRecentPosition = mTimestampedGeoPositions.getFirst();
-        }
+        TimestampedGeoPosition mostRecentPosition = mTimestampedGeoPositions.isEmpty() ? null :
+            mTimestampedGeoPositions.getFirst();
 
         if(isUnique(latest, mostRecentPosition))
         {
             mTimestampedGeoPositions.addFirst(latest);
-            fireTableRowsInserted(0, 0);
 
             while(mTimestampedGeoPositions.size() > MAX_LOCATION_HISTORY)
             {
-                int index = mTimestampedGeoPositions.size() - 1;
                 mTimestampedGeoPositions.removeLast();
-                fireTableRowsDeleted(index, index);
             }
+
+            return true;
         }
+
+        return false;
     }
 
     /**
-     * Indicates if the latest time and position is at least 30 seconds newer than the previous position and either the
-     * latitude or longitude differs by at least 0.00001 degrees.
+     * Indicates if the latest time is more than 2 seconds newer than the previous position or either the latitude or
+     * longitude differs by more than 0.00001 degrees.
      * @param latest location
      * @param previous location
      * @return indication of uniqueness.
      */
-    private boolean isUnique(TimestampedGeoPosition latest, TimestampedGeoPosition previous)
+    private static boolean isUnique(TimestampedGeoPosition latest, TimestampedGeoPosition previous)
     {
         if(latest != null && previous == null)
         {
@@ -106,10 +97,10 @@ public class TrackHistoryModel extends AbstractTableModel
 
     /**
      * Get the geo position at the specified index
-     * @param index to retrieve
+     * @param index to retrieve, 0 for the newest
      * @return geo or null.
      */
-    public TimestampedGeoPosition get(int index)
+    public synchronized TimestampedGeoPosition get(int index)
     {
         if(index >= 0 && index < mTimestampedGeoPositions.size())
         {
@@ -119,38 +110,11 @@ public class TrackHistoryModel extends AbstractTableModel
         return null;
     }
 
-    @Override
-    public int getRowCount()
+    /**
+     * Number of positions in the history
+     */
+    public synchronized int size()
     {
         return mTimestampedGeoPositions.size();
-    }
-
-    @Override
-    public int getColumnCount()
-    {
-        return COLUMNS.length;
-    }
-
-    @Override
-    public String getColumnName(int column)
-    {
-        return COLUMNS[column];
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
-    {
-        TimestampedGeoPosition geoPosition = mTimestampedGeoPositions.get(rowIndex);
-        switch (columnIndex)
-        {
-            case 0:
-                return mSimpleDateFormat.format(geoPosition.getTimestamp());
-            case 1:
-                return mDegreeFormat.format(geoPosition.getLatitude());
-            case 2:
-                return mDegreeFormat.format(geoPosition.getLongitude());
-        }
-
-        return null;
     }
 }

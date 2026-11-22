@@ -20,7 +20,7 @@ package io.github.dsheirer.source.tuner.fcd;
 public enum FCDCommand
 {
 	/**
-	 * Note: the javaxUSB and usb4Java libraries are slightly different than
+	 * Note: the libusb interrupt transfers used here (through jlibusb) are slightly different than
 	 * the signal9 HID libraries used in C, so you will see variations in the
 	 * byte array length and indexes, when comparing this setup to the qthid
 	 * source code.

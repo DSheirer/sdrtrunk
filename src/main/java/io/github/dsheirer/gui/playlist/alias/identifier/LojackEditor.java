@@ -47,6 +47,7 @@ public class LojackEditor extends IdentifierEditor<LoJackFunctionAndID>
         gridPane.setHgap(5);
 
         Label typeLabel = new Label("LoJack Function");
+        typeLabel.setLabelFor(getFunctionComboBox());
         GridPane.setConstraints(typeLabel, 0, 0);
         gridPane.getChildren().add(typeLabel);
 
@@ -57,6 +58,10 @@ public class LojackEditor extends IdentifierEditor<LoJackFunctionAndID>
         gridPane.getChildren().add(getIdentifierField());
 
         Label helpLabel = new Label("Format: 5 numbers, characters or (*)wildcard - e.g. AB*12");
+        //The identifier field has no label of its own, so the help label provides its accessible name and help text
+        helpLabel.setLabelFor(getIdentifierField());
+        helpLabel.setAccessibleText("LoJack ID");
+        getIdentifierField().setAccessibleHelp(helpLabel.getText());
         GridPane.setConstraints(helpLabel, 3, 0);
         gridPane.getChildren().add(helpLabel);
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -37,23 +38,46 @@ import org.slf4j.LoggerFactory;
 import javax.sound.sampled.AudioFormat;
 
 /**
- * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
+ * Baseband recorder module for recording complex (I&Q) samples to a wave (.wav) or SDRSharp raw I/Q (.iq) file.
+ *
+ * The recording file is created when the first sample buffer arrives so that the file name reflects the current
+ * sample rate and no empty file is left behind when a sample rate change restarts the recorder.
  */
 public class ComplexSamplesWaveRecorder extends Module implements IComplexSamplesListener,
         Listener<ComplexSamples>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
 
-    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>("sdrtrunk complex wave recorder", 250);
+    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>("sdrtrunk complex baseband recorder", 250);
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private BufferWaveWriter mWriter;
-    private String mFilePrefix;
+    private final Object mWriterLock = new Object();
+    private final BasebandRecordFormat mRecordFormat;
+    private final IRecordingPathProvider mPathProvider;
+    private IBasebandRecordingWriter mWriter;
     private Path mFile;
     private AudioFormat mAudioFormat;
 
+    /**
+     * Constructs a wave format recorder.
+     * @param sampleRate initial sample rate
+     * @param filePrefix full path and file name, without the .wav extension
+     */
     public ComplexSamplesWaveRecorder(float sampleRate, String filePrefix)
     {
-        mFilePrefix = filePrefix;
+        this(sampleRate, BasebandRecordFormat.WAVE, rate -> Paths.get(filePrefix + BasebandRecordFormat.WAVE.getExtension()));
+    }
+
+    /**
+     * Constructs an instance
+     * @param sampleRate initial sample rate
+     * @param recordFormat for the recording file
+     * @param pathProvider to provide the recording file path each time a new recording file is created.
+     */
+    public ComplexSamplesWaveRecorder(float sampleRate, BasebandRecordFormat recordFormat,
+                                      IRecordingPathProvider pathProvider)
+    {
+        mRecordFormat = recordFormat;
+        mPathProvider = pathProvider;
         setSampleRate(sampleRate);
     }
 
@@ -71,6 +95,9 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
         }
     }
 
+    /**
+     * Current recording file or null if a recording file has not yet been created.
+     */
     public Path getFile()
     {
         return mFile;
@@ -80,22 +107,8 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
     {
         if(mRunning.compareAndSet(false, true))
         {
-            try
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mFilePrefix);
-                sb.append(".wav");
-                mFile = Paths.get(sb.toString());
-
-                mWriter = new BufferWaveWriter(mAudioFormat, mFile);
-
-                mBufferProcessor.setListener(mWriter);
-                mBufferProcessor.start();
-            }
-            catch(IOException io)
-            {
-                mLog.error("Error starting complex baseband recorder", io);
-            }
+            mBufferProcessor.setListener(this::write);
+            mBufferProcessor.start();
         }
     }
 
@@ -109,26 +122,7 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
                 mBufferProcessor.setListener(null);
             }
 
-            if(mWriter != null)
-            {
-                //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
-                //close method will also rename the file and this can sometimes take a few seconds.
-                ThreadPool.CACHED.submit(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            mWriter.close();
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error closing baseband I/Q recorder", ioe);
-                        }
-                    }
-                });
-            }
+            closeWriter();
         }
     }
 
@@ -142,26 +136,75 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
                 mBufferProcessor.setListener(null);
             }
 
-            if(mWriter != null)
+            closeWriter();
+        }
+    }
+
+    /**
+     * Closes the current writer on a separate thread so that it doesn't tie up the calling thread.
+     */
+    private void closeWriter()
+    {
+        IBasebandRecordingWriter writer;
+
+        synchronized(mWriterLock)
+        {
+            writer = mWriter;
+            mWriter = null;
+        }
+
+        if(writer != null)
+        {
+            ThreadPool.CACHED.submit(() ->
             {
-                //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
-                //close method will also rename the file and this can sometimes take a few seconds.
-                ThreadPool.CACHED.submit(new Runnable()
+                try
                 {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            mWriter.close();
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error closing baseband I/Q recorder", ioe);
-                        }
-                    }
-                });
+                    writer.close();
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error closing baseband I/Q recorder", ioe);
+                }
+            });
+        }
+    }
+
+    /**
+     * Writes the samples to the recording, creating the recording file on first use.  Invoked on the dispatcher
+     * thread.
+     */
+    private void write(ComplexSamples complexSamples)
+    {
+        boolean error = false;
+
+        synchronized(mWriterLock)
+        {
+            if(!mRunning.get())
+            {
+                return;
             }
+
+            try
+            {
+                if(mWriter == null)
+                {
+                    mFile = mPathProvider.getPath(mAudioFormat.getSampleRate());
+                    mWriter = IBasebandRecordingWriter.create(mRecordFormat, mAudioFormat, mFile);
+                }
+
+                mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(complexSamples));
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("IOException while writing I/Q buffers to baseband recorder [" + mFile +
+                    "] - stopping recorder", ioe);
+                error = true;
+            }
+        }
+
+        if(error)
+        {
+            stop();
         }
     }
 
@@ -186,49 +229,14 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
-        return new Listener<SourceEvent>()
+        return sourceEvent ->
         {
-            @Override
-            public void receive(SourceEvent sourceEvent)
+            switch(sourceEvent.getEvent())
             {
-                switch(sourceEvent.getEvent())
-                {
-                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        setSampleRate(sourceEvent.getValue().floatValue());
-                        break;
-                }
+                case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                    setSampleRate(sourceEvent.getValue().floatValue());
+                    break;
             }
         };
-    }
-
-    /**
-     * Wave writer implementation for complex buffers delivered from buffer processor
-     */
-    public class BufferWaveWriter extends WaveWriter implements Listener<ComplexSamples>
-    {
-        public BufferWaveWriter(AudioFormat format, Path file) throws IOException
-        {
-            super(format, file);
-        }
-
-        @Override
-        public void receive(ComplexSamples complexSamples)
-        {
-            boolean error = false;
-
-            if(!error)
-            {
-                try
-                {
-                    mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(complexSamples));
-                }
-                catch(IOException ioe)
-                {
-                    mLog.error("IOException while writing I/Q buffers to wave recorder - stopping recorder", ioe);
-                    error = true;
-                    stop();
-                }
-            }
-        }
     }
 }

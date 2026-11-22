@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.fleetsync2.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
+import io.github.dsheirer.map.GeoPosition;
 
 import java.util.ArrayList;
 import java.util.Calendar;

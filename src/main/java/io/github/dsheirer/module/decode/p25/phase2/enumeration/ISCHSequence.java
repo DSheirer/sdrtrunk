@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,22 @@ public enum ISCHSequence
     public int getTimeslotOffset()
     {
         return mTimeslotOffset;
+    }
+
+    /**
+     * Sequence of the fragment that follows this fragment by the specified number of fragments in the repeating
+     * sequence of 3 fragments per superframe.
+     * @param fragmentCount number of fragments to advance
+     * @return advanced sequence or UNKNOWN if this is not a fragment (1-3) sequence.
+     */
+    public ISCHSequence advance(int fragmentCount)
+    {
+        if(this == ISCH_1 || this == ISCH_2 || this == ISCH_3)
+        {
+            return fromValue((getValue() + fragmentCount) % 3);
+        }
+
+        return UNKNOWN;
     }
 
     /**

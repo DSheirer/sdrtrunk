@@ -22,8 +22,6 @@ package io.github.dsheirer.source.tuner.sdrplay.rspDx;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.HdrModeBandwidth;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDxAntenna;
 
 /**
  * RSPdx tuner configuration
@@ -34,7 +32,7 @@ public class RspDxTunerConfiguration extends RspTunerConfiguration
     private boolean mHdrMode = false;
     private boolean mRfNotch;
     private boolean mRfDabNotch;
-    private RspDxAntenna mAntenna = RspDxAntenna.ANTENNA_A;
+    private RspDxAntennaSelection mAntenna = RspDxAntennaSelection.ANTENNA_A;
     private HdrModeBandwidth mHdrModeBandwidth = HdrModeBandwidth.BANDWIDTH_1_700;
 
     /**
@@ -132,7 +130,7 @@ public class RspDxTunerConfiguration extends RspTunerConfiguration
      * Antenna setting
      */
     @JacksonXmlProperty(isAttribute = true, localName = "antenna")
-    public RspDxAntenna getAntenna()
+    public RspDxAntennaSelection getAntenna()
     {
         return mAntenna;
     }
@@ -140,7 +138,7 @@ public class RspDxTunerConfiguration extends RspTunerConfiguration
     /**
      * Sets the antenna.
      */
-    public void setAntenna(RspDxAntenna antenna)
+    public void setAntenna(RspDxAntennaSelection antenna)
     {
         mAntenna = antenna;
     }

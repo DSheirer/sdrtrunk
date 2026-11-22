@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ public class SystemProperties
     private static String PROPERTIES_FILENAME = "SDRTrunk.properties";
     private static String MANIFEST_VERSION = "Implementation-Version";
     private static String BUILD_TIMESTAMP = "Build-Timestamp";
+    private static String GIT_DESCRIBE = "Git-Describe";
 
     private static SystemProperties INSTANCE;
     private static Properties mProperties;
@@ -217,12 +218,18 @@ public class SystemProperties
             {
                 String version = manifest.getMainAttributes().getValue(MANIFEST_VERSION);
                 String timestamp = manifest.getMainAttributes().getValue(BUILD_TIMESTAMP);
+                String gitDescribe = manifest.getMainAttributes().getValue(GIT_DESCRIBE);
 
                 if(version != null)
                 {
                     if(version.contains("nightly") && timestamp != null)
                     {
                         sb.append( " nightly - ").append(timestamp);
+
+                        if(gitDescribe != null && !gitDescribe.equals("unknown"))
+                        {
+                            sb.append(" (").append(gitDescribe).append(")");
+                        }
                     }
                     else
                     {

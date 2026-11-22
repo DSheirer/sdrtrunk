@@ -36,6 +36,7 @@ public class VoiceEMBMessage extends VoiceMessage
     private static final int PAYLOAD_END = 172;
 
     private EMB mEMB;
+    private final float[] mSoftBits;
     private EmbeddedParameters mEmbeddedParameters;
 
     /**
@@ -48,7 +49,22 @@ public class VoiceEMBMessage extends VoiceMessage
      */
     public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, long timestamp, int timeslot)
     {
+        this(syncPattern, message, null, cach, timestamp, timeslot);
+    }
+
+    /**
+     * Constructs an instance with soft bits to use for soft decision decoding of the EMB and the embedded signalling
+     * full link control fragment.
+     *
+     * @param syncPattern
+     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param softBits for the 288-bit DMR message where a positive value favors a 1 bit, or null.
+     */
+    public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, float[] softBits, CACH cach,
+                           long timestamp, int timeslot)
+    {
         super(syncPattern, message, cach, timestamp, timeslot);
+        mSoftBits = softBits;
     }
 
     @Override
@@ -90,7 +106,19 @@ public class VoiceEMBMessage extends VoiceMessage
                 segment.set(x, getMessage().get(EMB[x]));
             }
 
-            mEMB = new EMB(segment);
+            float[] softBits = null;
+
+            if(mSoftBits != null)
+            {
+                softBits = new float[EMB.length];
+
+                for(int x = 0; x < EMB.length; x++)
+                {
+                    softBits[x] = mSoftBits[EMB[x]];
+                }
+            }
+
+            mEMB = new EMB(segment, softBits);
         }
 
         return mEMB;
@@ -102,6 +130,22 @@ public class VoiceEMBMessage extends VoiceMessage
     public BinaryMessage getFLCFragment()
     {
         return getMessage().getSubMessage(PAYLOAD_START, PAYLOAD_END);
+    }
+
+    /**
+     * Soft bits for the embedded signalling full link control fragment
+     * @return soft bits or null if soft bits are not available.
+     */
+    public float[] getFLCFragmentSoftBits()
+    {
+        if(mSoftBits == null)
+        {
+            return null;
+        }
+
+        float[] softBits = new float[PAYLOAD_END - PAYLOAD_START];
+        System.arraycopy(mSoftBits, PAYLOAD_START, softBits, 0, softBits.length);
+        return softBits;
     }
 
     /**

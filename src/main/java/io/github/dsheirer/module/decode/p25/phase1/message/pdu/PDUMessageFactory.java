@@ -37,6 +37,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitAnswerResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcastUncoordinated;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCCallAlert;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCFrequencyBandUpdateTDMA;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupAffiliationQuery;
@@ -47,7 +48,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCIn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMessageUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMotorolaGroupRegroupChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCProtectionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressUpdate;
@@ -101,9 +101,52 @@ public class PDUMessageFactory
      * @param message containing an interleaved, viterbi encoded message
      * @return header or null.
      */
+    /**
+     * Creates a PDU header message using soft decision Viterbi decoding when soft symbols are provided.
+     * @param message containing an interleaved, viterbi encoded message
+     * @param softSymbols for the 98 interleaved dibits of the header, or null.
+     * @return header or null.
+     */
+    public static PDUHeader createHeader(CorrectedBinaryMessage message, float[] softSymbols)
+    {
+        return createHeader(message, softSymbols, null, false);
+    }
+
+    /**
+     * Creates a PDU header message using soft decision Viterbi decoding when soft symbols are provided.
+     * @param message containing an interleaved, viterbi encoded message
+     * @param softSymbols for the 98 interleaved dibits of the header, or null.
+     * @param reliabilities for the 98 interleaved soft symbols to weight the soft decision decoding, or null.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie P25 LSM).
+     * @return header or null.
+     */
+    public static PDUHeader createHeader(CorrectedBinaryMessage message, float[] softSymbols, float[] reliabilities,
+                                         boolean phaseWrapped)
+    {
+        if(softSymbols == null)
+        {
+            return createHeader(message);
+        }
+
+        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 196),
+                softSymbols, reliabilities, phaseWrapped);
+
+        if(decoded != null)
+        {
+            return PDUHeaderFactory.getPDUHeader(decoded);
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a PDU header message
+     * @param message containing an interleaved, viterbi encoded message
+     * @return header or null.
+     */
     public static PDUHeader createHeader(CorrectedBinaryMessage message)
     {
-        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 195));
+        CorrectedBinaryMessage decoded = TSBKMessageFactory.deinterleaveViterbiAndCrc(message.getSubMessage(0, 196));
 
         if(decoded != null)
         {
@@ -130,6 +173,13 @@ public class PDUMessageFactory
             case RESPONSE_PACKET_HEADER_FORMAT:
                 return new ResponseMessage(pduSequence, nac, timestamp);
             case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
+                //The header factory creates a packet header when the unconfirmed data header carries a packet data
+                //SAP, so that unconfirmed IP packets are processed the same as confirmed (PACKET_DATA) packets.
+                if(pduSequence.getHeader() instanceof PacketHeader)
+                {
+                    return createPacketData(pduSequence, nac, timestamp);
+                }
+
                 return createUMBTC(pduSequence, nac, timestamp);
             default:
                 return new PDUSequenceMessage(pduSequence, nac, timestamp);
@@ -148,6 +198,37 @@ public class PDUMessageFactory
     /**
      * Creates an unconfirmed data block for a packet sequence
      */
+    /**
+     * Creates an unconfirmed data block using soft decision Viterbi decoding when soft symbols are provided.
+     * @param interleaved data block
+     * @param softSymbols for the 98 interleaved dibits of the block, or null.
+     */
+    public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved, float[] softSymbols)
+    {
+        return createUnconfirmedDataBlock(interleaved, softSymbols, null, false);
+    }
+
+    /**
+     * Creates an unconfirmed data block using soft decision Viterbi decoding when soft symbols are provided.
+     * @param interleaved data block
+     * @param softSymbols for the 98 interleaved dibits of the block, or null.
+     * @param reliabilities for the 98 interleaved soft symbols to weight the soft decision decoding, or null.
+     * @param phaseWrapped true when the soft symbols are phase wrapped to +/- PI (ie P25 LSM).
+     */
+    public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved, float[] softSymbols,
+                                                       float[] reliabilities, boolean phaseWrapped)
+    {
+        if(softSymbols == null || softSymbols.length != P25P1Interleave.DATA_DEINTERLEAVE.length / 2)
+        {
+            return createUnconfirmedDataBlock(interleaved);
+        }
+
+        float[] deinterleavedReliabilities = reliabilities != null && reliabilities.length == softSymbols.length ?
+                P25P1Interleave.deinterleaveDataSoftSymbols(reliabilities) : null;
+        return new UnconfirmedDataBlock(P25P1Interleave.deinterleaveDataSoftSymbols(softSymbols),
+                deinterleavedReliabilities, phaseWrapped);
+    }
+
     public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved)
     {
         CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
@@ -155,7 +236,7 @@ public class PDUMessageFactory
     }
 
     /**
-     * Creates a packet data message
+     * Creates a packet data message from a confirmed or unconfirmed packet data sequence.
      *
      * @param pduSequence containing a packet data header and zero or more data blocks
      * @param nac network access code
@@ -263,7 +344,7 @@ public class PDUMessageFactory
             case OSP_NETWORK_STATUS_BROADCAST:
                 return new AMBTCNetworkStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_ADJACENT_STATUS_BROADCAST_UNCOORDINATED_BAND_PLAN:
-                return new AMBTCProtectionParameterBroadcast(pduSequence, nac, timestamp);
+                return new AMBTCAdjacentStatusBroadcastUncoordinated(pduSequence, nac, timestamp);
             case OSP_RFSS_STATUS_BROADCAST:
                 return new AMBTCRFSSStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_ROAMING_ADDRESS_UPDATE:

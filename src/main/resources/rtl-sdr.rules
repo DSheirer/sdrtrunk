@@ -90,3 +90,47 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d395", MODE:="066
 # SVEON STV20 DVB-T USB & FM (FC0012)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d39d", MODE:="0666"
 
+# DigitalNow Quad DVB-T PCI-E card (4x FC0012?)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0413", ATTRS{idProduct}=="6680", MODE:="0666"
+
+# Leadtek WinFast DTV Dongle mini D (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0413", ATTRS{idProduct}=="6f0f", MODE:="0666"
+
+# Terratec NOXON DAB Stick - Radio Energy (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b5", MODE:="0666"
+
+# Terratec BR DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b8", MODE:="0666"
+
+# Terratec WDR DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b9", MODE:="0666"
+
+# Terratec MuellerVerlag DAB Stick (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00c0", MODE:="0666"
+
+# PixelView PV-DT235U(RN) (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1554", ATTRS{idProduct}=="5020", MODE:="0666"
+
+# Astrometa DVB-T/DVB-T2 (R828D)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="15f4", ATTRS{idProduct}=="0131", MODE:="0666"
+
+# HanfTek DAB+FM+DVB-T
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="15f4", ATTRS{idProduct}=="0133", MODE:="0666"
+
+# KWorld KW-UB450-T USB DVB-T Pico TV (TUA9001)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d397", MODE:="0666"
+
+# ASUS U3100MINI_PLUS_V2 (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a8", MODE:="0666"
+
+# SVEON STV27 DVB-T USB & FM (FC0013)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3af", MODE:="0666"
+
+# SVEON STV21 DVB-T USB & FM
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3b0", MODE:="0666"
+
+# MSI DigiVox Micro HD (FC2580)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1104", MODE:="0666"
+
+# Sweex DVB-T USB (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="a803", MODE:="0666"

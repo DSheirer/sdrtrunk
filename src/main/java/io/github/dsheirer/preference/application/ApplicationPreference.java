@@ -37,6 +37,7 @@ public class ApplicationPreference extends Preference
     private static final String PREFERENCE_KEY_DARK_MODE = "dark.mode";
     private static final String PREFERENCE_KEY_THEME = "ui.theme";
     private static final String PREFERENCE_KEY_GUI_SCALE = "ui.gui.scale";
+    private static final String PREFERENCE_KEY_COMPLEMENTARY_ALIAS_COLORS = "ui.complementary.alias.colors";
 
     /** Hard bounds for the GUI zoom factor. */
     public static final double MIN_GUI_SCALE = 0.5d;
@@ -49,6 +50,7 @@ public class ApplicationPreference extends Preference
     private Boolean mAutomaticDiagnosticMonitoring;
     private Theme mTheme;
     private Double mGuiScale;
+    private Boolean mComplementaryAliasColors;
 
     /**
      * Constructs an instance
@@ -165,6 +167,32 @@ public class ApplicationPreference extends Preference
     public boolean isDarkMode()
     {
         return getTheme().isDark();
+    }
+
+    /**
+     * Indicates if alias colors that lack contrast with the background are replaced with a complementary color when a
+     * dark theme is active.
+     * @return true if enabled.  Default is false, so that aliases display the color selected by the user.
+     */
+    public boolean isComplementaryAliasColors()
+    {
+        if(mComplementaryAliasColors == null)
+        {
+            mComplementaryAliasColors = mPreferences.getBoolean(PREFERENCE_KEY_COMPLEMENTARY_ALIAS_COLORS, false);
+        }
+
+        return mComplementaryAliasColors;
+    }
+
+    /**
+     * Sets the enabled state for using complementary alias colors in dark themes.
+     * @param enabled true to replace alias colors that lack contrast with the background.
+     */
+    public void setComplementaryAliasColors(boolean enabled)
+    {
+        mComplementaryAliasColors = enabled;
+        mPreferences.putBoolean(PREFERENCE_KEY_COMPLEMENTARY_ALIAS_COLORS, enabled);
+        notifyPreferenceUpdated();
     }
 
     /**

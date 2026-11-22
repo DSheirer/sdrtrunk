@@ -32,10 +32,14 @@ import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.record.wave.NativeBufferWaveRecorder;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.wave.SDRSharpIQRecording;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +49,12 @@ import java.util.List;
 public class RecorderFactory
 {
     public static final float BASEBAND_SAMPLE_RATE = 25000.0f; //Default sample rate - source can override
+
+    /**
+     * Tuner type token used in SDRSharp (.iq) file names for channel baseband recordings, since a channel is a
+     * down-converted (decimated) slice of a tuner's spectrum rather than a tuner's raw output.
+     */
+    public static final String CHANNEL_TUNER_TYPE = "SDRTRUNK";
 
     /**
      * Creates recorder modules based on the channel configuration details
@@ -177,31 +187,92 @@ public class RecorderFactory
     }
 
     /**
-     * Constructs a baseband recorder for use in a processing chain.
+     * Constructs a channel baseband recorder for use in a processing chain, using the user's preferred baseband
+     * recording format.
+     * @param channelName for the file name
+     * @param frequency of the channel
+     * @param userPreferences for the recording directory and baseband record format
      */
     public static ComplexSamplesWaveRecorder getBasebandRecorder(String channelName, long frequency, UserPreferences userPreferences)
     {
+        BasebandRecordFormat format = userPreferences.getRecordPreference().getBasebandRecordFormat();
+        Path directory = getRecordingBasePath(userPreferences);
+        String label = StringUtils.replaceIllegalCharacters(channelName);
+
+        if(format == BasebandRecordFormat.SDRSHARP_IQ)
+        {
+            return new ComplexSamplesWaveRecorder(BASEBAND_SAMPLE_RATE, format,
+                sampleRate -> getIQRecordingPath(directory, label, CHANNEL_TUNER_TYPE, frequency, sampleRate));
+        }
+
         StringBuilder sb = new StringBuilder();
-        sb.append(getRecordingBasePath(userPreferences));
+        sb.append(directory);
         sb.append(File.separator);
         sb.append(TimeStamp.getTimeStamp("_"));
         sb.append("_");
         sb.append(frequency);
         sb.append("_");
-        sb.append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
+        sb.append(label).append("_baseband");
 
         return new ComplexSamplesWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }
 
     /**
-     * Constructs a baseband recorder for use in a processing chain.
+     * Constructs a tuner baseband recorder, using the user's preferred baseband recording format.
+     * @param tunerName (e.g. tuner class AIRSPY) used in the file name
+     * @param frequency tuner center frequency
+     * @param userPreferences for the recording directory and baseband record format
+     * @param statusListener to receive recording status updates
      */
-    public static NativeBufferWaveRecorder getTunerRecorder(String channelName, UserPreferences userPreferences,
+    public static NativeBufferWaveRecorder getTunerRecorder(String tunerName, long frequency,
+                                                            UserPreferences userPreferences,
                                                             IRecordingStatusListener statusListener)
     {
+        BasebandRecordFormat format = userPreferences.getRecordPreference().getBasebandRecordFormat();
+        Path directory = getRecordingBasePath(userPreferences);
+        String tuner = StringUtils.replaceIllegalCharacters(tunerName);
+
+        if(format == BasebandRecordFormat.SDRSHARP_IQ)
+        {
+            return new NativeBufferWaveRecorder(BASEBAND_SAMPLE_RATE, format,
+                sampleRate -> getIQRecordingPath(directory, null, tuner, frequency, sampleRate), statusListener);
+        }
+
         StringBuilder sb = new StringBuilder();
-        sb.append(getRecordingBasePath(userPreferences));
-        sb.append(File.separator).append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
+        sb.append(directory);
+        sb.append(File.separator).append(tuner).append("_").append(frequency).append("_baseband");
         return new NativeBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString(), statusListener);
+    }
+
+    /**
+     * Creates a unique SDRSharp compatible (.iq) recording file path, time stamped with the current time.  If the
+     * file already exists, a version suffix is appended to the label to keep the file name parseable.
+     * @param directory for the recording
+     * @param label optional label (e.g. channel name)
+     * @param tunerType for the file name
+     * @param frequency center frequency
+     * @param sampleRate of the recording
+     * @return unique path
+     * @throws IOException if a unique path can't be created
+     */
+    static Path getIQRecordingPath(Path directory, String label, String tunerType, long frequency, double sampleRate)
+        throws IOException
+    {
+        LocalDateTime now = LocalDateTime.now();
+        Path path = directory.resolve(SDRSharpIQRecording.createFileName(now, label, tunerType, frequency, sampleRate));
+
+        for(int version = 2; Files.exists(path); version++)
+        {
+            if(version > 20)
+            {
+                throw new IOException("Unable to create a unique file name for recording - exceeded 20 versioning attempts");
+            }
+
+            String versionedLabel = (label == null || label.isBlank()) ? "v" + version : label + "-v" + version;
+            path = directory.resolve(SDRSharpIQRecording.createFileName(now, versionedLabel, tunerType, frequency,
+                sampleRate));
+        }
+
+        return path;
     }
 }

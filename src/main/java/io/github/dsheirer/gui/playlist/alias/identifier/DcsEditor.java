@@ -44,6 +44,7 @@ public class DcsEditor extends IdentifierEditor<Dcs>
         gridPane.setHgap(5);
 
         Label typeLabel = new Label("DCS Code");
+        typeLabel.setLabelFor(getDCSCodeComboBox());
         GridPane.setConstraints(typeLabel, 0, 0);
         gridPane.getChildren().add(typeLabel);
 

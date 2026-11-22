@@ -48,6 +48,7 @@ public class P25FullyQualifiedRadio extends Radio
         super(Protocol.APCO25, id);
         mWacn = wacn;
         mSystem = system;
+        updateValueProperty();
     }
 
     @Override

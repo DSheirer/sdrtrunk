@@ -32,6 +32,22 @@ public class ChannelCalculator
     private final static Logger mLog = LoggerFactory.getLogger(ChannelCalculator.class);
 
     /**
+     * Maximum distance of a tuner channel's band edge from the center of a single polyphase channel, as a fraction of
+     * the channel bandwidth, that is sourced from that one channel.  The channelizer filter rolls off to -6 dB at 0.5
+     * channel bandwidths and this limit keeps the band edge loss to about 0.5 dB.
+     */
+    private static final double SINGLE_CHANNEL_MAXIMUM_EDGE_OFFSET = 0.35;
+
+    /**
+     * Maximum distance of a tuner channel's center from the center of a single polyphase channel, as a fraction of the
+     * channel bandwidth, where a channel that exceeds the band edge limit is still sourced from that one channel.  The
+     * synthesis filter is centered on the channel boundary and is flat to about 0.6 channel bandwidths, so a wide tuner
+     * channel centered closer than this to a polyphase channel center extends too far from either adjacent boundary
+     * and loses less of its band edge from the channelizer roll-off than it would from the synthesis filter.
+     */
+    private static final double SINGLE_CHANNEL_MAXIMUM_CENTER_OFFSET = 0.125;
+
+    /**
      * Policy to determine desired corrective action for methods that calculate an index for a frequency or a frequency
      * from an index where the frequency may exist either at the overlapping boundary of two indexes, or in the middle
      * of the wrap-around (N/2) index.
@@ -218,7 +234,8 @@ public class ChannelCalculator
      * @param tunerChannel specifying the desired channel frequency and bandwidth
      *
      * @return an array of one or more polyphase channelizer index(es) to target in order to produce an output channel
-     * for the desired frequency and bandwidth.
+     * for the desired frequency and bandwidth.  Tuner channels that are no wider than a polyphase channel use one or
+     * two indexes, whichever preserves the tuner channel's band edges best.
      *
      * @throws IllegalArgumentException if the tuner channel's minimum or maximum frequency is not contained
      * within the channelizer's minimum or maximum frequency range
@@ -243,6 +260,11 @@ public class ChannelCalculator
         {
             throw new IllegalArgumentException("Requested tuner channel cannot be provided.  Requested bandwidth is " +
                 "within two channel bandwidths of the sample rate.");
+        }
+
+        if(tunerChannel.getBandwidth() <= getChannelBandwidth())
+        {
+            return getIndexesForNarrowChannel(tunerChannel);
         }
 
         List<Integer> indexes = new ArrayList<>();
@@ -281,6 +303,36 @@ public class ChannelCalculator
         }
 
         return indexes;
+    }
+
+    /**
+     * Identifies the single index, or the two adjacent indexes ordered low to high in frequency, that best preserve the
+     * band edges of a tuner channel that is no wider than a polyphase channel.
+     *
+     * @param tunerChannel specifying the desired channel frequency and bandwidth
+     * @return list of one or two indexes
+     */
+    private List<Integer> getIndexesForNarrowChannel(TunerChannel tunerChannel)
+    {
+        long frequency = tunerChannel.getFrequency();
+        int index = getIndexForFrequency(frequency, IndexBoundaryPolicy.ADJUST_POSITIVE);
+        IndexBoundaryPolicy policy = frequency >= getCenterFrequency() ? IndexBoundaryPolicy.ADJUST_POSITIVE :
+            IndexBoundaryPolicy.ADJUST_NEGATIVE;
+        double centerOffset = (frequency - getIndexCenterFrequency(index, policy)) / getChannelBandwidth();
+        double edgeOffset = FastMath.abs(centerOffset) + (tunerChannel.getBandwidth() / 2.0 / getChannelBandwidth());
+
+        if(edgeOffset <= SINGLE_CHANNEL_MAXIMUM_EDGE_OFFSET ||
+           FastMath.abs(centerOffset) <= SINGLE_CHANNEL_MAXIMUM_CENTER_OFFSET)
+        {
+            return List.of(index);
+        }
+
+        if(centerOffset < 0)
+        {
+            return List.of(normalize(index - 1), index);
+        }
+
+        return List.of(index, normalize(index + 1));
     }
 
     /**

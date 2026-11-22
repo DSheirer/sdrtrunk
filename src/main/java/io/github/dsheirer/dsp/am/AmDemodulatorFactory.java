@@ -51,8 +51,6 @@ public class AmDemodulatorFactory
                 return new VectorAMDemodulator256(gain);
             case VECTOR_SIMD_512:
                 return new VectorAMDemodulator512(gain);
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorAMDemodulator64(gain);
             case SCALAR:
             case UNCALIBRATED:
                 return new ScalarAMDemodulator(gain);

@@ -72,6 +72,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.setHgap(5);
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, 0);
             mEditorPane.getChildren().add(formatLabel);
@@ -81,6 +82,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, 0);
             mEditorPane.getChildren().add(enabledLabel);
@@ -89,6 +91,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, 1);
             mEditorPane.getChildren().add(systemLabel);
@@ -97,6 +100,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getNameTextField());
 
             Label hostLabel = new Label("Host");
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, 2);
             mEditorPane.getChildren().add(hostLabel);
@@ -105,6 +109,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getHostTextField());
 
             Label portLabel = new Label("Port");
+            portLabel.setLabelFor(getPortTextField());
             GridPane.setHalignment(portLabel, HPos.RIGHT);
             GridPane.setConstraints(portLabel, 2, 2);
             mEditorPane.getChildren().add(portLabel);
@@ -113,6 +118,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getPortTextField());
 
             Label passwordLabel = new Label("Password");
+            setPasswordLabel(passwordLabel);
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
             GridPane.setConstraints(passwordLabel, 0, 3);
             mEditorPane.getChildren().add(passwordLabel);
@@ -121,6 +127,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getMaskedPasswordTextField());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, 4);
             mEditorPane.getChildren().add(maxAgeLabel);
@@ -129,6 +136,7 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label delayLabel = new Label("Delay (seconds)");
+            delayLabel.setLabelFor(getDelayTextField());
             GridPane.setHalignment(delayLabel, HPos.RIGHT);
             GridPane.setConstraints(delayLabel, 2, 4);
             mEditorPane.getChildren().add(delayLabel);

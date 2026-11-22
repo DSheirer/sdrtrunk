@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,61 +19,23 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.sync;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.c4fm.DibitSyncDetector;
 
 /**
  * Base implementation of P25 Phase 1 sync detector.
  */
-public abstract class P25P1SyncDetector
+public abstract class P25P1SyncDetector extends DibitSyncDetector
 {
-    public static final long SYNC_MASK = 0xFFFFFFFFFFFFL;
+    /**
+     * P25 Phase 1 sync pattern: +33333 -3 +33 -33 +33 -3333 +3 -3 +3 -33333
+     */
     public static final long SYNC_PATTERN = 0x5575F5FF77FFL;
 
     /**
-     * Converts the P25P1 sync pattern to a float array of ideal phase values for each Dibit to use for correlation
-     * against a stream of transmitted symbol phases.
-     * @return symbols array representing the sync pattern.
+     * Constructs an instance
      */
-    public static float[] syncPatternToSymbols()
+    public P25P1SyncDetector()
     {
-        float[] symbols = new float[24];
-        Dibit[] dibits = syncPatternToDibits();
-
-        for(int x = 0; x < 24; x++)
-        {
-            symbols[x] = dibits[x].getIdealPhase();
-        }
-
-        return symbols;
-    }
-
-    /**
-     * Converts the P25P1 sync pattern to an array of dibit symbols.  Note: only the +3 and -3 dibit symbols are used in
-     * sync patterns.
-     * @return dibit symbols array representing the sync pattern.
-     */
-    public static Dibit[] syncPatternToDibits()
-    {
-        Dibit[] dibits = new Dibit[24];
-        long mask = 3;
-        long dibitValue;
-
-        for(int x = 0; x < 24; x++)
-        {
-            dibitValue = (SYNC_PATTERN & mask) >> (2 * x);
-
-            if(dibitValue == 1)
-            {
-                dibits[23 - x] = Dibit.D01_PLUS_3;
-            }
-            else
-            {
-                dibits[23 - x] = Dibit.D11_MINUS_3;
-            }
-
-            mask = mask << 2;
-        }
-
-        return dibits;
+        super(SYNC_PATTERN, 24);
     }
 }

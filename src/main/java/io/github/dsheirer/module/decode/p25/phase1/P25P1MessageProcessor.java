@@ -29,6 +29,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.IExtendedSourceMes
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.HarrisTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasBase;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerAliasComplete;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock1;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSBlock2;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.l3harris.LCHarrisTalkerGPSComplete;
@@ -119,9 +120,12 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             //Reassemble extended source link control messages.
             if(message instanceof LDU1Message ldu1)
             {
-                LinkControlWord lcw = ldu1.getLinkControlWord();;
+                //The LDU1 message is valid for its voice frames, but the link control word that it carries is only used
+                //when it passes error correction.
+                LinkControlWord lcw = ldu1.getLinkControlWord();
+                boolean lcwValid = lcw.isValid();
 
-                if(lcw instanceof IExtendedSourceMessage esm)
+                if(lcwValid && lcw instanceof IExtendedSourceMessage esm)
                 {
                     if(lcw instanceof LCSourceIDExtension extension)
                     {
@@ -134,7 +138,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                         return;
                     }
                 }
-                else if(lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
+                else if(lcwValid && lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
                 {
                     //Send the LCW to the harris talker alias assembler
                     dispatch(mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, ldu1.getTimestamp()));
@@ -146,12 +150,12 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 dispatch(ldu1);
 
                 //Process Harris Talker GPS messages
-                if(lcw instanceof LCHarrisTalkerGPSBlock1 block1)
+                if(lcwValid && lcw instanceof LCHarrisTalkerGPSBlock1 block1)
                 {
                     mHeldHarrisGPSBlock1 = block1;
                     mHeldHarrisGPSBlock1Timestamp = ldu1.getTimestamp();
                 }
-                else if(lcw instanceof LCHarrisTalkerGPSBlock2 block2 && mHeldHarrisGPSBlock1 != null)
+                else if(lcwValid && lcw instanceof LCHarrisTalkerGPSBlock2 block2 && mHeldHarrisGPSBlock1 != null)
                 {
                     //Ensure block 1 and block 2 are within 2 seconds of each other
                     if(Math.abs(ldu1.getTimestamp() - mHeldHarrisGPSBlock1Timestamp) < 2000)
@@ -180,6 +184,8 @@ public class P25P1MessageProcessor implements Listener<IMessage>
             else if(message instanceof TDULCMessage tdulc)
             {
                 boolean motorolaTalkerAliasComplete = false;
+                LCHarrisTalkerAliasComplete harrisTalkerAliasComplete = null;
+                boolean harrisTalkerAliasBlock = false;
                 LinkControlWord lcw = tdulc.getLinkControlWord();
 
                 if(lcw instanceof IExtendedSourceMessage esm)
@@ -196,21 +202,38 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                     }
                 }
 
+                //L3Harris can carry the talker alias in the TDULC messages after the call ends
+                else if(lcw != null && lcw.isValid() && lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
+                {
+                    harrisTalkerAliasBlock = true;
+                    harrisTalkerAliasComplete = mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, message.getTimestamp());
+                }
+
                 //Motorola carries the talker alias in the TDULC
                 else if(mMotorolaTalkerAliasAssembler.add(lcw, message.getTimestamp()))
                 {
                     motorolaTalkerAliasComplete = true;
                 }
 
-                //Harris carries the talker alias in the LDU1 link control messages, so reset the assembler on TDULC.
-                mHarrisTalkerAliasAssembler.reset();
+                //Reset the L3Harris assembler on other TDULC messages so that alias blocks from different calls
+                //aren't combined.  Keep the blocks while the TDULC messages carry the alias.
+                if(!harrisTalkerAliasBlock)
+                {
+                    mHarrisTalkerAliasAssembler.reset();
+                }
 
                 dispatch(tdulc);
 
-                // Dispatch the complete talker alias after the TDULC to ensure correct log sequencing.
+                // Dispatch the complete talker alias after the TDULC to ensure correct log sequencing.  The decoder
+                // state assigns it to the talker of the call that just ended.
                 if(motorolaTalkerAliasComplete)
                 {
                     dispatch(mMotorolaTalkerAliasAssembler.assemble());
+                }
+
+                if(harrisTalkerAliasComplete != null)
+                {
+                    dispatch(harrisTalkerAliasComplete);
                 }
             }
             else if(message instanceof HDUMessage hdu && mHeldTDULCMessage != null)

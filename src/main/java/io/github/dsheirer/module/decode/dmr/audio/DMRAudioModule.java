@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import jmbe.frame.CorrectedAMBEFrame;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private ToneMetadataProcessor mToneMetadataProcessor = new ToneMetadataProcessor();
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
-    private List<byte[]> mQueuedAmbeFrames = new ArrayList<>();
+    private List<AmbeFrame> mQueuedAmbeFrames = new ArrayList<>();
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
     private Listener<IMessage> mMessageListener;
@@ -99,12 +100,19 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     }
 
     /**
-     * Processes DMR AMBE audio frames and signalling messages.
+     * Processes DMR AMBE audio frames and signaling messages.
      */
     public void receive(IMessage message)
     {
         if(hasAudioCodec() && message.getTimeslot() == getTimeslot())
         {
+            //Ignore voice messages where none of the AMBE voice frames pass error detection, so that invalid voice
+            //messages (ie false sync detections) don't produce audio or establish the encryption state.
+            if(message instanceof VoiceMessage voiceMessage && !voiceMessage.isValid())
+            {
+                return;
+            }
+
             //Attempt to set the audio encryption state from certain types of messages
             if(!mEncryptedCallStateEstablished)
             {
@@ -159,7 +167,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
 
             //Queue or process audio frames.  Note: audio frames are held/queued until encrypted state is established
             //before any audio is generated for the audio segment.
-            if(message instanceof VoiceMessage voiceMessage)
+            if(message instanceof VoiceMessage voiceMessage && voiceMessage.isValid())
             {
                 if(mEncryptedCallStateEstablished && mEncryptedCall)
                 {
@@ -168,13 +176,25 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                 else
                 {
                     List<byte[]> frames = voiceMessage.getAMBEFrames();
-                    for(byte[] frame: frames)
+
+                    //Only error correct the frames in sdrtrunk when the JMBE library (version 3+) can synthesize
+                    //from them
+                    List<CorrectedAMBEFrame> correctedFrames = isCorrectedFrameSupported() ?
+                        voiceMessage.getCorrectedAMBEFrames() : null;
+
+                    for(int x = 0; x < frames.size(); x++)
                     {
-                        processAudio(frame, message.getTimestamp());
+                        processAudio(new AmbeFrame(frames.get(x), correctedFrames != null ? correctedFrames.get(x) : null),
+                            message.getTimestamp());
                     }
                 }
             }
-            else if(message instanceof Terminator)
+            else if(message instanceof VoiceHeader voiceHeader && voiceHeader.isValid())
+            {
+                //Clear any queued audio frames received prior to the voice header
+                mQueuedAmbeFrames.clear();
+            }
+            else if(message instanceof Terminator terminator && terminator.isValid())
             {
                 reset();
             }
@@ -185,7 +205,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
      * Processes the audio frame.  Queues the frame until encryption state is determined.  Once determined, the audio
      * frames are dequeued and audio is generated.
      */
-    private void processAudio(byte[] frame, long timestamp)
+    private void processAudio(AmbeFrame frame, long timestamp)
     {
         if(mEncryptedCallStateEstablished)
         {
@@ -200,7 +220,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                 {
                     if(!mEncryptedCall)
                     {
-                        for(byte[] queuedFrame: mQueuedAmbeFrames)
+                        for(AmbeFrame queuedFrame: mQueuedAmbeFrames)
                         {
                             produceAudio(queuedFrame, timestamp);
                         }
@@ -220,11 +240,11 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         }
     }
 
-    private void produceAudio(byte[] frame, long timestamp)
+    private void produceAudio(AmbeFrame frame, long timestamp)
     {
         try
         {
-            IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(frame);
+            IAudioWithMetadata audioWithMetadata = getAudioWithMetadata(frame.frame(), frame.correctedFrame());
             addAudio(audioWithMetadata.getAudio());
             processMetadata(audioWithMetadata, timestamp);
         }
@@ -395,4 +415,11 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             mCurrentTone = null;
         }
     }
+
+    /**
+     * AMBE voice frame as transmitted, with the optional error corrected version of the frame.
+     * @param frame bytes as transmitted
+     * @param correctedFrame for the frame, or null when the JMBE library can't synthesize from corrected frames
+     */
+    private record AmbeFrame(byte[] frame, CorrectedAMBEFrame correctedFrame) {}
 }

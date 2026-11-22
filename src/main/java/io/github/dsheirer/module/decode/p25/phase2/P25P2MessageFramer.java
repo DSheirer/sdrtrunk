@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,8 @@ package io.github.dsheirer.module.decode.p25.phase2;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
@@ -49,52 +48,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
- * and issue phase corrections.
+ * P25 Phase 2 message framer.  Receives symbol decisions (dibits) and sync detection notifications from the symbol
+ * processor and frames super frame fragments using the super frame detector.
  */
-public class P25P2MessageFramer implements Listener<Dibit>
+public class P25P2MessageFramer extends C4FMMessageFramer
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageFramer.class);
-    private P25P2SuperFrameDetector mSuperFrameDetector;
+    private final P25P2SuperFrameDetector mSuperFrameDetector = new P25P2SuperFrameDetector();
+    private boolean mRunning = false;
 
     /**
      * Constructs an instance
-     * @param phaseLockedLoop for use with the super frame detector
      */
-    public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop)
+    public P25P2MessageFramer()
     {
-        mSuperFrameDetector = new P25P2SuperFrameDetector(phaseLockedLoop);
     }
 
     /**
      * Sets or updates the scramble parameters for the current channel
-     * @param scrambleParameters
+     * @param scrambleParameters to apply
      */
     public void setScrambleParameters(ScrambleParameters scrambleParameters)
     {
-        if(mSuperFrameDetector != null)
-        {
-            mSuperFrameDetector.setScrambleParameters(scrambleParameters);
-        }
-    }
-
-    /**
-     * Sets the sample rate for the sync detector
-     */
-    public void setSampleRate(double sampleRate)
-    {
-        mSuperFrameDetector.setSampleRate(sampleRate);
-    }
-
-    /**
-     * Registers a sync detect listener to be notified each time sync is detected or lost.
-     *
-     * Note: this actually registers the listener on the enclosed super frame detector which has access to the
-     * actual sync pattern detector instance.
-     */
-    public void setSyncDetectListener(ISyncDetectListener listener)
-    {
-        mSuperFrameDetector.setSyncDetectListener(listener);
+        mSuperFrameDetector.setScrambleParameters(scrambleParameters);
     }
 
     /**
@@ -104,22 +80,87 @@ public class P25P2MessageFramer implements Listener<Dibit>
      */
     public void setListener(Listener<IMessage> messageListener)
     {
-        mSuperFrameDetector.setListener(messageListener);
+        mSuperFrameDetector.setListener(message -> {
+            if(mRunning)
+            {
+                messageListener.receive(message);
+            }
+        });
+    }
+
+    /**
+     * Sets or updates the current dibit stream time from an incoming sample buffer.
+     * @param timestamp to use as a reference timestamp.
+     */
+    public void setTimestamp(long timestamp)
+    {
+        mSuperFrameDetector.setTimestamp(timestamp);
+    }
+
+    /**
+     * Starts this framer dispatching messages
+     */
+    public void start()
+    {
+        mRunning = true;
+    }
+
+    /**
+     * Stops this framer from dispatching messages
+     */
+    public void stop()
+    {
+        mRunning = false;
+    }
+
+    /**
+     * Notification from the symbol processor that a sync pattern was detected, where the final sync dibit is the most
+     * recently processed dibit.
+     */
+    @Override
+    public void syncDetected()
+    {
+        mSuperFrameDetector.syncDetected();
     }
 
     /**
      * Primary method for streaming decoded symbol dibits for message framing.
      *
      * @param dibit to process
+     * @return true if a valid super frame fragment was produced.
      */
     @Override
-    public void receive(Dibit dibit)
+    public boolean process(Dibit dibit)
     {
-        mSuperFrameDetector.receive(dibit);
+        return mSuperFrameDetector.process(dibit);
     }
 
     /**
-     * Primary method for streaming decoded symbol byte arrays.
+     * Primary method for streaming decoded symbol dibits and soft symbols for message framing.
+     *
+     * @param dibit to process
+     * @param softSymbol for the dibit (radians), for soft decision decoding
+     * @return true if a valid super frame fragment was produced.
+     */
+    @Override
+    public boolean process(Dibit dibit, float softSymbol)
+    {
+        return mSuperFrameDetector.process(dibit, softSymbol);
+    }
+
+    /**
+     * Processes the dibit and detects sync patterns from the dibit stream, for use when processing a stream of dibits
+     * without a symbol processor (ie replaying a recorded bit stream).
+     *
+     * @param dibit to process
+     */
+    public void processWithHardSyncDetect(Dibit dibit)
+    {
+        mSuperFrameDetector.processWithHardSyncDetect(dibit);
+    }
+
+    /**
+     * Processes the decoded symbol byte array using hard sync detection.
      *
      * @param buffer to process into a stream of dibits for processing.
      */
@@ -129,7 +170,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         {
             for(int x = 0; x <= 3; x++)
             {
-                receive(Dibit.parse(value, x));
+                processWithHardSyncDetect(Dibit.parse(value, x));
             }
         }
     }
@@ -202,7 +243,8 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
                                        processingChain.start();
 
-                                       P25P2MessageFramer messageFramer = new P25P2MessageFramer(null);
+                                       P25P2MessageFramer messageFramer = new P25P2MessageFramer();
+                                       messageFramer.start();
                                        messageFramer.setScrambleParameters(scrambleParameters);
                                        P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
                                        messageFramer.setListener(messageProcessor);

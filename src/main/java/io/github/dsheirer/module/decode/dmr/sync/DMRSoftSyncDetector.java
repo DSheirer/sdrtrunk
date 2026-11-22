@@ -19,14 +19,23 @@
 
 package io.github.dsheirer.module.decode.dmr.sync;
 
+import io.github.dsheirer.dsp.c4fm.DibitSyncDetector;
+import io.github.dsheirer.dsp.c4fm.ISoftC4FMSyncDetector;
+import io.github.dsheirer.dsp.c4fm.ReferenceSyncWaveform;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * DMR Sync Detector.  Uses soft demodulated symbols to detect sync patterns in the demodulated symbol stream.
+ *
+ * Implements the C4FM sync detector interface where the sync pattern accessor methods return the values for the sync
+ * pattern that produced the best correlation score from the most recent call to process().
  */
-public abstract class DMRSoftSyncDetector extends DMRSyncDetector
+public abstract class DMRSoftSyncDetector extends DMRSyncDetector implements ISoftC4FMSyncDetector
 {
+    private static final int SYNC_DIBIT_LENGTH = 24;
     protected static final float MAX_POSITIVE = Dibit.D01_PLUS_3.getIdealPhase();
     protected static final float MAX_NEGATIVE = Dibit.D11_MINUS_3.getIdealPhase();
     protected static final float[] BASE_DATA = DMRSyncPattern.BASE_STATION_DATA.toSymbols();
@@ -40,9 +49,47 @@ public abstract class DMRSoftSyncDetector extends DMRSyncDetector
 
     protected float[] mSymbols = new float[48]; //2x longer than 48-bit/24-dibit DMR sync patterns.
     protected int mSymbolPointer = 0;
+    //Per-instance sync pattern detectors provide pattern dibits, symbols and (cached) reference waveforms
+    private final Map<DMRSyncPattern,DibitSyncDetector> mPatternDetectors = new EnumMap<>(DMRSyncPattern.class);
 
     public DMRSoftSyncDetector()
     {
+        for(DMRSyncPattern pattern: DMRSyncPattern.SYNC_PATTERNS)
+        {
+            mPatternDetectors.put(pattern, new DibitSyncDetector(pattern.getPattern(), SYNC_DIBIT_LENGTH));
+        }
+    }
+
+    /**
+     * Sync pattern detector for the currently detected sync pattern.
+     */
+    private DibitSyncDetector getDetectedPatternDetector()
+    {
+        return mPatternDetectors.get(mDetectedPattern);
+    }
+
+    @Override
+    public float[] getPatternSymbols()
+    {
+        return getDetectedPatternDetector().getPatternSymbols();
+    }
+
+    @Override
+    public Dibit[] getPatternDibits()
+    {
+        return getDetectedPatternDetector().getPatternDibits();
+    }
+
+    @Override
+    public int getDibitLength()
+    {
+        return SYNC_DIBIT_LENGTH;
+    }
+
+    @Override
+    public ReferenceSyncWaveform getReferenceWaveform(double samplesPerSymbol)
+    {
+        return getDetectedPatternDetector().getReferenceWaveform(samplesPerSymbol);
     }
 
     /**
@@ -74,23 +121,15 @@ public abstract class DMRSoftSyncDetector extends DMRSyncDetector
      * symbols that include this recent soft symbol.
      *
      * @param dibitSymbol to process that represents the soft demodulated symbol value in phase angle/radians.
+     * @return best correlation score where the best detected pattern is available at getDetectedPattern().
      */
-    public void process(float dibitSymbol)
+    @Override
+    public float process(float dibitSymbol)
     {
         mSymbols[mSymbolPointer] = dibitSymbol;
         mSymbols[mSymbolPointer + 24] = dibitSymbol;
         mSymbolPointer++;
         mSymbolPointer %= 24;
-    }
-
-    /**
-     * Process the symbol and calculate the sync detection score.
-     * @param symbol to process
-     * @return sync detection score.
-     */
-    public float processAndCalculate(float symbol)
-    {
-        process(symbol);
         return calculate();
     }
 }

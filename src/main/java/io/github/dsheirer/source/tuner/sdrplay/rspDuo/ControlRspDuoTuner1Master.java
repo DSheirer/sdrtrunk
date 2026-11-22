@@ -20,9 +20,9 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
+import io.github.dsheirer.source.tuner.sdrplay.DeviceSelectionMode;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.sdrplay.DeviceInfo;
 import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +47,11 @@ public class ControlRspDuoTuner1Master extends ControlRspDuoTuner1
     /**
      * Constructs an instance
      *
-     * @param device to control
+     * @param deviceInfo for the device
      */
-    public ControlRspDuoTuner1Master(RspDuoDevice device, MasterSlaveBridge bridge)
+    public ControlRspDuoTuner1Master(DeviceInfo deviceInfo, MasterSlaveBridge bridge)
     {
-        super(device);
+        super(deviceInfo);
         mMasterSlaveBridge = bridge;
     }
 
@@ -68,11 +68,11 @@ public class ControlRspDuoTuner1Master extends ControlRspDuoTuner1
     }
 
     @Override
-    public void setSampleRate(RspSampleRate sampleRate) throws SDRPlayException
+    public void setSampleRate(RspSampleRate sampleRate) throws RspException
     {
-        if(!sampleRate.isDualTunerSampleRate())
+        if(!RspSampleRate.DUAL_TUNER_SAMPLE_RATES.contains(sampleRate))
         {
-            throw new SDRPlayException("Use dual-tuner sample rates only");
+            throw new RspException("Use supported dual-tuner sample rates only");
         }
 
         super.setSampleRate(sampleRate);
@@ -87,10 +87,10 @@ public class ControlRspDuoTuner1Master extends ControlRspDuoTuner1
     /**
      * Overrides parent stop method to disable continous streaming flag before stopping this device so that the
      * stream can be stopped.
-     * @throws SDRPlayException if there is an error
+     * @throws RspException if there is an error
      */
     @Override
-    public void stop() throws SDRPlayException
+    public void stop() throws RspException
     {
         mStreamingLock.lock();
 

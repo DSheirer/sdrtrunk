@@ -22,6 +22,7 @@ package io.github.dsheirer.channel.metadata;
 
 public enum ChannelMetadataField
 {
+    CONFIGURATION_ALIAS_LIST,
     CONFIGURATION_CHANNEL,
     CONFIGURATION_FREQUENCY,
     CONFIGURATION_SITE,

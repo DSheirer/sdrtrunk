@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,52 +19,59 @@
 
 package io.github.dsheirer.source.tuner.airspy.hf;
 
-import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.buffer.airspy.AirspyHfNativeBufferFactory;
+import io.github.dsheirer.airspyhf.AirspyHf;
+import io.github.dsheirer.airspyhf.AirspyHfDevice;
+import io.github.dsheirer.airspyhf.AirspyHfException;
+import io.github.dsheirer.airspyhf.BoardInfo;
+import io.github.dsheirer.airspyhf.SampleBuffer;
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import io.github.dsheirer.util.ByteUtil;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.LibUsb;
 
 /**
- * Airspy HF+ and HF Discovery tuner controller.
+ * Airspy HF+ Dual Port, HF+ Discovery and Ranger tuner controller, implemented with the jAirspyHF library
+ * (libairspyhf).
+ *
+ * The tuner is discovered with LibUsb at a USB bus and port, like all other USB tuners, however libairspyhf owns the
+ * USB device and its transfers.  The library also corrects the IQ imbalance of the zero IF sample rates and shifts the
+ * signal so that the tuned frequency is at the center of the spectrum, without a DC spike, for every sample rate.
  */
-public class AirspyHfTunerController extends USBTunerController
+public class AirspyHfTunerController extends TunerController
 {
     private static final Logger mLog = LoggerFactory.getLogger(AirspyHfTunerController.class);
-    private static final AirspyHfSampleRate DEFAULT_SAMPLE_RATE = new AirspyHfSampleRate(0, 768_000, false);
-    private static final long IF_SHIFT_LIF = 0;
-    private static final long IF_SHIFT_ZIF = 5_000;
     public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 500_000;
     public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 260_000_000;
-    private static final byte REQUEST_TYPE_IN = LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE;
-    private static final byte REQUEST_TYPE_OUT = LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE;
-    private static final int BUFFER_SAMPLE_COUNT = 1024;
-    private static final int BUFFER_BYTE_SIZE = BUFFER_SAMPLE_COUNT * 2 * 2; //2x 16-bit samples (4-bytes total) per complex.
-    private AirspyHfNativeBufferFactory mNativeBufferFactory = new AirspyHfNativeBufferFactory();
-    private List<AirspyHfSampleRate> mAvailableSampleRates;
+    private static final long FREQUENCY_DEFAULT = 10_000_000;
+    private static final AirspyHfSampleRate DEFAULT_SAMPLE_RATE = new AirspyHfSampleRate(0, 912_000, false);
+    //Sample count of each buffer from libairspyhf, used until the device is opened.
+    private static final int DEFAULT_BUFFER_SAMPLE_COUNT = 4096;
+    private final int mBus;
+    private final String mPortAddress;
+    private AirspyHfDevice mDevice;
+    private BoardId mBoardId = BoardId.UNKNOWN;
+    private String mSerialNumber = "UNKNOWN";
+    private String mFirmwareVersion;
+    private List<AirspyHfSampleRate> mAvailableSampleRates = Collections.emptyList();
     private AirspyHfSampleRate mCurrentSampleRate = DEFAULT_SAMPLE_RATE;
-    private BoardId mBoardId;
-    private String mSerialNumber;
     private Attenuation mAttenuation = Attenuation.A0;
     private boolean mAgcEnabled;
     private boolean mLnaEnabled;
-    private long mTunedFrequency;
-    private static final int CALIBRATION_MAGIC = 0xA5CA71B0;
-    private int mCalibrationRecordMagicNumber;
-    private int mCalibrationRecordPPB;
-    private int mCalibrationRecordVctcxo;
+    private boolean mBiasTSupported;
+    private boolean mBiasTEnabled;
+    private volatile float mSamplesPerMillisecond = DEFAULT_SAMPLE_RATE.getSampleRate() / 1000.0f;
+    private volatile int mBufferSampleCount = DEFAULT_BUFFER_SAMPLE_COUNT;
+    private boolean mStreaming = false;
 
     /**
      * Constructs an instance
@@ -74,79 +81,484 @@ public class AirspyHfTunerController extends USBTunerController
      */
     public AirspyHfTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, portAddress, tunerErrorListener);
+        super(tunerErrorListener);
+        mBus = bus;
+        mPortAddress = portAddress;
         setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
         setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
         setUsableBandwidthPercentage(.9); //90% usable after filter rolloff
-        setMiddleUnusableHalfBandwidth(3000);
+        //libairspyhf offsets the LO from the tuned frequency and removes the IQ imbalance, so the center is usable.
+        setMiddleUnusableHalfBandwidth(0);
     }
 
     @Override
-    public void apply(TunerConfiguration config) throws SourceException
+    public TunerType getTunerType()
     {
-        super.apply(config);
-
-        if(config instanceof AirspyHfTunerConfiguration airspyConfig)
-        {
-            int sampleRate = airspyConfig.getSampleRate();
-
-            boolean found = false;
-            //The tuner supports several sample rates, but in testing the only rate that seems to function
-            //correctly is the 912kHz rate, which should be index 0.
-//            for(AirspyHfSampleRate rate: getAvailableSampleRates())
-//            {
-//                if(rate.getSampleRate() == sampleRate)
-//                {
-//                    setSampleRate(rate);
-//                    found = true;
-//                    break;
-//                }
-//            }
-
-            if(!found)
-            {
-                setSampleRate(getAvailableSampleRates().get(0));
-            }
-
-            try
-            {
-                setAgc(airspyConfig.isAgc());
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error setting AGC enabled [" + airspyConfig.isAgc() + "]");
-            }
-
-            try
-            {
-                setLna(airspyConfig.isLna());
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error setting LNA enabled [" + airspyConfig.isLna() + "]");
-            }
-
-            try
-            {
-                setAttenuation(airspyConfig.getAttenuation());
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error setting attenuation [" + airspyConfig.getAttenuation() + "]");
-            }
-        }
+        return TunerType.AIRSPY_HF_PLUS;
     }
 
     @Override
     public int getBufferSampleCount()
     {
-        return 1024;
+        return mBufferSampleCount;
+    }
+
+    @Override
+    public void start() throws SourceException
+    {
+        long serialNumber = readSerialNumber();
+
+        getLock().lock();
+
+        try
+        {
+            mBiasTSupported = false;
+            mBiasTEnabled = false;
+            mDevice = AirspyHf.open(serialNumber);
+
+            BoardInfo boardInfo = mDevice.boardInfo();
+            mBoardId = BoardId.fromValue((int)boardInfo.partId());
+            mSerialNumber = String.format("%016X", boardInfo.serialNumber());
+            mFirmwareVersion = mDevice.firmwareVersion();
+            mBufferSampleCount = mDevice.outputSize();
+
+            List<AirspyHfSampleRate> sampleRates = new ArrayList<>();
+            long[] rates = mDevice.sampleRates();
+
+            for(int x = 0; x < rates.length; x++)
+            {
+                mDevice.setSampleRate(rates[x]);
+                sampleRates.add(new AirspyHfSampleRate(x, (int)rates[x], mDevice.isLowIf()));
+            }
+
+            if(sampleRates.isEmpty())
+            {
+                sampleRates.add(DEFAULT_SAMPLE_RATE);
+            }
+
+            mAvailableSampleRates = Collections.unmodifiableList(sampleRates);
+            mBiasTSupported = detectBiasTSupport(mDevice);
+            mBiasTEnabled = false;
+
+            //Force the sample rate to be applied, since the rate discovery leaves the device at the last rate.
+            mCurrentSampleRate = null;
+            setFrequency(FREQUENCY_DEFAULT);
+            setSampleRate(mAvailableSampleRates.get(0));
+        }
+        catch(AirspyHfException | SourceException | RuntimeException | LinkageError e)
+        {
+            closeDevice(mDevice);
+            mDevice = null;
+            throw new SourceException("Can't start Airspy HF tuner - " + e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        AirspyHfDevice device;
+        boolean biasTEnabled;
+
+        getLock().lock();
+
+        try
+        {
+            device = mDevice;
+            mDevice = null;
+            mStreaming = false;
+            biasTEnabled = mBiasTEnabled;
+            mBiasTEnabled = false;
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+
+        mNativeBufferBroadcaster.clear();
+
+        if(device != null && biasTEnabled)
+        {
+            try
+            {
+                device.setBiasTee(0);
+            }
+            catch(AirspyHfException | RuntimeException e)
+            {
+                mLog.warn("Error turning off Airspy HF bias-T before closing the device - " + e.getMessage());
+            }
+        }
+
+        closeDevice(device);
+    }
+
+    /**
+     * Detects if the device firmware supports a bias-T.  Firmware without bias-T support rejects the bias-T commands.
+     * Some firmware (HF+ Discovery R5.0.1) rejects the bias-T count request, so this falls back to turning the bias-T
+     * off, which is a safe probe since the bias-T should be off at startup anyway.
+     * @param device to probe
+     * @return true if the device accepts bias-T commands
+     */
+    private static boolean detectBiasTSupport(AirspyHfDevice device)
+    {
+        try
+        {
+            if(device.biasTeeCount() > 0)
+            {
+                device.setBiasTee(0);
+                return true;
+            }
+
+            return false;
+        }
+        catch(AirspyHfException | RuntimeException e)
+        {
+            //Bias-T count not supported - fall through and probe with a bias-T off command.
+        }
+
+        try
+        {
+            device.setBiasTee(0);
+            return true;
+        }
+        catch(AirspyHfException | RuntimeException e)
+        {
+            mLog.debug("Airspy HF firmware doesn't support bias-T - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Closes the device, which also stops streaming.
+     * @param device to close, or null
+     */
+    private static void closeDevice(AirspyHfDevice device)
+    {
+        if(device != null)
+        {
+            try
+            {
+                device.close();
+            }
+            catch(AirspyHfException | RuntimeException e)
+            {
+                mLog.error("Error closing Airspy HF device", e);
+            }
+        }
+    }
+
+    /**
+     * Reads the serial number of the device at this controller's USB bus and port, since libairspyhf opens a specific
+     * device by serial number.  The USB serial string is formatted as: AIRSPYHF SN:0123456789ABCDEF
+     * @return serial number
+     * @throws SourceException if the device isn't found or can't be accessed.
+     */
+    private long readSerialNumber() throws SourceException
+    {
+        String serial = UsbDeviceLookup.readSerialNumber(mBus, mPortAddress);
+
+        try
+        {
+            return Long.parseUnsignedLong(serial.substring(serial.lastIndexOf(':') + 1).trim(), 16);
+        }
+        catch(NullPointerException | NumberFormatException e)
+        {
+            throw new SourceException("Can't read Airspy HF serial number from USB serial string [" + serial + "]", e);
+        }
+    }
+
+    /**
+     * Operation that requires the device.
+     */
+    private interface DeviceOperation
+    {
+        void execute(AirspyHfDevice device) throws AirspyHfException;
+    }
+
+    /**
+     * Executes the operation under the controller lock so that the device can't be closed while it is in use.  The
+     * operation is ignored when the device isn't open, which allows for calls that arrive during tuner shutdown.
+     * @param operation to execute
+     * @throws SourceException if the operation fails
+     */
+    private void execute(DeviceOperation operation) throws SourceException
+    {
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                operation.execute(mDevice);
+            }
+        }
+        catch(AirspyHfException e)
+        {
+            throw new SourceException(e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Receives samples on the libairspyhf consumer thread and dispatches them to the buffer listeners.  Exceptions
+     * are contained here since an exception reaching the library would stop the sample stream.
+     * @param buffer from the library, which is only valid until this method returns.
+     * @return true to continue streaming
+     */
+    private boolean receive(SampleBuffer buffer)
+    {
+        try
+        {
+            mBufferSampleCount = buffer.sampleCount();
+            broadcast(new FloatNativeBuffer(buffer.copyFloats(), System.currentTimeMillis(), mSamplesPerMillisecond));
+        }
+        catch(RuntimeException e)
+        {
+            mLog.error("Error dispatching Airspy HF sample buffer", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Starts the sample stream if it's not already started.
+     */
+    private void startStreaming() throws SourceException
+    {
+        if(!mStreaming)
+        {
+            execute(device -> device.startRx(this::receive));
+            mStreaming = mDevice != null;
+        }
+    }
+
+    /**
+     * Stops the sample stream if it's started.
+     */
+    private void stopStreaming() throws SourceException
+    {
+        if(mStreaming)
+        {
+            mStreaming = false;
+            execute(AirspyHfDevice::stopRx);
+        }
+    }
+
+    /**
+     * Adds the IQ buffer listener and automatically starts streaming, if not already started.
+     */
+    @Override
+    public void addBufferListener(Listener<INativeBuffer> listener)
+    {
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                super.addBufferListener(listener);
+                startStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error starting streaming on Airspy HF tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Removes the IQ buffer listener and stops streaming if there are no more listeners.
+     */
+    @Override
+    public void removeBufferListener(Listener<INativeBuffer> listener)
+    {
+        getLock().lock();
+
+        try
+        {
+            super.removeBufferListener(listener);
+
+            if(!hasBufferListeners())
+            {
+                stopStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error stopping streaming on Airspy HF tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    @Override
+    public void apply(TunerConfiguration config) throws SourceException
+    {
+        //Invoke super for frequency, frequency correction and autoPPM
+        super.apply(config);
+
+        if(config instanceof AirspyHfTunerConfiguration airspyConfig)
+        {
+            AirspyHfSampleRate sampleRate = getSampleRate(airspyConfig.getSampleRate());
+            setSampleRate(sampleRate != null ? sampleRate : getAvailableSampleRates().get(0));
+
+            try
+            {
+                setLna(airspyConfig.isLna());
+                setAttenuation(airspyConfig.getAttenuation());
+                setAgc(airspyConfig.isAgc());
+
+                if(isBiasTSupported())
+                {
+                    setBiasT(airspyConfig.isBiasT());
+                }
+            }
+            catch(SourceException se)
+            {
+                throw new SourceException("Couldn't apply settings from Airspy HF config", se);
+            }
+        }
     }
 
     @Override
     public long getTunedFrequency() throws SourceException
     {
-        return mTunedFrequency;
+        return mFrequencyController.getTunedFrequency();
+    }
+
+    /**
+     * Sets the tuned frequency.  libairspyhf applies the device's frequency calibration and the IF shift.
+     * @param frequency to set
+     * @throws SourceException if there is an error
+     */
+    @Override
+    public void setTunedFrequency(long frequency) throws SourceException
+    {
+        if(MINIMUM_TUNABLE_FREQUENCY_HZ <= frequency && frequency <= MAXIMUM_TUNABLE_FREQUENCY_HZ)
+        {
+            execute(device -> device.setFrequency(frequency));
+        }
+        else
+        {
+            throw new SourceException("Frequency [" + frequency + "] outside of tunable range " +
+                    MINIMUM_TUNABLE_FREQUENCY_HZ + "-" + MAXIMUM_TUNABLE_FREQUENCY_HZ);
+        }
+    }
+
+    @Override
+    public double getCurrentSampleRate()
+    {
+        return mCurrentSampleRate != null ? mCurrentSampleRate.getSampleRate() : 0;
+    }
+
+    /**
+     * Access the current sample rate object.
+     * @return current sample rate.
+     */
+    public AirspyHfSampleRate getCurrentAirspySampleRate()
+    {
+        return mCurrentSampleRate;
+    }
+
+    /**
+     * Sets the sample rate for the tuner.  The sample stream is stopped for the change so that the library's consumer
+     * thread doesn't process samples while the rate, filter gain and IF mode are changing.
+     * @param sampleRate to apply.
+     * @throws SourceException if the rate can't be set
+     */
+    public void setSampleRate(AirspyHfSampleRate sampleRate) throws SourceException
+    {
+        if(sampleRate == null || sampleRate.equals(mCurrentSampleRate))
+        {
+            return;
+        }
+
+        if(!isSupportedSampleRate(sampleRate.getSampleRate()))
+        {
+            throw new SourceException("Unsupported Airspy HF sample rate: " + sampleRate);
+        }
+
+        getLock().lock();
+
+        try
+        {
+            boolean streaming = mStreaming;
+            stopStreaming();
+
+            try
+            {
+                execute(device -> device.setSampleRate(sampleRate.getSampleRate()));
+                mSamplesPerMillisecond = sampleRate.getSampleRate() / 1000.0f;
+                mCurrentSampleRate = sampleRate;
+                mFrequencyController.setSampleRate(sampleRate.getSampleRate());
+            }
+            finally
+            {
+                if(streaming)
+                {
+                    startStreaming();
+                }
+            }
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Indicates if the sample rate is supported.
+     * @param sampleRate to check
+     * @return true if the rate matches one of the available sample rates.
+     */
+    public boolean isSupportedSampleRate(int sampleRate)
+    {
+        return getSampleRate(sampleRate) != null;
+    }
+
+    /**
+     * Sample rate object that matches the rate in hertz.
+     * @param sampleRate in hertz
+     * @return matching sample rate or null
+     */
+    private AirspyHfSampleRate getSampleRate(int sampleRate)
+    {
+        for(AirspyHfSampleRate availableRate: mAvailableSampleRates)
+        {
+            if(availableRate.getSampleRate() == sampleRate)
+            {
+                return availableRate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Available/supported sample rates.
+     * @return available sample rates
+     * @throws IllegalStateException if the device has not yet been started
+     */
+    public List<AirspyHfSampleRate> getAvailableSampleRates()
+    {
+        if(mAvailableSampleRates.isEmpty())
+        {
+            throw new IllegalStateException("Device must be started before accessing available sample rates");
+        }
+
+        return mAvailableSampleRates;
     }
 
     /**
@@ -168,413 +580,12 @@ public class AirspyHfTunerController extends USBTunerController
     }
 
     /**
-     * Sets the tuned frequency.
-     * @param frequency to set
-     * @throws SourceException if there is an error
+     * Firmware version string, available once the tuner is started.
+     * @return firmware version or null
      */
-    @Override
-    public void setTunedFrequency(long frequency) throws SourceException
+    public String getFirmwareVersion()
     {
-        double if_shift = mCurrentSampleRate.isLowIf() ? IF_SHIFT_ZIF : IF_SHIFT_LIF;
-        double adjusted_freq_hz = frequency * (1.0e9 + mCalibrationRecordPPB) * 1.0e-9;
-        int freq_khz = (int)((adjusted_freq_hz + if_shift) * 1e-3);
-        ByteBuffer buffer = ByteBuffer.allocateDirect(4);
-        buffer.putInt(freq_khz).flip();
-
-        try
-        {
-            writeData(Request.SET_FREQUENCY, buffer);
-            mTunedFrequency = frequency;
-        }
-        catch(IOException ioe)
-        {
-            mLog.info("Error setting tuned frequency to " + frequency, ioe);
-            throw new SourceException("Error setting frequency", ioe);
-        }
-
-        try
-        {
-            byte[] deltaBytes = read(Request.GET_FREQUENCY_DELTA, 0, 4);
-            int delta = ByteUtil.toInteger(deltaBytes, 0);
-
-            if(delta != 0)
-            {
-                mLog.warn("Frequency delta after setting tuned frequency [" + frequency + "] is: " + delta);
-            }
-        }
-        catch(IOException ioe)
-        {
-            mLog.error("Error reading frequency delta from Airspy HF+ tuner", ioe);
-        }
-    }
-
-    @Override
-    public double getCurrentSampleRate() throws SourceException
-    {
-        loadSampleRates();
-        return mCurrentSampleRate.getSampleRate();
-    }
-
-    /**
-     * Access the current sample rate object.
-     * @return current sample rate.
-     */
-    public AirspyHfSampleRate getCurrentAirspySampleRate()
-    {
-        return mCurrentSampleRate;
-    }
-
-    /**
-     * Sets the sample rate for the tuner.
-     * @param sampleRate to apply.
-     */
-    public void setSampleRate(AirspyHfSampleRate sampleRate) throws SourceException
-    {
-        if(sampleRate != null)
-        {
-            if(isSupportedSampleRate(sampleRate.getSampleRate()))
-            {
-                getNativeBufferFactory().setSamplesPerMillisecond((float)sampleRate.getSampleRate() / 1000.0f);
-
-                LibUsb.clearHalt(getDeviceHandle(), USB_BULK_TRANSFER_ENDPOINT);
-                int status = writeIndex(Request.SET_SAMPLE_RATE, sampleRate.getIndex());
-
-                if(status != 0)
-                {
-                    throw new SourceException("Unable to set Airspy HF sample rate to: " + sampleRate);
-                }
-
-                mFrequencyController.setSampleRate(sampleRate.getSampleRate());
-                getNativeBufferFactory().setSamplesPerMillisecond(sampleRate.getSampleRate() / 1000.0f);
-                mCurrentSampleRate = sampleRate;
-
-                //Set the frequency again to adjust for any switch between ZIF & LIF
-                setTunedFrequency(mTunedFrequency);
-            }
-        }
-    }
-
-    /**
-     * Indicates if the sample rate is supported.
-     * @param sampleRate to check
-     * @return true if the rate matches one of the available sample rates.
-     */
-    public boolean isSupportedSampleRate(int sampleRate)
-    {
-        if(mAvailableSampleRates != null && !mAvailableSampleRates.isEmpty())
-        {
-            for(AirspyHfSampleRate availableRate: mAvailableSampleRates)
-            {
-                if(availableRate.getSampleRate() == sampleRate)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Available/supported sample rates.
-     * @return available sample rates
-     * @throws IllegalStateException if the device has not yet been started
-     */
-    public List<AirspyHfSampleRate> getAvailableSampleRates()
-    {
-        if(mAvailableSampleRates == null || mAvailableSampleRates.isEmpty())
-        {
-            throw new IllegalStateException("Device must be started before accessing available sample rates");
-        }
-
-        return mAvailableSampleRates;
-    }
-
-    /**
-     * Tuner type.
-     * @return for this tuner
-     */
-    @Override
-    public TunerType getTunerType()
-    {
-        return TunerType.AIRSPY_HF_PLUS;
-    }
-
-    /**
-     * Native buffer factory for creating native buffers from USB transfer buffers
-     * @return factory
-     */
-    @Override
-    protected INativeBufferFactory getNativeBufferFactory()
-    {
-        return mNativeBufferFactory;
-    }
-
-    /**
-     * Byte size of USB transfer buffers
-     */
-    @Override
-    protected int getTransferBufferSize()
-    {
-        return BUFFER_BYTE_SIZE;
-    }
-
-    /**
-     * Implements additional device-specific start operations.
-     * @throws SourceException if there is an issue
-     */
-    @Override
-    protected void deviceStart() throws SourceException
-    {
-        int status = LibUsb.setInterfaceAltSetting(getDeviceHandle(), 0, 1);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Can't set Airspy HF interface 0 alternate setting 1 - " + LibUsb.errorName(status));
-        }
-
-        loadBoardIdAndSerialNumber();
-        loadSampleRates();
-
-        try
-        {
-            loadDeviceConfig();
-        }
-        catch(IOException ioe)
-        {
-            mLog.info("Error getting device configuration and calibration info", ioe);
-        }
-    }
-
-    /**
-     * Implements additional device-specific stop operations.
-     * @throws SourceException if there is an issue
-     */
-    @Override
-    protected void deviceStop()
-    {
-        try
-        {
-            setReceiverMode(false);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error setting Airspy HF tuner receiver mode to false for device stop.");
-        }
-    }
-
-    /**
-     * Preparation operations for starting sample stream.
-     */
-    @Override
-    protected void prepareStreaming()
-    {
-        try
-        {
-            setReceiverMode(false);
-        }
-        catch(SourceException ioe)
-        {
-            mLog.error("Error setting Airspy HF tuner receiver mode to false to reset before we start streaming.");
-            setErrorMessage("Unable to set receiver mode off");
-            return;
-        }
-
-        LibUsb.clearHalt(getDeviceHandle(), USB_BULK_TRANSFER_ENDPOINT);
-
-        try
-        {
-            setReceiverMode(true);
-        }
-        catch(SourceException ioe)
-        {
-            mLog.error("Error setting Airspy HF tuner receiver mode to true to start streaming.");
-            setErrorMessage("Unable to set receiver mode on");
-        }
-    }
-
-    /**
-     * Cleanup operations for shutting down sample stream.
-     */
-    @Override
-    protected void streamingCleanup()
-    {
-        try
-        {
-            setReceiverMode(false);
-        }
-        catch(SourceException ioe)
-        {
-            mLog.error("Error setting Airspy HF tuner receiver mode to false to stop streaming.");
-        }
-    }
-
-    /**
-     * LibUsb control transfer to request data from the tuner.
-     * @param request to submit
-     * @param count parameter associated with the request
-     * @param bufferLength is the byte size of the buffer to receive the read data.
-     * @return byte array containing the response value
-     * @throws IOException if there is an error or the request cannot be completed.
-     */
-    private byte[] read(Request request, int count, int bufferLength) throws IOException
-    {
-        //Allocate a native/direct byte buffer outside of the JVM
-        ByteBuffer buffer = ByteBuffer.allocateDirect(bufferLength);
-        int status = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_IN, request.getRequest(), (short)0,
-                (short)count, buffer, 0);
-
-        if(status < 0)
-        {
-            throw new IOException("Unable to complete read request [" + request.name() + "] - libusb status [" + status +
-                    "] - " + LibUsb.errorName(status));
-        }
-
-        byte[] result = new byte[bufferLength];
-        buffer.get(result);
-        return result;
-    }
-
-    /**
-     * LibUsb control transfer to write data to the tuner with a value of zero and an index of zero.
-     * @param request to submit
-     * @param dataBuffer to write
-     * @return direct byte buffer containing the value(s) to write in little-endian format
-     * @throws IOException if there is an error or the request cannot be completed.
-     */
-    private void writeData(Request request, ByteBuffer dataBuffer) throws IOException
-    {
-        if(!dataBuffer.isDirect())
-        {
-            throw new IllegalArgumentException("Cannot write - must use a direct/native byte buffer");
-        }
-
-        int status = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_OUT, request.getRequest(), (short)0, (short)0,
-                dataBuffer, 0);
-
-        if(status < 0)
-        {
-            throw new IOException("Unable to complete write request [" + request.name() + "] - libusb status [" +
-                    status + "] - " + LibUsb.errorName(status));
-        }
-    }
-
-    /**
-     * Writes the request with the specified value using an index of zero.
-     * @param request type
-     * @param value value to write
-     * @return status code of the write operation.
-     */
-    private int writeValue(Request request, short value)
-    {
-        return LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_OUT, request.getRequest(), value, (short)0,
-                ByteBuffer.allocateDirect(0), 0);
-    }
-
-    /**
-     * Writes the request with the specified index with a value of zero.
-     * @param request type
-     * @param index to write
-     * @return status code of the write operation.
-     */
-    private int writeIndex(Request request, short index)
-    {
-        return LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_OUT, request.getRequest(), (short)0, index,
-                ByteBuffer.allocateDirect(0), 0);
-    }
-
-    /**
-     * Sets the receiver mode to start/stop the sample stream
-     * @param running true to start and false to stop.
-     * @throws SourceException if there is an error
-     */
-    private void setReceiverMode(boolean running) throws SourceException
-    {
-        int status = writeValue(Request.RECEIVER_MODE, running ? (short)1 : (short)0);
-
-        if(status != LibUsb.SUCCESS)
-        {
-            throw new SourceException("Unable to set receiver mode started to " + running + " - status [" + status +
-                    "] " + LibUsb.errorName(status));
-        }
-   }
-
-    /**
-     * Reads the board ID and serial number from the device.
-     * @throws IOException if there is an issue
-     */
-   private void loadBoardIdAndSerialNumber()
-   {
-       try
-       {
-           byte[] bytes = read(Request.GET_SERIAL_NUMBER_BOARD_ID, 0, 20);
-
-           int boardId = ByteUtil.toInteger(bytes, 0);
-           mBoardId = BoardId.fromValue(boardId);
-
-           int serial1 = ByteUtil.toInteger(bytes, 4);
-           int serial2 = ByteUtil.toInteger(bytes, 8);
-           int serial3 = ByteUtil.toInteger(bytes, 12);
-           int serial4 = ByteUtil.toInteger(bytes, 16);
-
-           StringBuilder sb = new StringBuilder();
-           sb.append(Integer.toHexString(serial1));
-           sb.append(Integer.toHexString(serial2));
-           sb.append(Integer.toHexString(serial3));
-           sb.append(Integer.toHexString(serial4));
-           mSerialNumber = sb.toString().toUpperCase();
-       }
-       catch(IOException ioe)
-       {
-            mLog.error("Error reading board ID and serial number from device", ioe);
-            mBoardId = BoardId.UNKNOWN;
-            mSerialNumber = "UNKNOWN";
-       }
-   }
-
-    /**
-     * Loads the sample rates and LIF/ZIF modes from the tuner's firmware or uses the default sample rate of 768 kHz.
-     */
-    private void loadSampleRates()
-    {
-        if(mAvailableSampleRates == null)
-        {
-            mAvailableSampleRates = new ArrayList<>();
-
-            try
-            {
-                //Read the first 4 bytes to get the count of sample rates.
-                byte[] bytes = read(Request.GET_SAMPLE_RATES, 0, 4);
-
-                int count = ByteUtil.toInteger(bytes, 0);
-
-                if(count > 0)
-                {
-                    //Read the count (again) plus the number of 4-byte integer values.
-                    bytes = read(Request.GET_SAMPLE_RATES, count, count * 4);
-
-                    //Read the architectures array.
-                    byte[] architectures = read(Request.GET_SAMPLE_RATE_ARCHITECTURES, count, count);
-
-                    for(int x = 0; x < count; x++)
-                    {
-                        int sampleRate = ByteUtil.toInteger(bytes, (x * 4));
-                        boolean lowIf = architectures[x] == (byte)0x1;
-                        mAvailableSampleRates.add(new AirspyHfSampleRate(x, sampleRate, lowIf));
-                    }
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error reading sample rates from Airspy HF tuner", e);
-            }
-
-            //If we can't read sample rates from tuner, use the default sample rate.
-            if(mAvailableSampleRates.isEmpty())
-            {
-                mAvailableSampleRates.add(DEFAULT_SAMPLE_RATE);
-            }
-        }
+        return mFirmwareVersion;
     }
 
     /**
@@ -587,19 +598,13 @@ public class AirspyHfTunerController extends USBTunerController
     }
 
     /**
-     * Sets the Automatic Gain Control (AGC)
+     * Sets the Automatic Gain Control (AGC).  The attenuation setting applies when the AGC is off.
      * @param enabled true to turn on AGC or false to turn off AGC
-     * @throws IOException if there is an error
+     * @throws SourceException if there is an error
      */
-    public void setAgc(boolean enabled) throws IOException
+    public void setAgc(boolean enabled) throws SourceException
     {
-        int status = writeValue(Request.SET_HF_AGC, enabled ? (short)1 : (short)0);
-
-        if(status != 0)
-        {
-            throw new IOException("Unable to set AGC enabled [" + enabled + "] - status code: " + status);
-        }
-
+        execute(device -> device.setHfAgc(enabled));
         mAgcEnabled = enabled;
     }
 
@@ -615,17 +620,11 @@ public class AirspyHfTunerController extends USBTunerController
     /**
      * Sets the Low Noise Amplifier (LNA)
      * @param enabled true to turn on or false to turn off
-     * @throws IOException if there is an error
+     * @throws SourceException if there is an error
      */
-    public void setLna(boolean enabled) throws IOException
+    public void setLna(boolean enabled) throws SourceException
     {
-        int status = writeValue(Request.SET_HF_LNA, enabled ? (short)1 : (short)0);
-
-        if(status != 0)
-        {
-            throw new IOException("Unable to set LNA enabled [" + enabled + "] - status code: " + status);
-        }
-
+        execute(device -> device.setHfLna(enabled));
         mLnaEnabled = enabled;
     }
 
@@ -638,31 +637,47 @@ public class AirspyHfTunerController extends USBTunerController
     }
 
     /**
-     * Sets the attenuation value.
+     * Sets the attenuation value, which applies when the AGC is off.
      * @param attenuation value to set: 0 - 8.  Increases attenuation (ie decrease gain) by 6dB with each step.
-     * @throws IOException if there is an error
+     * @throws SourceException if there is an error
      */
-    public void setAttenuation(Attenuation attenuation) throws IOException
+    public void setAttenuation(Attenuation attenuation) throws SourceException
     {
-        int status = writeValue(Request.SET_HF_ATT, attenuation.getValue());
-
-        if(status != 0)
-        {
-            throw new IOException("Unable to set attenuation [" + attenuation + "] - status code: " + status);
-        }
+        execute(device -> device.setAttenuationStep(attenuation.getValue()));
         mAttenuation = attenuation;
     }
 
     /**
-     * Reads the device configuration from the tuner
-     * @return byte array with configuration contents.
+     * Indicates if the device firmware supports a bias-T, available once the tuner is started.
+     * @return true if supported
      */
-    private void loadDeviceConfig() throws IOException
+    public boolean isBiasTSupported()
     {
-        byte[] bytes = read(Request.CONFIG_READ, 0, 256);
-        IntBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-        mCalibrationRecordMagicNumber = buffer.get(0);
-        mCalibrationRecordPPB = buffer.get(1);
-        mCalibrationRecordVctcxo = buffer.get(2);
+        return mBiasTSupported;
+    }
+
+    /**
+     * Indicates if the Bias-T power output is enabled.
+     * @return enabled state
+     */
+    public boolean getBiasT()
+    {
+        return mBiasTEnabled;
+    }
+
+    /**
+     * Enables/disables the Bias-T (RF bias tee) power output for active antennas
+     * @param enabled true to enable Bias-T, false to disable
+     * @throws SourceException if the device doesn't support a bias-T or there is an error
+     */
+    public void setBiasT(boolean enabled) throws SourceException
+    {
+        if(!mBiasTSupported)
+        {
+            throw new SourceException("Airspy HF firmware doesn't support bias-T");
+        }
+
+        execute(device -> device.setBiasTee(enabled ? 1 : 0));
+        mBiasTEnabled = enabled;
     }
 }

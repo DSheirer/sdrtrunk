@@ -24,7 +24,7 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerController;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class Rsp1bTunerController extends RspTunerController<IControlRsp1b>
             {
                 getControlRsp().setAgcMode(rtc.getAgcMode());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
             }
@@ -72,7 +72,7 @@ public class Rsp1bTunerController extends RspTunerController<IControlRsp1b>
             {
                 getControlRsp().setBiasT(rtc.isBiasT());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP1B bias-T enabled to " + rtc.isBiasT());
             }
@@ -81,7 +81,7 @@ public class Rsp1bTunerController extends RspTunerController<IControlRsp1b>
             {
                 getControlRsp().setRfNotch(rtc.isRfNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP1B RF Notch enabled to " + rtc.isRfNotch());
             }
@@ -90,7 +90,7 @@ public class Rsp1bTunerController extends RspTunerController<IControlRsp1b>
             {
                 getControlRsp().setRfDabNotch(rtc.isRfDabNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP1B RF DAB Notch enabled to " + rtc.isRfDabNotch());
             }

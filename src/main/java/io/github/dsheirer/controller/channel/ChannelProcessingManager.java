@@ -154,6 +154,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Channels that currently have a processing chain, including temporary traffic channels.
+     */
+    public List<Channel> getProcessingChannels()
+    {
+        return new ArrayList<>(mProcessingChainsMap.keySet());
+    }
+
+    /**
      * Returns the current processing chain associated with the channel, or
      * null if a processing chain is not currently setup for the channel
      */
@@ -416,6 +424,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
 
             throw new ChannelException("No Tuner Available");
+        }
+
+        if(source instanceof TunerChannelSource tunerChannelSource)
+        {
+            tunerChannelSource.setStartTimestamp(request.getStartTimestamp());
         }
 
         ProcessingChain processingChain = new ProcessingChain(channel, mAliasModel);

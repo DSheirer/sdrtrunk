@@ -20,34 +20,46 @@
 package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
+import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.rrapi.RadioReferenceException;
+import io.github.dsheirer.rrapi.RadioReferenceService;
+import io.github.dsheirer.rrapi.type.AgencyInfo;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.Country;
 import io.github.dsheirer.rrapi.type.CountryInfo;
 import io.github.dsheirer.rrapi.type.County;
 import io.github.dsheirer.rrapi.type.CountyInfo;
+import io.github.dsheirer.rrapi.type.Site;
+import io.github.dsheirer.rrapi.type.SystemInformation;
+import io.github.dsheirer.service.radioreference.FrequencyCandidate;
 import io.github.dsheirer.rrapi.type.State;
 import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
+import io.github.dsheirer.service.radioreference.UserLocation;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
@@ -57,7 +69,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class RadioReferenceEditor extends BorderPane implements Consumer<AuthorizationInformation>
@@ -68,6 +83,10 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private PlaylistManager mPlaylistManager;
     private VBox mTopBox;
     private HBox mCredentialsBox;
+    private HBox mLocationBox;
+    private Label mLocationText;
+    private final AtomicLong mLocationRequest = new AtomicLong();
+    private volatile String mLocationKey;
     private Label mRRStatusText;
     private TextField mUserNameText;
     private TextField mAccountExpiresText;
@@ -113,20 +132,41 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             {
                 refreshCountries();
             }
+
+            //The preferred county fallback location needs a premium login
+            refreshLocation();
         });
+
+        refreshLocation();
+
+        //Updates the location when it's changed elsewhere, e.g. from the map
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Refreshes the location text when the location or the preferred county changes
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.RADIO_REFERENCE)
+        {
+            RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+            String key = preference.getLocation() + "/" + preference.getPreferredCountyId();
+
+            if(!key.equals(mLocationKey))
+            {
+                mLocationKey = key;
+                Platform.runLater(this::refreshLocation);
+            }
+        }
     }
 
     private void login()
     {
-        if(mUserPreferences.getRadioReferencePreference().hasStoredCredentials())
-        {
-            AuthorizationInformation credentials = mUserPreferences.getRadioReferencePreference().getAuthorizationInformation();
-
-            if(credentials != null)
-            {
-                ThreadPool.CACHED.execute(() -> accept(credentials));
-            }
-        }
+        //Logs in on a background thread, unless the spectral display has already logged in
+        mRadioReference.loginWithStoredCredentials();
     }
 
     /**
@@ -137,8 +177,6 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     {
         getCountryComboBox().getItems().clear();
 
-        final int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
-
         ThreadPool.CACHED.execute(() -> {
             try
             {
@@ -146,6 +184,8 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
                 Platform.runLater(() -> {
                     getCountryComboBox().getItems().addAll(countries);
+                    //Read when the list arrives, so a view request made while loading is honored
+                    int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
 
                     if(preferredCountryId >= 0)
                     {
@@ -166,6 +206,342 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                 Platform.runLater(() -> new RadioReferenceUnavailableAlert(getCountryComboBox()).showAndWait());
             }
         });
+    }
+
+    /**
+     * Where a view request's system or frequency is listed in the editor
+     * @param countryId of the country
+     * @param stateId of the state
+     * @param countyId of the county, or 0 for a state level listing
+     * @param level of the listing: COUNTY or STATE
+     * @param systemId of the trunked system, or null for an agency
+     * @param siteId of the site to select, or -1
+     * @param agencyId of the agency, or the negative county id for a county's own frequencies, or null for a system
+     * @param frequency to select in the agency, or null
+     */
+    private record ViewTarget(int countryId, int stateId, int countyId, Level level, Integer systemId, int siteId,
+                              Integer agencyId, AgencyFrequencyEditor.FrequencyTarget frequency)
+    {
+    }
+
+    /**
+     * Shows the request's trunked system site or conventional frequency: selects its country, state and county, the
+     * tab that lists it, and the system and site or the agency and frequency.  Finds where it's listed in the
+     * background.
+     */
+    public void view(ViewRadioReferenceRequest request)
+    {
+        ThreadPool.CACHED.execute(() -> {
+            try
+            {
+                ViewTarget target = resolve(request);
+
+                Platform.runLater(() -> {
+                    if(target == null)
+                    {
+                        showViewError("Radio Reference doesn't list where this " +
+                            (request.getSystemId() != null ? "system" : "frequency") + " is listed.");
+                    }
+                    else
+                    {
+                        navigate(target);
+                    }
+                });
+            }
+            catch(RadioReferenceException rre)
+            {
+                mLog.error("Error finding radio reference listing to view - " + rre.getMessage());
+                Platform.runLater(() -> new RadioReferenceUnavailableAlert(getTabPane()).showAndWait());
+            }
+        });
+    }
+
+    /**
+     * Finds where the request's system or frequency is listed.  Call from a background thread.
+     * @return target, or null when it can't be found
+     */
+    private ViewTarget resolve(ViewRadioReferenceRequest request) throws RadioReferenceException
+    {
+        RadioReferenceService service = mRadioReference.getService();
+
+        if(request.getSystemId() != null)
+        {
+            int systemId = request.getSystemId();
+            int siteId = request.getSiteId() != null ? request.getSiteId() : -1;
+            //The site's county first, then the system's counties, then its states
+            Set<Integer> countyIds = new LinkedHashSet<>();
+
+            for(Site site: nonNull(service.getSites(systemId)))
+            {
+                if(site.getSiteId() == siteId && isCounty(site.getCountyId()))
+                {
+                    countyIds.add(site.getCountyId());
+                }
+            }
+
+            SystemInformation systemInformation = service.getSystemInformation(systemId);
+
+            if(systemInformation != null)
+            {
+                for(County county: nonNull(systemInformation.getCounties()))
+                {
+                    if(isCounty(county.getCountyId()))
+                    {
+                        countyIds.add(county.getCountyId());
+                    }
+                }
+            }
+
+            //Limit the requests for systems that span many counties
+            int checked = 0;
+
+            for(Integer countyId: countyIds)
+            {
+                if(checked++ >= 10)
+                {
+                    break;
+                }
+
+                CountyInfo countyInfo = service.getCountyInfo(countyId);
+
+                if(countyInfo != null && nonNull(countyInfo.getSystems()).stream()
+                    .anyMatch(system -> system.getSystemId() == systemId))
+                {
+                    return new ViewTarget(getCountryId(service, countyInfo.getStateId()), countyInfo.getStateId(),
+                        countyId, Level.COUNTY, systemId, siteId, null, null);
+                }
+            }
+
+            if(systemInformation != null)
+            {
+                for(State state: nonNull(systemInformation.getStates()))
+                {
+                    StateInfo stateInfo = service.getStateInfo(state.getStateId());
+
+                    if(stateInfo != null && nonNull(stateInfo.getSystems()).stream()
+                        .anyMatch(system -> system.getSystemId() == systemId))
+                    {
+                        return new ViewTarget(getCountryId(service, state.getStateId()), state.getStateId(), 0,
+                            Level.STATE, systemId, siteId, null, null);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        String key = request.getSourceKey();
+        AgencyFrequencyEditor.FrequencyTarget frequency = getFrequencyTarget(request.getCandidate());
+
+        if(key != null && key.startsWith("county:"))
+        {
+            int countyId = Integer.parseInt(key.substring("county:".length()));
+            CountyInfo countyInfo = service.getCountyInfo(countyId);
+
+            if(countyInfo != null)
+            {
+                return new ViewTarget(getCountryId(service, countyInfo.getStateId()), countyInfo.getStateId(),
+                    countyId, Level.COUNTY, null, -1, -countyId, frequency);
+            }
+        }
+        else if(key != null && key.startsWith("agency:"))
+        {
+            int agencyId = Integer.parseInt(key.substring("agency:".length()));
+            AgencyInfo agencyInfo = service.getAgencyInfo(agencyId);
+
+            if(agencyInfo != null && isCounty(agencyInfo.getCountyId()))
+            {
+                CountyInfo countyInfo = service.getCountyInfo(agencyInfo.getCountyId());
+
+                if(countyInfo != null && nonNull(countyInfo.getAgencies()).stream()
+                    .anyMatch(agency -> agency.getAgencyId() == agencyId))
+                {
+                    return new ViewTarget(getCountryId(service, countyInfo.getStateId()), countyInfo.getStateId(),
+                        countyInfo.getCountyId(), Level.COUNTY, null, -1, agencyId, frequency);
+                }
+            }
+
+            if(agencyInfo != null && agencyInfo.getStateId() > 0)
+            {
+                StateInfo stateInfo = service.getStateInfo(agencyInfo.getStateId());
+
+                if(stateInfo != null && nonNull(stateInfo.getAgencies()).stream()
+                    .anyMatch(agency -> agency.getAgencyId() == agencyId))
+                {
+                    return new ViewTarget(getCountryId(service, stateInfo.getStateId()), stateInfo.getStateId(), 0,
+                        Level.STATE, null, -1, agencyId, frequency);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Frequency to select for the candidate: its source is the owner, category and subcategory
+     */
+    private static AgencyFrequencyEditor.FrequencyTarget getFrequencyTarget(FrequencyCandidate candidate)
+    {
+        if(candidate == null)
+        {
+            return null;
+        }
+
+        String[] source = candidate.source() != null ? candidate.source().split(" › ") : new String[0];
+        String category = source.length >= 3 ? source[source.length - 2] : null;
+        String subCategory = source.length >= 3 ? source[source.length - 1] : null;
+        return new AgencyFrequencyEditor.FrequencyTarget(category, subCategory, candidate.frequencyHz(),
+            candidate.title(), candidate.alphaTag());
+    }
+
+    /**
+     * Country of the state: the preferred country when it has the state, or else the first country that has it
+     */
+    private int getCountryId(RadioReferenceService service, int stateId) throws RadioReferenceException
+    {
+        int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
+        List<Integer> countryIds = new ArrayList<>();
+
+        if(preferredCountryId > 0)
+        {
+            countryIds.add(preferredCountryId);
+        }
+
+        for(Country country: nonNull(service.getCountries()))
+        {
+            if(country.getCountryId() != preferredCountryId)
+            {
+                countryIds.add(country.getCountryId());
+            }
+        }
+
+        for(Integer countryId: countryIds)
+        {
+            CountryInfo countryInfo = service.getCountryInfo(countryId);
+
+            if(countryInfo != null && nonNull(countryInfo.getStates()).stream()
+                .anyMatch(state -> state.getStateId() == stateId))
+            {
+                return countryId;
+            }
+        }
+
+        return preferredCountryId;
+    }
+
+    /**
+     * Indicates if the county id is a real county.  Temporary sites in an unknown county have county id 99999.
+     */
+    private static boolean isCounty(int countyId)
+    {
+        return countyId > 0 && countyId != 99999;
+    }
+
+    private static <T> List<T> nonNull(List<T> list)
+    {
+        return list != null ? list : List.of();
+    }
+
+    /**
+     * Selects the target's country, state and county, its tab, and its system or agency.  Selecting a country, state
+     * or county loads the lists below it, which select the preferred ids set here, so only the first selection that
+     * changes is made here.
+     */
+    private void navigate(ViewTarget target)
+    {
+        RadioReferencePreference preference = mUserPreferences.getRadioReferencePreference();
+        preference.setPreferredCountryId(target.countryId());
+        preference.setPreferredStateId(target.stateId());
+
+        if(target.countyId() > 0)
+        {
+            preference.setPreferredCountyId(target.countyId());
+        }
+
+        SystemEditor systemEditor = target.level() == Level.COUNTY ? getCountySystemEditor() : getStateSystemEditor();
+        AgencyEditor agencyEditor = target.level() == Level.COUNTY ? getCountyAgencyEditor() : getStateAgencyEditor();
+
+        if(target.systemId() != null)
+        {
+            systemEditor.prepareView(target.systemId(), target.siteId());
+            getTabPane().getSelectionModel().select(target.level() == Level.COUNTY ? getCountySystemTab() :
+                getStateSystemTab());
+        }
+        else
+        {
+            agencyEditor.prepareView(target.agencyId(), target.frequency());
+            getTabPane().getSelectionModel().select(target.level() == Level.COUNTY ? getCountyAgencyTab() :
+                getStateAgencyTab());
+        }
+
+        //Lists that are still loading select the preferred ids when they arrive
+        Country country = getCountryComboBox().getItems().stream()
+            .filter(item -> item.getCountryId() == target.countryId()).findFirst().orElse(null);
+
+        if(country == null)
+        {
+            return;
+        }
+
+        if(getCountryComboBox().getValue() != country)
+        {
+            getCountryComboBox().getSelectionModel().select(country);
+            return;
+        }
+
+        State state = getStateComboBox().getItems().stream()
+            .filter(item -> item.getStateId() == target.stateId()).findFirst().orElse(null);
+
+        if(state == null)
+        {
+            return;
+        }
+
+        if(getStateComboBox().getValue() != state)
+        {
+            getStateComboBox().getSelectionModel().select(state);
+            return;
+        }
+
+        if(target.level() == Level.COUNTY)
+        {
+            County county = getCountyComboBox().getItems().stream()
+                .filter(item -> item.getCountyId() == target.countyId()).findFirst().orElse(null);
+
+            if(county == null)
+            {
+                return;
+            }
+
+            if(getCountyComboBox().getValue() != county)
+            {
+                getCountyComboBox().getSelectionModel().select(county);
+                return;
+            }
+        }
+
+        boolean listed = target.systemId() != null ? systemEditor.view(target.systemId(), target.siteId()) :
+            agencyEditor.view(target.agencyId(), target.frequency());
+
+        if(!listed)
+        {
+            showViewError("The Radio Reference tab doesn't list this " + (target.systemId() != null ? "system" :
+                "agency") + ".");
+        }
+    }
+
+    private void showViewError(String message)
+    {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
+        alert.setTitle("Radio Reference");
+        alert.setHeaderText("Can't show the Radio Reference listing");
+
+        if(getScene() != null)
+        {
+            alert.initOwner(getScene().getWindow());
+        }
+
+        alert.show();
     }
 
     private TabPane getTabPane()
@@ -354,7 +730,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mTopBox = new VBox();
             mTopBox.setSpacing(5);
             mTopBox.setPadding(new Insets(10,10,10,10));
-            mTopBox.getChildren().addAll(getCredentialsBox(), getComboBoxPane());
+            mTopBox.getChildren().addAll(getCredentialsBox(), getLocationBox(), getComboBoxPane());
         }
 
         return mTopBox;
@@ -377,6 +753,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getColumnConstraints().addAll(column1, column2, column3);
 
             Label countryLabel = new Label("Country");
+            countryLabel.setLabelFor(getCountryComboBox());
             GridPane.setConstraints(countryLabel, 0, 0);
             mComboBoxPane.getChildren().add(countryLabel);
 
@@ -385,6 +762,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getChildren().add(getCountryComboBox());
 
             Label stateLabel = new Label("State");
+            stateLabel.setLabelFor(getStateComboBox());
             GridPane.setConstraints(stateLabel, 1, 0);
             mComboBoxPane.getChildren().add(stateLabel);
 
@@ -393,6 +771,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mComboBoxPane.getChildren().add(getStateComboBox());
 
             Label countyLabel = new Label("County");
+            countyLabel.setLabelFor(getCountyComboBox());
             GridPane.setConstraints(countyLabel, 2, 0);
             mComboBoxPane.getChildren().add(countyLabel);
 
@@ -413,13 +792,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mCredentialsBox = new HBox();
             mCredentialsBox.setAlignment(Pos.CENTER_RIGHT);
             mCredentialsBox.setSpacing(5.0);
-            Region leftFiller = new Region();
-            HBox.setHgrow(leftFiller, Priority.ALWAYS);
-            mCredentialsBox.getChildren().add(leftFiller);
             mCredentialsBox.getChildren().add(getRRPremiumReqText());
-            Region rightFiller = new Region();
-            HBox.setHgrow(rightFiller, Priority.ALWAYS);
-            mCredentialsBox.getChildren().add(rightFiller);
             mCredentialsBox.getChildren().add(new Label("User Name:"));
             mCredentialsBox.getChildren().add(getUserNameText());
             mCredentialsBox.getChildren().add(new Label("Expires:"));
@@ -443,8 +816,8 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Bindings.and(
                             mRadioReference.availableProperty(),
                             mRadioReference.premiumAccountProperty().not()));
-            mRRStatusText.setTextFill(Color.ORANGERED);
-            mRRStatusText.setStyle("-fx-font-weight: bold;"); // I guess
+            //Inline style, because the theme stylesheets override a label's text fill
+            mRRStatusText.setStyle("-fx-text-fill: orangered; -fx-font-weight: bold;");
         }
 
         return mRRStatusText;
@@ -568,8 +941,6 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         if(country != null)
         {
-            int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
-
             ThreadPool.CACHED.execute(() -> {
                 try
                 {
@@ -578,6 +949,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Platform.runLater(() -> {
                         getNationalAgencyEditor().setAgencies(countryInfo.getAgencies());
                         getStateComboBox().getItems().addAll(countryInfo.getStates());
+                        int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
 
                         for(State state: mStateComboBox.getItems())
                         {
@@ -624,8 +996,6 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         clearEditors(Level.STATE);
         getCountyComboBox().getItems().clear();
 
-        int preferredCountyId = mUserPreferences.getRadioReferencePreference().getPreferredCountyId();
-
         if(state != null)
         {
             ThreadPool.CACHED.execute(() -> {
@@ -637,6 +1007,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                         getStateAgencyEditor().setAgencies(stateInfo.getAgencies());
                         getStateSystemEditor().setSystems(stateInfo.getSystems());
                         getCountyComboBox().getItems().addAll(stateInfo.getCounties());
+                        int preferredCountyId = mUserPreferences.getRadioReferencePreference().getPreferredCountyId();
 
                         for(County county: mCountyComboBox.getItems())
                         {
@@ -722,11 +1093,117 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                 if(selected != null)
                 {
                     mUserPreferences.getRadioReferencePreference().setPreferredCountyId(selected.getCountyId());
+                    refreshLocation();
                 }
             });
         }
 
         return mCountyComboBox;
+    }
+
+    /**
+     * Row that shows the user's location and a button to change it
+     */
+    private HBox getLocationBox()
+    {
+        if(mLocationBox == null)
+        {
+            mLocationBox = new HBox();
+            mLocationBox.setAlignment(Pos.CENTER_LEFT);
+            mLocationBox.setSpacing(5.0);
+
+            Button setLocationButton = new Button("My Location:");
+            setLocationButton.setOnAction(event -> {
+                LocationDialog dialog = new LocationDialog(mRadioReference,
+                    mUserPreferences.getRadioReferencePreference().getLocation(), getScene().getWindow());
+                //The map follows the location through the preference update
+                dialog.showAndWait().ifPresent(result -> {
+                    mUserPreferences.getRadioReferencePreference().setLocation(result.location());
+                    refreshLocation();
+                });
+            });
+
+            mLocationBox.getChildren().addAll(setLocationButton, getLocationText());
+        }
+
+        return mLocationBox;
+    }
+
+    private Label getLocationText()
+    {
+        if(mLocationText == null)
+        {
+            mLocationText = new Label();
+            mLocationText.setTooltip(new Tooltip("Your location is shown on the map and used to find nearby Radio " +
+                "Reference frequencies.  When it isn't set, the center of the selected county is used."));
+        }
+
+        return mLocationText;
+    }
+
+    /**
+     * Updates the location text: the user's location, or else the preferred county fallback, which is looked up in
+     * the background.
+     */
+    private void refreshLocation()
+    {
+        long request = mLocationRequest.incrementAndGet();
+        RadioReferencePreference.Location location = mUserPreferences.getRadioReferencePreference().getLocation();
+
+        if(location != null)
+        {
+            getLocationText().setText(location.describe());
+            return;
+        }
+
+        String notRanked = "Not set";
+
+        if(mUserPreferences.getRadioReferencePreference().getPreferredCountyId() <= 0 ||
+            !mRadioReference.premiumAccountProperty().get())
+        {
+            getLocationText().setText(notRanked);
+            return;
+        }
+
+        getLocationText().setText("Not set");
+
+        ThreadPool.CACHED.execute(() -> {
+            String text;
+
+            try
+            {
+                UserLocation userLocation = mRadioReference.getUserLocation();
+
+                if(userLocation == null)
+                {
+                    text = notRanked;
+                }
+                else if(userLocation.source() == UserLocation.Source.PREFERRED_COUNTY)
+                {
+                    text = "Not set - using the center of " + userLocation.description();
+                }
+                else
+                {
+                    //Set in the meantime - a newer refresh shows it
+                    return;
+                }
+            }
+            catch(RadioReferenceException rre)
+            {
+                mLog.warn("Unable to look up the preferred county location - " + rre.getMessage());
+                text = "Not set - unable to look up the selected county";
+            }
+
+            final String locationText = text;
+
+            Platform.runLater(() -> {
+                //A newer refresh supersedes this one
+                if(mLocationRequest.get() == request)
+                {
+                    getLocationText().setText(locationText);
+                }
+            });
+        });
     }
 
 

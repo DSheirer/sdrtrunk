@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.gui.playlist.decoder;
 
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
@@ -121,6 +122,7 @@ public class AuxDecoderConfigurationEditor extends Editor<AuxDecodeConfiguration
             getChildren().add(getToggleSwitch());
 
             Label label = new Label(mDecoderType.getDisplayString());
+            label.setLabelFor(getToggleSwitch());
             GridPane.setHalignment(label, HPos.LEFT);
             GridPane.setConstraints(label, 1, 0);
             getChildren().add(label);
@@ -130,7 +132,7 @@ public class AuxDecoderConfigurationEditor extends Editor<AuxDecodeConfiguration
         {
             if(mToggleSwitch == null)
             {
-                mToggleSwitch = new ToggleSwitch();
+                mToggleSwitch = new AccessibleToggleSwitch();
                 mToggleSwitch.setDisable(true);
                 mToggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
             }

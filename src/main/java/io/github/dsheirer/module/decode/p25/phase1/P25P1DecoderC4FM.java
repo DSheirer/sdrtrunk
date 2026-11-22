@@ -23,21 +23,15 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFactory;
-import io.github.dsheirer.dsp.psk.demod.DifferentialDemodulatorFloat;
+import io.github.dsheirer.dsp.fm.FMDiscriminatorReliability;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
-import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessageWithLinkControl;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 import io.github.dsheirer.preference.UserPreferences;
@@ -49,12 +43,11 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * As a child of the FeedbackDecoder, this decoder provides periodic PLL measurements to the tuner for automatic PPM
  * correction.  It also provides a stream of demodulated soft symbols (in radians) for display to the user.
+ *
+ * Soft decision decoding is weighted by each soft symbol's reliability (see FMDiscriminatorReliability), calculated
+ * from the power of the complex samples spanned by the receive filter.
  */
 public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProvider, IComplexSamplesListener,
         ISourceEventListener, Listener<ComplexSamples>
@@ -74,18 +70,25 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderC4FM.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
     private static final int SYMBOL_RATE = 4800;
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
+    //TIA-102.BAAA C4FM transmit raised cosine filter roll-off
+    private static final double RECEIVE_FILTER_ALPHA = 0.2;
+    //Band limited integrate and dump receive filter settings.  Noise injection testing against P25 C4FM recordings:
+    //stopband starts of 3300 - 4000 Hz perform similarly, a 5-symbol span is too short, and 12 symbols adds nothing.
+    private static final double RECEIVE_FILTER_STOP_BAND_START = 3600.0; //Hertz
+    private static final int RECEIVE_FILTER_SYMBOL_SPAN = 8;
+    private static final double BASEBAND_FILTER_PASS_BAND = 5200.0; //Hertz
+    private static final double BASEBAND_FILTER_STOP_BAND = 6500.0; //Hertz
 
-    private final P25P1DemodulatorC4FM mSymbolProcessor;
+    private final P25P1SymbolProcessorC4FM mSymbolProcessor;
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
-    private DifferentialDemodulatorFloat mDemodulator;
+    private IDemodulator mDemodulator;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
-    private IRealFilter mPulseShapingFilterI;
-    private IRealFilter mPulseShapingFilterQ;
+    private IRealFilter mReceiveFilter;
+    private FMDiscriminatorReliability mReliability;
 
     @Override
     public DecoderType getDecoderType()
@@ -96,7 +99,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     public P25P1DecoderC4FM()
     {
         mMessageProcessor.setMessageListener(getMessageListener());
-        mSymbolProcessor = new P25P1DemodulatorC4FM(mMessageFramer, this);
+        mSymbolProcessor = new P25P1SymbolProcessorC4FM(this, mMessageFramer);
     }
 
     @Override
@@ -111,18 +114,20 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
      */
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= SYMBOL_RATE * 2)
+        float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
+
+        if(samplesPerSymbol <= 4.0f)
         {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
-                    SYMBOL_RATE + " symbol rate)");
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be at least " + (SYMBOL_RATE * 4) + " Hz");
         }
 
         int decimation = 1;
 
-        //Identify decimation that gets us as close to 4.0 Samples Per Symbol as possible (19.2 kHz)
-        while((sampleRate / decimation) >= 38400)
+        //Identify decimation that gets us as close to 5.0 Samples Per Symbol as possible
+        while(samplesPerSymbol >= 10.0)
         {
             decimation *= 2;
+            samplesPerSymbol /= 2;
         }
 
         mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
@@ -133,20 +138,43 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        int symbolLength = 16;
-        float rrcAlpha = 0.2f;
+        //Receive filter: integrate and dump (sinc) response across the signal band with a stopband above the signal band
+        //to reject FM discriminator noise that an integrate and dump filter's sidelobes would otherwise pass.
+        float[] receiveFilterTaps = FilterFactory.getBandLimitedIntegrateAndDump(decimatedSampleRate, SYMBOL_RATE,
+                RECEIVE_FILTER_ALPHA, RECEIVE_FILTER_STOP_BAND_START, RECEIVE_FILTER_SYMBOL_SPAN);
+        mReceiveFilter = new RealFIRFilter(receiveFilterTaps);
+        mReliability = new FMDiscriminatorReliability(receiveFilterTaps);
 
-        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / SYMBOL_RATE,
-                symbolLength, rrcAlpha);
-        mPulseShapingFilterI = new RealFIRFilter(taps);
-        mPulseShapingFilterQ = new RealFIRFilter(taps);
+        float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, BASEBAND_FILTER_PASS_BAND,
+                BASEBAND_FILTER_STOP_BAND);
+        mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
+        mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
 
-        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mDemodulator = DifferentialDemodulatorFactory.getFloatDemodulator(decimatedSampleRate, SYMBOL_RATE);
-        mSymbolProcessor.setSamplesPerSymbol(mDemodulator.getSamplesPerSymbol());
+        mDemodulator = FmDemodulatorFactory.getFmDemodulator();
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
+
+        //TODO: update P25 message Framer and Processor like we do in NXDN constructor
         mMessageFramer.setListener(mMessageProcessor);
+
         mMessageProcessor.setMessageListener(getMessageListener());
+    }
+
+    /**
+     * Converts the soft symbol reliabilities to soft decision decoding weights.  Noise injection testing against a P25
+     * C4FM control channel recording found that the square root of the reliability produced 1.6% more valid messages
+     * at 9 dB carrier to noise (in-band) than the reliability, and 6.3% more than unweighted decoding.  The P25 LSM
+     * decoder uses the reliability, which tested 5% better than the square root against LSM recordings.
+     * @param reliabilities to convert (modified in place)
+     * @return weights
+     */
+    private static float[] getWeights(float[] reliabilities)
+    {
+        for(int x = 0; x < reliabilities.length; x++)
+        {
+            reliabilities[x] = (float)Math.sqrt(reliabilities[x]);
+        }
+
+        return reliabilities;
     }
 
     /**
@@ -165,52 +193,12 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
 
-        i = mPulseShapingFilterI.filter(i);
-        q = mPulseShapingFilterQ.filter(q);
-
-        // PI/4 DQPSK differential demodulation
         float[] demodulated = mDemodulator.demodulate(i, q);
+        demodulated = mReceiveFilter.filter(demodulated);
 
-        //Process demodulated samples into symbols and apply message sync detection and framing.
-        mSymbolProcessor.process(demodulated);
-    }
-
-    /**
-     * Constructs a baseband filter for this decoder using the current sample rate
-     */
-    private float[] getBasebandFilter(double sampleRate)
-    {
-        if(BASEBAND_FILTERS.containsKey(sampleRate))
-        {
-            return BASEBAND_FILTERS.get(sampleRate);
-        }
-
-        FIRFilterSpecification specification = FIRFilterSpecification
-                .lowPassBuilder()
-                .sampleRate(sampleRate)
-                .passBandCutoff(5200)
-                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
-                .stopBandAmplitude(0.0).stopBandStart(6500) //6500
-                .stopBandRipple(0.01).build();
-
-        float[] coefficients = null;
-
-        try
-        {
-            coefficients = FilterFactory.getTaps(specification);
-            BASEBAND_FILTERS.put(sampleRate, coefficients);
-        }
-        catch(Exception fde) //FilterDesignException
-        {
-            System.out.println("Error");
-        }
-
-        if(coefficients == null)
-        {
-            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
-        }
-
-        return coefficients;
+        //Process demodulated samples into symbols and apply message sync detection and framing.  The soft symbol
+        //reliabilities weight the soft decision decoding.
+        mSymbolProcessor.process(demodulated, getWeights(mReliability.calculate(i, q)));
     }
 
     /**
@@ -258,6 +246,7 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
     {
         super.stop();
         mMessageFramer.stop();
+        mSymbolProcessor.dispose();
     }
 
     /**
@@ -268,8 +257,13 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         switch(sourceEvent.getEvent())
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
+                mSymbolProcessor.resetBalance();
+                break;
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                mSymbolProcessor.resetPLL();
+                //Tuner PPM changes are small (auto-PPM steps are <= 10 Hz) and the symbol processor balance tracks the
+                //change.  Resetting drops the symbol processor synchronization, and the symbol timing tracking with it,
+                //until the next sync detection, which costs messages on channels with long sync intervals (ie P25
+                //voice).
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
@@ -288,10 +282,11 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
         LOGGER.info("Starting ...");
 
 //        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
-        String directory = "/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
+        String directory = "/run/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
-        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
-//        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
+        //Note: this file has lots of dropped sample periods across each burst, with otherwise high SNR good decodes
+//        String file = directory + "P25-S1-Conventional-repeater-20241115_212221_469325000_QPS_Digital_Kynoch_Kynoch_Digital_59_baseband.wav";
+        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
 
         boolean autoReplay = false;
 
@@ -336,23 +331,9 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                         mValidMessageCounter++;
                     }
                 }
-                else if(iMessage instanceof LCMessage lcw)
-                {
-                    mTotalMessageCounter++;
-                    errors = lcw.getMessage().getCorrectedBitCount();
-                    if(lcw.isValid())
-                    {
-                        mBitErrorCounter += errors;
-                        mValidMessageCounter++;
-                    }
-                }
 
                 double bitErrorRate = (double)mBitErrorCounter / (double)mBitCounter * 100.0;
-
                 boolean logEverything = true;
-                boolean logFLC = true;
-                boolean logSLC = true;
-                boolean logCACH = true;
                 boolean logIdles = true;
 
                 if(logEverything)
@@ -365,32 +346,6 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
                 }
                 else
                 {
-                    if (logFLC)
-                    {
-                        if(iMessage instanceof FullLCMessage)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof Terminator terminator)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                        else if(iMessage instanceof DataMessageWithLinkControl)
-                        {
-                            System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                        }
-                    }
-
-                    if(logCACH && iMessage instanceof DMRBurst burst && burst.hasCACH())
-                    {
-                        System.out.println("CACH:" + burst.getCACH());
-                    }
-
-                    if(logSLC && iMessage instanceof ShortLCMessage)
-                    {
-                        System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
-                    }
-
                     if(logIdles && iMessage instanceof SyncLossMessage)
                     {
                         System.out.println(">>MESSAGE: TS" + iMessage.getTimeslot() + " " + iMessage + " \t\t[" + errors + " | " + mBitErrorCounter + " | Valid:" + mValidMessageCounter + " Total:" + mTotalMessageCounter + " Msgs] Rate [" + DECIMAL_FORMAT.format(bitErrorRate) + " %]");
@@ -412,10 +367,24 @@ public class P25P1DecoderC4FM extends FeedbackDecoder implements IByteBufferProv
             source.start();
             decoder.setSampleRate(source.getSampleRate());
 
-            while(true)
+            boolean hasData = true;
+
+            while(hasData)
             {
-                source.next(2048, true);
+                try
+                {
+                    source.next(2048, true);
+                }
+                catch(IOException e)
+                {
+                    LOGGER.info("End of file: " + e.getLocalizedMessage());
+                    hasData = false;
+                }
             }
+        }
+        catch(FileNotFoundException e)
+        {
+            LOGGER.error("File not found: " + file);
         }
         catch(IOException ioe)
         {

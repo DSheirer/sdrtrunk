@@ -1,0 +1,7 @@
+# LimeSDR udev rules
+# Grants access to the logged-in user (uaccess) and to the plugdev group.
+
+# LimeSDR-USB
+SUBSYSTEM=="usb", ATTR{idVendor}=="1d50", ATTR{idProduct}=="6108", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+# LimeSDR Mini and LimeSDR Mini 2.0
+SUBSYSTEM=="usb", ATTR{idVendor}=="0403", ATTR{idProduct}=="601f", MODE="0660", GROUP="plugdev", TAG+="uaccess"

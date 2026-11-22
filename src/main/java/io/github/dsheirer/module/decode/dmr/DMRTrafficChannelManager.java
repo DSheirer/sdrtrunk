@@ -65,6 +65,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,6 +135,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     /**
      * Talker alias manager
      */
+    @Override
     public TalkerAliasManager getTalkerAliasManager()
     {
         return mTalkerAliasManager;
@@ -188,24 +190,15 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             DecodeConfiguration decodeConfiguration = mParentChannel.getDecodeConfiguration();
             List<Channel> trafficChannelList = new ArrayList<>();
 
-            if(decodeConfiguration instanceof DecodeConfigDMR)
+            if(decodeConfiguration instanceof DecodeConfigDMR decodeConfig)
             {
-                DecodeConfigDMR decodeConfig = (DecodeConfigDMR)decodeConfiguration;
-
                 int maxTrafficChannels = decodeConfig.getTrafficChannelPoolSize();
 
                 if(maxTrafficChannels > 0)
                 {
                     for(int x = 0; x < maxTrafficChannels; x++)
                     {
-                        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), ChannelType.TRAFFIC);
-                        trafficChannel.setAliasListName(mParentChannel.getAliasListName());
-                        trafficChannel.setSystem(mParentChannel.getSystem());
-                        trafficChannel.setSite(mParentChannel.getSite());
-                        trafficChannel.setDecodeConfiguration(decodeConfig);
-                        trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
-                        trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
-                        trafficChannelList.add(trafficChannel);
+                        trafficChannelList.add(createTrafficChannel(decodeConfig));
                     }
                 }
             }
@@ -216,6 +209,23 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             //is for a traffic channel owned by this traffic channel manager.
             mAllocatedTrafficChannels = Collections.unmodifiableList(trafficChannelList);
         }
+    }
+
+    /**
+     * Creates a child traffic channel that share's the same parent decode configuration
+     * @param decodeConfig from the parent
+     * @return traffic channel
+     */
+    private @NonNull Channel createTrafficChannel(DecodeConfigDMR decodeConfig)
+    {
+        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), ChannelType.TRAFFIC);
+        trafficChannel.setAliasListName(mParentChannel.getAliasListName());
+        trafficChannel.setSystem(mParentChannel.getSystem());
+        trafficChannel.setSite(mParentChannel.getSite());
+        trafficChannel.setDecodeConfiguration(decodeConfig);
+        trafficChannel.setEventLogConfiguration(mParentChannel.getEventLogConfiguration());
+        trafficChannel.setRecordConfiguration(mParentChannel.getRecordConfiguration());
+        return trafficChannel;
     }
 
     /**
@@ -372,6 +382,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     public void processChannelGrant(DMRChannel channel, IdentifierCollection identifierCollection,
                                     Opcode opcode, long timestamp, boolean encrypted)
     {
+        //Apply the stored talker alias for the radio, learned from the radio's earlier calls
+        identifierCollection = mTalkerAliasManager.enrich(identifierCollection);
+
         mLock.lock();
 
         try
@@ -410,11 +423,11 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 }
                 else if(event != null) //Update current event
                 {
-                    Identifier from = getIdentifier(identifierCollection, Role.FROM);
+                    Identifier from = getFrom(identifierCollection);
 
                     if(from != null)
                     {
-                        Identifier currentFrom = getIdentifier(event.getIdentifierCollection(), Role.FROM);
+                        Identifier currentFrom = getFrom(event.getIdentifierCollection());
                         if(currentFrom != null && !Objects.equals(from, currentFrom))
                         {
                             event.end(timestamp);
@@ -480,8 +493,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                         config.setChannelGrantEvent(event);
                     }
 
-                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, channel,
-                            identifierCollection, this));
+                    ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(trafficChannel, channel,
+                            identifierCollection, this);
+                    request.setStartTimestamp(timestamp);
+                    getInterModuleEventBus().post(request);
                 }
                 else
                 {
@@ -649,6 +664,15 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
      * @param collection containing a TO identifier
      * @return TO identifier or null
      */
+    /**
+     * FROM identifier of the collection, preferring the radio over other FROM identifiers such as a talker alias.
+     */
+    private Identifier getFrom(IdentifierCollection collection)
+    {
+        Identifier radio = TalkerAliasManager.getFromRadio(collection);
+        return radio != null ? radio : getIdentifier(collection, Role.FROM);
+    }
+
     private Identifier getIdentifier(IdentifierCollection collection, Role role)
     {
         List<Identifier> identifiers = collection.getIdentifiers(role);

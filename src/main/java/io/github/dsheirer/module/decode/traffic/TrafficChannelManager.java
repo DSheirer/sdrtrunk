@@ -20,6 +20,7 @@
 package io.github.dsheirer.module.decode.traffic;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.module.Module;
 
 /**
@@ -34,6 +35,15 @@ public abstract class TrafficChannelManager extends Module
      */
     public TrafficChannelManager()
     {
+    }
+
+    /**
+     * Talker alias manager shared by the control and traffic channels of the system.
+     * @return talker alias manager, or null if the protocol doesn't have talker aliases.
+     */
+    public TalkerAliasManager getTalkerAliasManager()
+    {
+        return null;
     }
 
     /**

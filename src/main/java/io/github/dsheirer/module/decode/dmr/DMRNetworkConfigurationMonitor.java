@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.dmr;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.site.SiteIdentifier;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRNetwork;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
@@ -144,8 +145,10 @@ public class DMRNetworkConfigurationMonitor
         switch(linkControl.getOpcode())
         {
             case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
-            case FULL_CAPACITY_MAX_TALKER_ALIAS:
-            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_HEADER:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_1:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_2:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_3:
                 mBrand = BRAND_MOTOROLA_CAPACITY_MAX_TIER_3_TRUNKING;
                 break;
 
@@ -337,43 +340,43 @@ public class DMRNetworkConfigurationMonitor
         mObservedChannelMap.put(dmrChannel.getValue(), dmrChannel);
     }
 
-    public String getActivitySummary()
+    /**
+     * Adds the network configuration sections to the activity summary.
+     * @param summary to add to
+     */
+    public void addActivitySummary(ActivitySummary summary)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Activity Summary - Decoder: DMR ");
-
-        sb.append("\n\nBrand: ").append((mBrand == null ? BRAND_STANDARD : mBrand));
+        summary.section("Network");
+        summary.field("Brand", mBrand == null ? BRAND_STANDARD : mBrand);
 
         if(mMode != null)
         {
-            sb.append("\nConfigured Mode: ").append(mMode);
+            summary.field("Configured Mode", mMode);
         }
 
-        sb.append("\nChannel Type: ").append((mChannelType != null) ? mChannelType : UNKNOWN);
-        sb.append("\nColor Code Timeslot 1: ").append(mColorCodeTS1 != null ? mColorCodeTS1 : UNKNOWN);
-        sb.append("\nColor Code Timeslot 2: ").append(mColorCodeTS2 != null ? mColorCodeTS2 : UNKNOWN);
+        summary.field("Channel Type", mChannelType != null ? mChannelType : UNKNOWN);
+        summary.field("Color Code TS1", mColorCodeTS1 != null ? mColorCodeTS1 : UNKNOWN);
+        summary.field("Color Code TS2", mColorCodeTS2 != null ? mColorCodeTS2 : UNKNOWN);
 
         if(mDMRNetwork != null)
         {
-            sb.append("\nNetwork: ").append(mDMRNetwork);
+            summary.field("Network", mDMRNetwork);
         }
 
         if(mDMRSite != null)
         {
-            sb.append("\nSite: ").append(mDMRSite);
+            summary.field("Site", mDMRSite);
         }
 
         if(mTier3Model != null)
         {
-            sb.append("\nNetwork Model: ").append(mTier3Model);
+            summary.field("Network Model", mTier3Model);
         }
 
-        //Observed DMR Channels
         if(!mObservedChannelMap.isEmpty())
         {
-            sb.append("\nObserved Logical Slot Numbers (LSN):");
-
+            summary.section("Observed Logical Slot Numbers (LSN)");
+            ActivitySummary.Table table = summary.table("LSN", "Channel", "Timeslot", "Downlink");
             List<Integer> lsns = new ArrayList<>(mObservedChannelMap.keySet());
             Collections.sort(lsns);
 
@@ -383,54 +386,34 @@ public class DMRNetworkConfigurationMonitor
 
                 if(channel != null)
                 {
-                    sb.append("\n\t").append(channel);
-
-                    double frequency = channel.getDownlinkFrequency();
-
-                    if(frequency != 0)
-                    {
-                        frequency /= 1E6d;
-                    }
-                    sb.append(" ").append(frequency).append(" MHz");
+                    table.row(lsn, channel.getChannelNumber(), channel.getTimeslot(),
+                        ActivitySummary.mhz(channel.getDownlinkFrequency()));
                 }
             }
         }
 
         if(!mNeighborSites.isEmpty())
         {
-            sb.append("\nNeighbor Sites\n");
+            summary.section("Neighbor Sites");
 
             for(SiteIdentifier neighbor: mNeighborSites)
             {
-                sb.append("\tNeighbor: ").append(neighbor).append("\n");
+                summary.text(neighbor);
             }
         }
 
         if(!mTier3NeighborSites.isEmpty())
         {
-            sb.append("\nTier III Neighbor Sites\n");
+            summary.section("Tier III Neighbor Sites");
+            ActivitySummary.Table table = summary.table("Network", "Site", "Model", "Channel", "Downlink");
 
-            for(Map.Entry<Integer,AdjacentSiteInformation> neighbor: mTier3NeighborSites.entrySet())
+            for(AdjacentSiteInformation site: mTier3NeighborSites.values())
             {
-                AdjacentSiteInformation site = neighbor.getValue();
-                sb.append("\tNeighbor: ").append("Network:").append(site.getNeighborSystemIdentityCode().getNetwork());
-                sb.append(" Site:").append(site.getNeighborSystemIdentityCode().getSite());
-                sb.append(" ").append(site.getNeighborSystemIdentityCode().getModel());
-
+                SystemIdentityCode code = site.getNeighborSystemIdentityCode();
                 DMRChannel channel = site.getNeighborChannel();
-                sb.append(" ").append(channel);
-
-                if(channel.getDownlinkFrequency() > 0)
-                {
-                    sb.append(" ").append(channel.getDownlinkFrequency());
-                }
-
-                sb.append("\n");
+                table.row(code.getNetwork(), code.getSite(), code.getModel(), channel,
+                    channel != null ? ActivitySummary.mhz(channel.getDownlinkFrequency()) : null);
             }
         }
-
-        sb.append("\n\n");
-
-        return sb.toString();
     }
 }

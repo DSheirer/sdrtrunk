@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2023 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import jmbe.frame.CorrectedAMBEFrame;
 
 /**
  * Base DMR Voice Message
@@ -40,9 +41,11 @@ public abstract class VoiceMessage extends DMRBurst
     public static int[] FRAME_1_IV_FRAGMENT = new int[]{95, 91, 87, 83};
     public static int[] FRAME_2_IV_FRAGMENT = new int[]{215, 211, 207, 203};
     public static int[] FRAME_3_IV_FRAGMENT = new int[]{287, 283, 279, 275};
+    private Boolean mValid;
+    private List<CorrectedAMBEFrame> mCorrectedAMBEFrames;
 
     /**
-     * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
+     * DMR message frame.  This message comprises a 24-bit prefix and a 264-bit message frame.  Outbound base
      * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
      * do not use the 24-bit prefix.
      *
@@ -73,8 +76,8 @@ public abstract class VoiceMessage extends DMRBurst
         {
             frame_2[i] = getMessage().getByte(96 + i * 8);
         }
-        // 4 bits and 4 bits
-        frame_2[4] = (byte)((getMessage().getByte(128) & 0xF0) | (getMessage().getByte(180) >> 4));
+        // 4 bits and 4 bits.  Note: mask the shifted (signed) byte to prevent sign extension into the upper 4 bits.
+        frame_2[4] = (byte)((getMessage().getByte(128) & 0xF0) | ((getMessage().getByte(180) >> 4) & 0x0F));
         // copy last 4 byte
         for(int i = 0; i < 4; i++)
         {
@@ -89,6 +92,27 @@ public abstract class VoiceMessage extends DMRBurst
         frames.add(frame_2);
         frames.add(frame_3);
         return frames;
+    }
+
+    /**
+     * Error corrected versions of the three AMBE voice frames from getAMBEFrames(), in the same order.  The frames are
+     * error corrected once and cached.
+     */
+    public synchronized List<CorrectedAMBEFrame> getCorrectedAMBEFrames()
+    {
+        if(mCorrectedAMBEFrames == null)
+        {
+            List<CorrectedAMBEFrame> corrected = new ArrayList<>();
+
+            for(byte[] frame: getAMBEFrames())
+            {
+                corrected.add(CorrectedAMBEFrame.correct(frame));
+            }
+
+            mCorrectedAMBEFrames = corrected;
+        }
+
+        return mCorrectedAMBEFrames;
     }
 
     /**
@@ -109,10 +133,20 @@ public abstract class VoiceMessage extends DMRBurst
         return fragments;
     }
 
+    /**
+     * Indicates if the voice burst is valid, meaning that at least one of the three AMBE voice frames passes error
+     * detection (see AMBEFrameValidator).  Frames are checked in turn until a valid frame is found and the result is
+     * cached.
+     */
     @Override
     public boolean isValid()
     {
-        return true;
+        if(mValid == null)
+        {
+            mValid = AMBEFrameValidator.isValid(getMessage());
+        }
+
+        return mValid;
     }
 
     @Override

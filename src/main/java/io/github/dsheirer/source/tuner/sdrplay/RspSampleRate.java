@@ -19,8 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.device.Decimate;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Bandwidth;
+import io.github.dsheirer.sdrplay.Bandwidth;
 import java.util.EnumSet;
 
 /**
@@ -30,35 +29,35 @@ import java.util.EnumSet;
  */
 public enum RspSampleRate
 {
-    RATE_0_250(8_000_000, 16_000, Bandwidth.BW_0_300, Decimate.X32, "0.250 MHz (0.234 usable)"),
-    RATE_0_500(8_000_000, 24_000, Bandwidth.BW_0_600, Decimate.X16, "0.500 MHz (0.476 usable)"),
-    RATE_1_000(8_000_000, 100_000, Bandwidth.BW_1_536, Decimate.X8, "1.000 MHz (0.900 usable)"),
-    RATE_1_500(6_000_000, 140_000, Bandwidth.BW_1_536, Decimate.X4, "1.500 MHz (1.360 usable)"),
-    RATE_2_048(8_192_000, 248_000, Bandwidth.BW_1_536, Decimate.X4, "2.048 MHz (1.800 usable)"),
-    RATE_3_000(6_000_000, 300_000, Bandwidth.BW_5_000, Decimate.X2, "3.000 MHz (2.700 usable)"),
-    RATE_4_000(8_000_000, 340_000, Bandwidth.BW_5_000, Decimate.X2, "4.000 MHz (3.560 usable)"),
-    RATE_5_000(5_000_000, 880_000, Bandwidth.BW_5_000, Decimate.X1, "5.000 MHz (4.120 usable)"),
-    RATE_6_000(6_000_000, 800_000, Bandwidth.BW_6_000, Decimate.X1, "6.000 MHz (5.200 usable)"),
-    RATE_7_000(7_000_000, 1_040_000, Bandwidth.BW_7_000, Decimate.X1, "7.000 MHz (5.960 usable)"),
-    RATE_8_000(8_000_000, 1_060_000, Bandwidth.BW_8_000, Decimate.X1, "8.000 MHz (6.940 usable)"),
-    RATE_9_000(9_000_000, 1_620_000, Bandwidth.BW_8_000, Decimate.X1, "9.000 MHz (7.380 usable)"),
-    RATE_10_000(10_000_000, 1_500_000, Bandwidth.BW_8_000, Decimate.X1, "10.000 MHz (8.500 usable)"),
+    RATE_0_250(8_000_000, 16_000, Bandwidth.KHZ_300, 32, "0.250 MHz (0.234 usable)"),
+    RATE_0_500(8_000_000, 24_000, Bandwidth.KHZ_600, 16, "0.500 MHz (0.476 usable)"),
+    RATE_1_000(8_000_000, 100_000, Bandwidth.KHZ_1536, 8, "1.000 MHz (0.900 usable)"),
+    RATE_1_500(6_000_000, 140_000, Bandwidth.KHZ_1536, 4, "1.500 MHz (1.360 usable)"),
+    RATE_2_048(8_192_000, 248_000, Bandwidth.KHZ_1536, 4, "2.048 MHz (1.800 usable)"),
+    RATE_3_000(6_000_000, 300_000, Bandwidth.MHZ_5, 2, "3.000 MHz (2.700 usable)"),
+    RATE_4_000(8_000_000, 340_000, Bandwidth.MHZ_5, 2, "4.000 MHz (3.560 usable)"),
+    RATE_5_000(5_000_000, 880_000, Bandwidth.MHZ_5, 1, "5.000 MHz (4.120 usable)"),
+    RATE_6_000(6_000_000, 800_000, Bandwidth.MHZ_6, 1, "6.000 MHz (5.200 usable)"),
+    RATE_7_000(7_000_000, 1_040_000, Bandwidth.MHZ_7, 1, "7.000 MHz (5.960 usable)"),
+    RATE_8_000(8_000_000, 1_060_000, Bandwidth.MHZ_8, 1, "8.000 MHz (6.940 usable)"),
+    RATE_9_000(9_000_000, 1_620_000, Bandwidth.MHZ_8, 1, "9.000 MHz (7.380 usable)"),
+    RATE_10_000(10_000_000, 1_500_000, Bandwidth.MHZ_8, 1, "10.000 MHz (8.500 usable)"),
 
     /**
      * Note: in dual tuner mode, available sample rates are 6 or 8 MHz with an effective output rate of
      * 2 MHz.  Decimation is applied against the final 2 MHz rate, not the original 6/8 sampling rate.
      */
-    DUO_RATE_0_500(8_000_000, 50_000, Bandwidth.BW_8_000, Decimate.X4, "0.500 MHz (0.450 usable)"),
-    DUO_RATE_1_000(8_000_000, 50_000, Bandwidth.BW_8_000, Decimate.X2, "1.000 MHz (0.950 usable)"),
-    DUO_RATE_1_500(6_000_000, 0, Bandwidth.BW_6_000, Decimate.X1, "1.500 MHz (1.500 usable)"),
-    DUO_RATE_2_000(8_000_000, 0, Bandwidth.BW_8_000, Decimate.X1, "2.000 MHz (2.000 usable)"),
+    DUO_RATE_0_500(8_000_000, 50_000, Bandwidth.MHZ_8, 4, "0.500 MHz (0.450 usable)"),
+    DUO_RATE_1_000(8_000_000, 50_000, Bandwidth.MHZ_8, 2, "1.000 MHz (0.950 usable)"),
+    DUO_RATE_1_500(6_000_000, 0, Bandwidth.MHZ_6, 1, "1.500 MHz (1.500 usable)"),
+    DUO_RATE_2_000(8_000_000, 0, Bandwidth.MHZ_8, 1, "2.000 MHz (2.000 usable)"),
 
-    UNDEFINED(0, 0, Bandwidth.UNDEFINED, Decimate.X1, "UNDEFINED");
+    UNDEFINED(0, 0, Bandwidth.UNDEFINED, 1, "UNDEFINED");
 
     private final long mSampleRate;
     private final long mUnusable;
     private final Bandwidth mBandwidth;
-    private final Decimate mDecimation;
+    private final int mDecimation;
     private final String mDescription;
 
     /**
@@ -66,10 +65,11 @@ public enum RspSampleRate
      * @param sampleRate in hertz
      * @param unusable bandwidth (total) in Hertz due to IF or decimation filter roll-off at spectrum edges
      * @param bandwidth of the frequency spectrum
-     * @param decimation to be applied to the original sample rate to achieve the effective sample rate
+     * @param decimation factor (1, 2, 4, 8, 16 or 32) to be applied to the original sample rate to achieve the
+     * effective sample rate
      * @param description for UI display
      */
-    RspSampleRate(long sampleRate, long unusable, Bandwidth bandwidth, Decimate decimation, String description)
+    RspSampleRate(long sampleRate, long unusable, Bandwidth bandwidth, int decimation, String description)
     {
         mSampleRate = sampleRate;
         mUnusable = unusable;
@@ -84,9 +84,18 @@ public enum RspSampleRate
     public static final EnumSet<RspSampleRate> SINGLE_TUNER_SAMPLE_RATES = EnumSet.range(RATE_0_250, RATE_10_000);
 
     /**
-     * RSPduo dual-tuner mode sample rates
+     * RSPduo dual-tuner mode sample rates.  Note: DUO_RATE_1_500 is not supported.  It requires a 6 MHz master sample
+     * rate, which is fixed when the master tuner is selected, and the SDRplay API rejects changing it before streaming
+     * starts or while the slave tuner is streaming.  The entry is retained so that existing tuner configurations load,
+     * and the RSPduo tuner controllers replace it with the default dual tuner sample rate.
      */
-    public static final EnumSet<RspSampleRate> DUAL_TUNER_SAMPLE_RATES = EnumSet.range(DUO_RATE_0_500, DUO_RATE_2_000);
+    public static final EnumSet<RspSampleRate> DUAL_TUNER_SAMPLE_RATES = EnumSet.of(DUO_RATE_0_500, DUO_RATE_1_000,
+            DUO_RATE_2_000);
+
+    /**
+     * All RSPduo dual-tuner mode sample rate entries, including unsupported entries.
+     */
+    private static final EnumSet<RspSampleRate> DUAL_TUNER_ENTRIES = EnumSet.range(DUO_RATE_0_500, DUO_RATE_2_000);
 
     /**
      * Sample Rate
@@ -116,7 +125,7 @@ public enum RspSampleRate
      */
     public boolean isDualTunerSampleRate()
     {
-        return DUAL_TUNER_SAMPLE_RATES.contains(this);
+        return DUAL_TUNER_ENTRIES.contains(this);
     }
 
     /**
@@ -125,14 +134,21 @@ public enum RspSampleRate
      */
     public int getSampleSize()
     {
-        return mDecimation.getSampleSize();
+        //Effective sample size by decimation factor (same values as the legacy SDRplay API wrapper)
+        return switch(mDecimation)
+        {
+            case 4, 8 -> 17;
+            case 16 -> 18;
+            case 32 -> 20;
+            default -> 16;
+        };
     }
 
     /**
-     * Decimation rate to be applied against sample rate.
-     * @return decimation value
+     * Decimation factor to be applied against sample rate.
+     * @return decimation factor: 1 (none), 2, 4, 8, 16 or 32
      */
-    public Decimate getDecimation()
+    public int getDecimation()
     {
         return mDecimation;
     }
@@ -148,11 +164,11 @@ public enum RspSampleRate
         {
             //Dual tuner sample rate is specified at 8 MHz, but there is an inherent x4 decimation to 2 MHz
             //on top of the user specified decimation rate.
-            return getSampleRate() / getDecimation().getValue() / 4;
+            return getSampleRate() / getDecimation() / 4;
         }
         else
         {
-            return getSampleRate() / getDecimation().getValue();
+            return getSampleRate() / getDecimation();
         }
     }
 

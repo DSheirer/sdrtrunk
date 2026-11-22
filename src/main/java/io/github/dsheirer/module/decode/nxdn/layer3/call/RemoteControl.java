@@ -91,9 +91,9 @@ public abstract class RemoteControl extends CallControl
             }
             else if(getCallControlOption().hasLocationId() && getLocationIDOption().isDestination())
             {
-//                mDestinationIdentifier = NXDNFullyQualifiedRadioIdentifier.createFrom(getLocationID().getSystem().getValue(),
-//                        getMessage().getInt(IDENTIFIER_OCTET_3));
-                mDestinationIdentifier = NXDNRadioIdentifier.createFrom(getMessage().getInt(IDENTIFIER_OCTET_3));
+//                mDestinationIdentifier = NXDNFullyQualifiedRadioIdentifier.createTo(getLocationID().getSystem().getValue(),
+//                        getMessage().getInt(IDENTIFIER_OCTET_5));
+                mDestinationIdentifier = NXDNRadioIdentifier.createTo(getMessage().getInt(IDENTIFIER_OCTET_5));
             }
         }
 

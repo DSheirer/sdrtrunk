@@ -108,7 +108,7 @@ public class AudioProviderMultiChannel extends AudioProvider
         {
             for(int channelNumber = 0; channelNumber < mAudioChannels.size(); channelNumber++)
             {
-                shortBuffer.put((short)(samples[channelNumber][sampleCounter] * Short.MAX_VALUE));
+                shortBuffer.put(toPcm(samples[channelNumber][sampleCounter]));
             }
         }
 

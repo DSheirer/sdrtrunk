@@ -45,7 +45,8 @@ public class DifferentialDemodulatorFactory
             case VECTOR_SIMD_128 -> new DifferentialDemodulatorFloatVector128(sampleRate, symbolRate);
             case VECTOR_SIMD_256 -> new DifferentialDemodulatorFloatVector256(sampleRate, symbolRate);
             case VECTOR_SIMD_512 -> new DifferentialDemodulatorFloatVector512(sampleRate, symbolRate);
-            default -> new DifferentialDemodulatorFloatScalar(sampleRate, symbolRate); //Includes SCALAR case
+            case SCALAR, UNCALIBRATED -> new DifferentialDemodulatorFloatScalar(sampleRate, symbolRate);
+            default -> new DifferentialDemodulatorFloatScalar(sampleRate, symbolRate);
         };
     }
 }

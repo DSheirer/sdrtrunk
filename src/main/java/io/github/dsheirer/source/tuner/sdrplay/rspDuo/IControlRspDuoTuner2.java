@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 
 /**
  * Control interface for RSPduo Tuner 2 device
@@ -29,16 +29,16 @@ public interface IControlRspDuoTuner2 extends IControlRspDuo
     /**
      * Indicates if the Bias-T power is enabled.
      * @return true if enabled.
-     * @throws SDRPlayException if the device is no started/selected
+     * @throws RspException if the device is no started/selected
      */
-    boolean isBiasT() throws SDRPlayException;
+    boolean isBiasT() throws RspException;
 
     /**
      * Sets the enabled state of the Bias-T power.
      * @param enabled true to power on the Bias-T
-     * @throws SDRPlayException if the device is no started/selected
+     * @throws RspException if the device is no started/selected
      */
-    void setBiasT(boolean enabled) throws SDRPlayException;
+    void setBiasT(boolean enabled) throws RspException;
 
     /**
      * Indicates if this tuner is configured for dual-tuner slave mode.

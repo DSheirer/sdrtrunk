@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.map;
 
 import io.github.dsheirer.alias.Alias;
@@ -27,31 +26,24 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.sample.Listener;
-import java.awt.EventQueue;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.table.AbstractTableModel;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Table model for plottable entity history elements.
+ * Plottable entity histories, one for each FROM identifier and alias list that reported a location.  Thread safe:
+ * listeners are called on the thread that made the change, outside of the model's lock.
  */
-public class PlottableEntityModel extends AbstractTableModel implements Listener<PlottableDecodeEvent>
+public class PlottableEntityModel implements Listener<PlottableDecodeEvent>
 {
-    private final static Logger LOGGER = LoggerFactory.getLogger(PlottableEntityModel.class);
-    private static final int COLUMN_ID = 0;
-    private static final int COLUMN_ALIAS = 1;
-    private static final int COLUMN_ALIAS_LIST = 2;
-    private static final String[] COLUMN_NAMES = {"ID", "Alias", "List"};
     private static final String KEY_NO_ALIAS_LIST = "(no alias list)";
-    private Map<String,PlottableEntityHistory> mEntityHistoryMap = new HashMap();
-    private List<PlottableEntityHistory> mEntityHistories = new ArrayList<>();
-    private List<IPlottableUpdateListener> mPlottableUpdateListeners = new ArrayList<>();
-    private AliasModel mAliasModel;
+    private final Map<String,PlottableEntityHistory> mEntityHistoryMap = new HashMap<>();
+    private final List<PlottableEntityHistory> mEntityHistories = new ArrayList<>();
+    private final List<IPlottableUpdateListener> mPlottableUpdateListeners = new CopyOnWriteArrayList<>();
+    private final AliasModel mAliasModel;
 
     /**
      * Constructs an instance
@@ -67,181 +59,144 @@ public class PlottableEntityModel extends AbstractTableModel implements Listener
      */
     public void deleteAllTracks()
     {
-        EventQueue.invokeLater(() -> {
-            if(mEntityHistories.size() > 0)
-            {
-                int firstRow = 0;
-                int lastRow = mEntityHistories.size() - 1;
-                mEntityHistoryMap.clear();
-                mEntityHistories.clear();
-                fireTableRowsDeleted(firstRow, lastRow);
-            }
-        });
+        List<PlottableEntityHistory> removed;
+
+        synchronized(this)
+        {
+            removed = new ArrayList<>(mEntityHistories);
+            mEntityHistoryMap.clear();
+            mEntityHistories.clear();
+        }
+
+        if(!removed.isEmpty())
+        {
+            mPlottableUpdateListeners.forEach(listener -> listener.entitiesRemoved(removed));
+        }
     }
 
     /**
-     * Deletes the tracks from both the map and entity histories and fires a table model changed event.
+     * Deletes the tracks from the entity histories.
      * @param tracksToDelete to delete
      */
     public void delete(List<PlottableEntityHistory> tracksToDelete)
     {
-        EventQueue.invokeLater(() ->
+        List<PlottableEntityHistory> removed = new ArrayList<>();
+
+        synchronized(this)
         {
             for(PlottableEntityHistory track : tracksToDelete)
             {
-                int index = mEntityHistories.indexOf(track);
-                mEntityHistories.remove(track);
-                mEntityHistoryMap.entrySet().removeIf(entry -> entry.getValue() == track);
-                fireTableRowsDeleted(index, index);
+                if(mEntityHistories.remove(track))
+                {
+                    mEntityHistoryMap.values().removeIf(value -> value == track);
+                    removed.add(track);
+                }
             }
-        });
+        }
+
+        if(!removed.isEmpty())
+        {
+            mPlottableUpdateListeners.forEach(listener -> listener.entitiesRemoved(removed));
+        }
     }
 
     @Override
     public void receive(PlottableDecodeEvent plottableDecodeEvent)
     {
-        if(plottableDecodeEvent.isValidLocation())
+        if(!plottableDecodeEvent.isValidLocation())
         {
-            //Add or update the event on the swing event thread
-            EventQueue.invokeLater(() -> {
-                Identifier from = plottableDecodeEvent.getIdentifierCollection().getFromIdentifier();
-
-                if(from != null && from.getForm() != Form.LOCATION)
-                {
-                    AliasListConfigurationIdentifier aliasList = plottableDecodeEvent.getIdentifierCollection().getAliasListConfiguration();
-                    String key = (aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST) + from;
-
-                    PlottableEntityHistory entityHistory = mEntityHistoryMap.get(key);
-
-                    if(entityHistory == null)
-                    {
-                        entityHistory = new PlottableEntityHistory(from, plottableDecodeEvent);
-                        mEntityHistories.add(entityHistory);
-                        mEntityHistoryMap.put(key, entityHistory);
-                        int index = mEntityHistories.indexOf(entityHistory);
-                        fireTableRowsInserted(index, index);
-                    }
-                    else
-                    {
-                        entityHistory.add(plottableDecodeEvent);
-                        int index = mEntityHistories.indexOf(entityHistory);
-                        fireTableRowsUpdated(index, index);
-                    }
-
-                    for(IPlottableUpdateListener listener : mPlottableUpdateListeners)
-                    {
-                        listener.addPlottableEntity(entityHistory);
-                    }
-                }
-                else
-                {
-//                    LOGGER.warn("Received plottable decode event that does not contain a FROM identifier - cannot plot");
-                }
-            });
-        }
-    }
-
-    @Override
-    public String getColumnName(int column)
-    {
-        if(0 <= column && column < COLUMN_NAMES.length)
-        {
-            return COLUMN_NAMES[column];
+            return;
         }
 
-        return "error!";
-    }
+        Identifier from = plottableDecodeEvent.getIdentifierCollection().getFromIdentifier();
 
-    @Override
-    public int getRowCount()
-    {
-        return mEntityHistories.size();
-    }
+        if(from == null || from.getForm() == Form.LOCATION)
+        {
+            return;
+        }
 
-    @Override
-    public int getColumnCount()
-    {
-        return COLUMN_NAMES.length;
+        AliasListConfigurationIdentifier aliasList = plottableDecodeEvent.getIdentifierCollection()
+            .getAliasListConfiguration();
+        String key = (aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST) + from;
+        PlottableEntityHistory entityHistory;
+        boolean added = false;
+
+        synchronized(this)
+        {
+            entityHistory = mEntityHistoryMap.get(key);
+
+            if(entityHistory == null)
+            {
+                entityHistory = new PlottableEntityHistory(from, plottableDecodeEvent);
+                mEntityHistories.add(entityHistory);
+                mEntityHistoryMap.put(key, entityHistory);
+                added = true;
+            }
+            else
+            {
+                entityHistory.add(plottableDecodeEvent);
+            }
+        }
+
+        for(IPlottableUpdateListener listener : mPlottableUpdateListeners)
+        {
+            if(added)
+            {
+                listener.entityAdded(entityHistory);
+            }
+            else
+            {
+                listener.entityUpdated(entityHistory);
+            }
+        }
     }
 
     /**
-     * Get the plottable entity history for the specified model index
-     * @param index in the model
-     * @return entity history or null.
+     * Snapshot of all plottable entity histories, in the order they were added.
      */
-    public PlottableEntityHistory get(int index)
-    {
-        if(index >= 0 && index < mEntityHistories.size())
-        {
-            return mEntityHistories.get(index);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get all plottable entity histories.
-     */
-    public List<PlottableEntityHistory> getAll()
+    public synchronized List<PlottableEntityHistory> getAll()
     {
         return new ArrayList<>(mEntityHistories);
     }
 
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
+    /**
+     * Aliases for the entity's identifier from the entity's alias list
+     * @param history of the entity
+     * @return aliases, or an empty list
+     */
+    public List<Alias> getAliases(PlottableEntityHistory history)
     {
-        PlottableEntityHistory history = mEntityHistories.get(rowIndex);
+        AliasList aliasList = mAliasModel.getAliasList(history.getIdentifierCollection());
 
-        if(history != null)
+        if(aliasList != null && history.getIdentifier() != null)
         {
-            switch(columnIndex)
-            {
-                case COLUMN_ID:
-                    Identifier identifier = history.getIdentifier();
-
-                    if(identifier != null)
-                    {
-                        return identifier.toString();
-                    }
-                    else
-                    {
-                        return "(no ID)";
-                    }
-                case COLUMN_ALIAS:
-                    Identifier aliasListConfig = history.getIdentifierCollection().getAliasListConfiguration();
-                    if(aliasListConfig != null)
-                    {
-                        AliasList al = mAliasModel.getAliasList(aliasListConfig.toString());
-
-                        if(al != null)
-                        {
-                            List<Alias> aliases = al.getAliases(history.getIdentifier());
-
-                            if(!aliases.isEmpty())
-                            {
-                                return aliases.get(0).getName();
-                            }
-                        }
-                    }
-                    break;
-                case COLUMN_ALIAS_LIST:
-                    Identifier aliasList = history.getIdentifierCollection().getAliasListConfiguration();
-                    if(aliasList != null)
-                    {
-                        return aliasList.toString();
-                    }
-                    else
-                    {
-                        return "(no alias list)";
-                    }
-                default:
-                    throw new IllegalArgumentException("Unexpected column index");
-            }
+            return aliasList.getAliases(history.getIdentifier());
         }
 
-        return null;
+        return Collections.emptyList();
     }
 
+    /**
+     * Name of the entity's first alias, or null
+     */
+    public String getAliasName(PlottableEntityHistory history)
+    {
+        List<Alias> aliases = getAliases(history);
+        return aliases.isEmpty() ? null : aliases.getFirst().getName();
+    }
+
+    /**
+     * Name of the entity's alias list
+     */
+    public static String getAliasListName(PlottableEntityHistory history)
+    {
+        Identifier aliasList = history.getIdentifierCollection().getAliasListConfiguration();
+        return aliasList != null ? aliasList.toString() : KEY_NO_ALIAS_LIST;
+    }
+
+    /**
+     * Adds a listener.  New listeners don't receive the existing entities: see {@link #getAll()}.
+     */
     public void addListener(IPlottableUpdateListener listener)
     {
         mPlottableUpdateListeners.add(listener);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,39 +22,28 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JLabel;
-import javax.swing.JSeparator;
+import javafx.scene.control.Label;
 
 /**
- * Recording tuner configuration editor
+ * Recording tuner editor.  Shows the recording file and the frequency of the recording.
  */
 public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTunerConfiguration>
 {
-    private static final long serialVersionUID = 1L;
-    private final static Logger mLog = LoggerFactory.getLogger(RecordingTunerEditor.class);
-    private JLabel mRecordingPath;
+    private final Label mRecordingPath = new Label();
 
     /**
      * Constructs an instance
-     * @param userPreferences for wide-band recordings
+     * @param userPreferences for settings
      * @param tunerManager for saving configurations
-     * @param discoveredTuner for this configuration
+     * @param discoveredTuner to edit
      */
     public RecordingTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
         super(userPreferences, tunerManager, discoveredTuner);
-        init();
-        tunerStatusUpdated();
-    }
-
-    @Override
-    public void setTunerLockState(boolean locked)
-    {
-        getFrequencyPanel().updateControls();
+        mRecordingPath.setWrapText(true);
+        mRecordingPath.getStyleClass().add("tuner-value-label");
+        getTuningSection().addRow("File", mRecordingPath);
+        refresh();
     }
 
     @Override
@@ -72,62 +61,7 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
     @Override
     protected void tunerStatusUpdated()
     {
-        setLoading(true);
-
-        if(hasTuner())
-        {
-            getTunerIdLabel().setText(getTuner().getPreferredName());
-        }
-        else
-        {
-            getTunerIdLabel().setText(null);
-        }
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-
-        if(hasConfiguration())
-        {
-            getRecordingPath().setText(getConfiguration().getPath());
-        }
-        setLoading(false);
-    }
-
-    private void init()
-    {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill]",
-            "[][][][][][][][grow]"));
-
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel(), "wrap");
-
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
-
-        add(new JLabel("File:"));
-        add(getRecordingPath(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-        add(new JSeparator(), "span,growx,push");
-
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-    }
-
-    private JLabel getRecordingPath()
-    {
-        if(mRecordingPath == null)
-        {
-            mRecordingPath = new JLabel();
-        }
-
-        return mRecordingPath;
+        mRecordingPath.setText(hasConfiguration() ? getConfiguration().getPath() : "");
     }
 
     @Override
@@ -137,8 +71,8 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
         {
             RecordingTunerConfiguration config = getConfiguration();
             config.setFrequency(getFrequencyControl().getFrequency());
-            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
+            config.setMinimumFrequency(getMinimumFrequencyField().getFrequency());
+            config.setMaximumFrequency(getMaximumFrequencyField().getFrequency());
             saveConfiguration();
         }
     }

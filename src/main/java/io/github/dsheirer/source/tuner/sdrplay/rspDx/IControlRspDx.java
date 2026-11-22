@@ -20,9 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDx;
 
 import io.github.dsheirer.source.tuner.sdrplay.IControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.HdrModeBandwidth;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDxAntenna;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 
 /**
  * Control interface for RSPdx device
@@ -32,84 +30,84 @@ public interface IControlRspDx extends IControlRsp
     /**
      * Indicates if the Bias-T power is enabled.
      * @return true if enabled.
-     * @throws SDRPlayException if the device is no started/selected
+     * @throws RspException if the device is no started/selected
      */
-    boolean isBiasT() throws SDRPlayException;
+    boolean isBiasT() throws RspException;
 
     /**
      * Sets the enabled state of the Bias-T power.
      * @param enabled true to power on the Bias-T
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setBiasT(boolean enabled) throws SDRPlayException;
+    void setBiasT(boolean enabled) throws RspException;
 
     /**
      * Indicates the enabled state of high dynamic range mode
      * @return true if enabled.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    boolean isHighDynamicRange() throws SDRPlayException;
+    boolean isHighDynamicRange() throws RspException;
 
     /**
      * Sets the enabled state of the high dynamic range mode
      * @param enabled true to enable.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setHighDynamicRange(boolean enabled) throws SDRPlayException;
+    void setHighDynamicRange(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF notch is enabled (FM broadcast band filter).
      * @return true if enabled.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    boolean isRfNotch() throws SDRPlayException;
+    boolean isRfNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF notch
      * @param enabled true to filter the FM broadcast band frequency range.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setRfNotch(boolean enabled) throws SDRPlayException;
+    void setRfNotch(boolean enabled) throws RspException;
 
     /**
      * Indicates if the RF DAB notch is enabled (DAB broadcast band filter).
      * @return true if enabled.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    boolean isRfDabNotch() throws SDRPlayException;
+    boolean isRfDabNotch() throws RspException;
 
     /**
      * Sets the enabled state of the RF DAB notch.
      * @param enabled true to filter the DAB broadcast band frequency range.
-     * @throws SDRPlayException if the device is not started (selected).
+     * @throws RspException if the device is not started (selected).
      */
-    void setRfDabNotch(boolean enabled) throws SDRPlayException;
+    void setRfDabNotch(boolean enabled) throws RspException;
 
     /**
      * Antenna selection
      * @return currently selected antenna
-     * @throws SDRPlayException if the device is not started (selected)
+     * @throws RspException if the device is not started (selected)
      */
-    RspDxAntenna getAntenna() throws SDRPlayException;
+    RspDxAntennaSelection getAntenna() throws RspException;
 
     /**
      * Sets the antenna selection
      * @param antenna to select
-     * @throws SDRPlayException if the device is not started (selected)
+     * @throws RspException if the device is not started (selected)
      */
-    void setAntenna(RspDxAntenna antenna) throws SDRPlayException;
+    void setAntenna(RspDxAntennaSelection antenna) throws RspException;
 
     /**
      * Sets High Dynamic Range mode bandwidth
      * @param bandwidth to apply
-     * @throws SDRPlayException if the device is not started (selected)
+     * @throws RspException if the device is not started (selected)
      */
-    void setHdrModeBandwidth(HdrModeBandwidth bandwidth) throws SDRPlayException;
+    void setHdrModeBandwidth(HdrModeBandwidth bandwidth) throws RspException;
 
     /**
      * High Dynamic Range mode bandwidth
      * @return bandwidth
-     * @throws SDRPlayException if the device is not started (selected)
+     * @throws RspException if the device is not started (selected)
      */
-    HdrModeBandwidth getHdrModeBandwidth() throws SDRPlayException;
+    HdrModeBandwidth getHdrModeBandwidth() throws RspException;
 }

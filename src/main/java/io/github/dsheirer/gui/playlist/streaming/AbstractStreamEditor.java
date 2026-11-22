@@ -25,7 +25,10 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.beans.binding.Bindings;
+import javafx.scene.Node;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
@@ -150,9 +153,22 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
         if(mShowPasswordCheckBox == null)
         {
             mShowPasswordCheckBox = new CheckBox("Show");
+            mShowPasswordCheckBox.setAccessibleText("Show password");
         }
 
         return mShowPasswordCheckBox;
+    }
+
+    /**
+     * Links the password label to whichever password field (masked or unmasked) is currently visible, so that
+     * screen readers announce the label for the password field that has focus.
+     * @param label for the password fields
+     */
+    protected void setPasswordLabel(Label label)
+    {
+        label.labelForProperty().bind(Bindings.when(getShowPasswordCheckBox().selectedProperty())
+            .then((Node)getUnMaskedPasswordTextField())
+            .otherwise(getMaskedPasswordTextField()));
     }
 
     protected IntegerTextField getPortTextField()

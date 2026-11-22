@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.TalkerAliasAutoAdder;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.*;
 import io.github.dsheirer.audio.codec.mbe.JmbeAudioModule;
@@ -210,7 +211,35 @@ public class DecoderFactory
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
         }
 
+        configureTalkerAliasAutoAdd(channel, modules, aliasModel);
+
         return modules;
+    }
+
+    /**
+     * Configures the traffic channel manager of a standard (control) channel to automatically add talker aliases to
+     * the channel's alias list, when the channel is configured for it.  Traffic channels share the talker alias manager
+     * of their control channel, so they use the control channel's setting.
+     * @param channel configuration
+     * @param modules for the channel
+     * @param aliasModel to add aliases to
+     */
+    private static void configureTalkerAliasAutoAdd(Channel channel, List<Module> modules, AliasModel aliasModel)
+    {
+        if(channel.isStandardChannel() && channel.isAutoAddTalkerAliases() &&
+            channel.getDecodeConfiguration().getDecoderType().providesTalkerAlias() &&
+            channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
+        {
+            TalkerAliasAutoAdder autoAdder = new TalkerAliasAutoAdder(aliasModel, channel.getAliasListName());
+
+            for(Module module: modules)
+            {
+                if(module instanceof TrafficChannelManager tcm && tcm.getTalkerAliasManager() != null)
+                {
+                    tcm.getTalkerAliasManager().setTalkerAliasListener(autoAdder);
+                }
+            }
+        }
     }
 
     /**
@@ -571,6 +600,11 @@ public class DecoderFactory
     {
         List<String> features = audioModule.getFeatures();
 
+        if(features.contains(IAudioCodecV2.FEATURE_LEGACY_TONE_LEVELS))
+        {
+            audioModule.setFeature(IAudioCodecV2.FEATURE_LEGACY_TONE_LEVELS, config.isLegacyToneLevels());
+        }
+
         if(features.contains(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL))
         {
             audioModule.setFeature(IAudioCodecV2.FEATURE_AUTOMATIC_GAIN_CONTROL, config.isAGC());
@@ -578,7 +612,7 @@ public class DecoderFactory
 
         if(features.contains(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN))
         {
-            audioModule.setFeature(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN, config.getNoiseGain());
+            audioModule.setFeature(IAudioCodecV2.FEATURE_NOISE_GENERATOR_GAIN, config.getComfortNoiseGain());
         }
 
         if(features.contains(IAudioCodecV2.FEATURE_TONE_GENERATOR_GAIN))
@@ -872,7 +906,10 @@ public class DecoderFactory
                     copyAM.setSquelchAutoTrack(origAM.isSquelchAutoTrack());
                     return copyAM;
                 case DMR:
-                    return new DecodeConfigDMR();
+                    DecodeConfigDMR originalDMR = (DecodeConfigDMR)config;
+                    DecodeConfigDMR copyDMR = new DecodeConfigDMR();
+                    transferJMBESettings(originalDMR, copyDMR);
+                    return copyDMR;
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
@@ -908,17 +945,24 @@ public class DecoderFactory
                     copyNXDN.setChannelMap(origNXDN.getChannelMap());
                     copyNXDN.setTransmissionMode(origNXDN.getTransmissionMode());
                     copyNXDN.setTrafficChannelPoolSize(origNXDN.getTrafficChannelPoolSize());
+                    transferJMBESettings(origNXDN, copyNXDN);
                     return copyNXDN;
                 case P25_PHASE1:
-                    DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
-                    DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();
-                    copyP25.setIgnoreDataCalls(originalP25.getIgnoreDataCalls());
-                    copyP25.setModulation(originalP25.getModulation());
-                    copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
-                    return copyP25;
+                    DecodeConfigP25Phase1 originalP25P1 = (DecodeConfigP25Phase1)config;
+                    DecodeConfigP25Phase1 copyP25P1 = new DecodeConfigP25Phase1();
+                    copyP25P1.setIgnoreDataCalls(originalP25P1.getIgnoreDataCalls());
+                    copyP25P1.setIgnoreEncryptedCalls(originalP25P1.getIgnoreEncryptedCalls());
+                    copyP25P1.setModulation(originalP25P1.getModulation());
+                    copyP25P1.setTrafficChannelPoolSize(originalP25P1.getTrafficChannelPoolSize());
+                    transferJMBESettings(originalP25P1, copyP25P1);
+                    return copyP25P1;
                 case P25_PHASE2:
                     DecodeConfigP25Phase2 originalP25P2 = (DecodeConfigP25Phase2)config;
                     DecodeConfigP25Phase2 copyP25P2 = new DecodeConfigP25Phase2();
+                    copyP25P2.setIgnoreDataCalls(originalP25P2.getIgnoreDataCalls());
+                    copyP25P2.setIgnoreEncryptedCalls(originalP25P2.getIgnoreEncryptedCalls());
+                    copyP25P2.setTrafficChannelPoolSize(originalP25P2.getTrafficChannelPoolSize());
+                    transferJMBESettings(originalP25P2, copyP25P2);
 
                     if(originalP25P2.getScrambleParameters() != null)
                     {
@@ -933,5 +977,19 @@ public class DecoderFactory
         }
 
         return null;
+    }
+
+    /**
+     * Transfers the JMBE audio codec settings from one JMBE decode configuration to another.  This works both ways
+     * since both phase 1 and phase 2 decode configurations extend from a common JMBE decode configuration.
+     * @param from decode configuration
+     * @param to decode configuration
+     */
+    public static void transferJMBESettings(DecodeConfigJMBE from, DecodeConfigJMBE to)
+    {
+        to.setAGC(from.isAGC());
+        to.setComfortNoiseGain(from.getComfortNoiseGain());
+        to.setToneGain(from.getToneGain());
+        to.setLegacyToneLevels(from.isLegacyToneLevels());
     }
 }

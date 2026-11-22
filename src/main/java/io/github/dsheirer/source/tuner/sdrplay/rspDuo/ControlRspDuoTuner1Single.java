@@ -20,9 +20,9 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
+import io.github.dsheirer.source.tuner.sdrplay.DeviceSelectionMode;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.sdrplay.DeviceInfo;
 import java.util.EnumSet;
 
 /**
@@ -33,11 +33,11 @@ public class ControlRspDuoTuner1Single extends ControlRspDuoTuner1
     /**
      * Constructs an instance
      *
-     * @param device to control
+     * @param deviceInfo for the device
      */
-    public ControlRspDuoTuner1Single(RspDuoDevice device)
+    public ControlRspDuoTuner1Single(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo);
     }
 
     @Override
@@ -53,11 +53,11 @@ public class ControlRspDuoTuner1Single extends ControlRspDuoTuner1
     }
 
     @Override
-    public void setSampleRate(RspSampleRate sampleRate) throws SDRPlayException
+    public void setSampleRate(RspSampleRate sampleRate) throws RspException
     {
         if(sampleRate.isDualTunerSampleRate())
         {
-            throw new SDRPlayException("Use single-tuner sample rates only");
+            throw new RspException("Use single-tuner sample rates only");
         }
 
         super.setSampleRate(sampleRate);

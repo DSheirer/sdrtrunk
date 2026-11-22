@@ -1,0 +1,292 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+/* Tuners tab and tuner editors.  Colors are derived from the theme's looked-up colors so they follow every
+   application theme. */
+
+.tuner-view
+{
+    -fx-background-color: -fx-background;
+}
+
+.tuner-list-pane
+{
+    -fx-spacing: 6;
+    -fx-padding: 6 0 0 6;
+}
+
+.tuner-list-toolbar
+{
+    -fx-spacing: 6;
+}
+
+.tuner-frequency-column
+{
+    -fx-alignment: center-right;
+}
+
+/* Editor */
+
+.tuner-editor
+{
+    -fx-padding: 12 14 16 14;
+    -fx-spacing: 12;
+    -fx-max-width: 760;
+}
+
+.tuner-editor-scroll,
+.tuner-editor-scroll > .viewport
+{
+    -fx-background-color: -fx-background;
+    -fx-background-insets: 0;
+}
+
+.tuner-header
+{
+    -fx-spacing: 8;
+}
+
+.tuner-title-row,
+.tuner-header-extras
+{
+    -fx-spacing: 8;
+}
+
+.tuner-titles
+{
+    -fx-spacing: 1;
+}
+
+.tuner-title
+{
+    -fx-font-size: 1.45em;
+    -fx-font-weight: bold;
+}
+
+.tuner-subtitle
+{
+    -fx-opacity: 0.7;
+}
+
+.tuner-status-row
+{
+    -fx-spacing: 10;
+}
+
+.tuner-actions
+{
+    -fx-hgap: 6;
+    -fx-vgap: 6;
+}
+
+.tuner-error
+{
+    -fx-text-fill: #d9443a;
+}
+
+.tuner-recording-status
+{
+    -fx-text-fill: #d9443a;
+    -fx-font-size: 0.95em;
+}
+
+.tuner-record-button:selected
+{
+    -fx-base: #c0392b;
+    -fx-background-color: -fx-shadow-highlight-color, -fx-outer-border, -fx-inner-border, -fx-body-color;
+    -fx-text-fill: white;
+}
+
+.tuner-record-button:selected .text
+{
+    -fx-fill: white;
+}
+
+.tuner-restart-button
+{
+    -fx-base: #d9822b;
+}
+
+/* Status chip used in the editor header and the tuner list */
+.tuner-status-chip
+{
+    -fx-padding: 1 9 1 9;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-font-size: 0.92em;
+    -fx-font-weight: bold;
+    -fx-background-color: derive(-fx-background, -12%);
+    -fx-text-fill: -fx-text-base-color;
+}
+
+.tuner-status-chip:enabled
+{
+    -fx-background-color: #2e9e5b;
+    -fx-text-fill: white;
+}
+
+.tuner-status-chip:error
+{
+    -fx-background-color: #d9443a;
+    -fx-text-fill: white;
+}
+
+.tuner-status-chip:removed
+{
+    -fx-background-color: #888888;
+    -fx-text-fill: white;
+}
+
+.tuner-status-chip:enabled .text,
+.tuner-status-chip:error .text,
+.tuner-status-chip:removed .text
+{
+    -fx-fill: white;
+}
+
+/* Sections */
+
+.tuner-sections
+{
+    -fx-spacing: 12;
+}
+
+.tuner-section
+{
+    -fx-background-color: derive(-fx-background, -10%), ladder(-fx-background, derive(-fx-background, 4%) 49%, derive(-fx-background, 45%) 50%);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 8, 7;
+    -fx-padding: 10 14 12 14;
+    -fx-spacing: 8;
+}
+
+.tuner-section-embedded
+{
+    -fx-background-color: transparent;
+    -fx-padding: 4 0 4 0;
+}
+
+.tuner-section-title
+{
+    -fx-font-weight: bold;
+    -fx-font-size: 0.95em;
+    -fx-text-fill: -fx-accent;
+}
+
+.tuner-section-title .text
+{
+    -fx-fill: -fx-accent;
+}
+
+.tuner-section-grid
+{
+    -fx-hgap: 12;
+    -fx-vgap: 8;
+}
+
+.tuner-row-label
+{
+    -fx-min-width: 90;
+}
+
+.tuner-flow-row
+{
+    -fx-spacing: 12;
+}
+
+.tuner-frequency-row
+{
+    -fx-padding: 2 0 4 0;
+}
+
+.tuner-hint
+{
+    -fx-opacity: 0.75;
+    -fx-font-size: 0.95em;
+}
+
+.tuner-value-label
+{
+    -fx-opacity: 0.85;
+}
+
+.tuner-locked-notice
+{
+    -fx-padding: 4 10 4 10;
+    -fx-background-radius: 6;
+    -fx-background-color: derive(#d9a62b, 55%);
+    -fx-text-fill: #5c4300;
+}
+
+.tuner-locked-notice .text
+{
+    -fx-fill: #5c4300;
+}
+
+.tuner-limits-pane > .content
+{
+    -fx-padding: 4 14 8 14;
+}
+
+/* Gain slider */
+
+.gain-slider
+{
+    -fx-spacing: 10;
+}
+
+.gain-slider-value
+{
+    -fx-min-width: 5.5em;
+}
+
+/* RSP gain overload indicator, which lights when the tuner reports an overload */
+.tuner-overload-indicator
+{
+    -fx-padding: 1 8 1 8;
+    -fx-background-radius: 4;
+    -fx-background-color: derive(-fx-background, -8%);
+    -fx-opacity: 0.55;
+}
+
+.tuner-overload-indicator:overload
+{
+    -fx-background-color: #d9443a;
+    -fx-text-fill: #ffeb3b;
+    -fx-opacity: 1.0;
+}
+
+.tuner-overload-indicator:overload .text
+{
+    -fx-fill: #ffeb3b;
+}
+
+/* Placeholder when no tuner is selected */
+.empty-tuner-editor
+{
+    -fx-padding: 40;
+    -fx-spacing: 6;
+    -fx-opacity: 0.75;
+}
+
+.empty-tuner-title
+{
+    -fx-font-size: 1.3em;
+    -fx-font-weight: bold;
+}

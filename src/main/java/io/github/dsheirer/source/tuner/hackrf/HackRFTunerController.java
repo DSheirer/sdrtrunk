@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,190 +18,441 @@
  */
 package io.github.dsheirer.source.tuner.hackrf;
 
-import io.github.dsheirer.buffer.INativeBufferFactory;
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.SignedByteNativeBufferFactory;
+import io.github.dsheirer.hackrf.BoardId;
+import io.github.dsheirer.hackrf.BoardInfo;
+import io.github.dsheirer.hackrf.HackRf;
+import io.github.dsheirer.hackrf.HackRfDevice;
+import io.github.dsheirer.hackrf.HackRfException;
+import io.github.dsheirer.hackrf.SampleBuffer;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
+import io.github.dsheirer.source.tuner.manager.UsbDeviceLookup;
 import java.util.EnumSet;
-import org.apache.commons.io.EndianUtils;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.LibUsb;
-import org.usb4java.LibUsbException;
 
-import javax.usb.UsbException;
-
-public class HackRFTunerController extends USBTunerController
+/**
+ * HackRF One, HackRF Pro, Jawbreaker and rad1o tuner controller, implemented with the jHackRF library (libhackrf).
+ *
+ * The tuner is discovered with LibUsb at a USB bus and port, like all other USB tuners, however libhackrf owns the
+ * USB device and its transfers.
+ */
+public class HackRFTunerController extends TunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(HackRFTunerController.class);
-
-    public final static long USB_TIMEOUT_US = 1000000l; //uSeconds
-    public static final int USB_TRANSFER_BUFFER_SIZE = 262144;
-
-    public static final byte REQUEST_TYPE_IN = (byte)(LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
-    public static final byte REQUEST_TYPE_OUT = (byte)(LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
 
     public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 10000000l;
     public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 6000000000l;
     public static final long DEFAULT_FREQUENCY = 101100000;
     public static final double USABLE_BANDWIDTH = 0.90;
     public static final int DC_HALF_BANDWIDTH = 5000;
+    //Sample count of each buffer from libhackrf (262,144 bytes), used until the device is opened.
+    private static final int DEFAULT_BUFFER_SAMPLE_COUNT = 131072;
 
-    private INativeBufferFactory mNativeBufferFactory = new SignedByteNativeBufferFactory();
+    private final int mBus;
+    private final String mPortAddress;
+    private final SignedByteNativeBufferFactory mNativeBufferFactory = new SignedByteNativeBufferFactory();
+    private HackRfDevice mDevice;
+    private TunerType mTunerType = TunerType.HACKRF_ONE;
+    private String mBoardName;
+    private String mSerialNumber;
+    private String mPartId;
+    private String mFirmwareVersion;
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
     private boolean mAmplifierEnabled = false;
+    private boolean mBiasTEnabled = false;
+    private volatile int mBufferSampleCount = DEFAULT_BUFFER_SAMPLE_COUNT;
+    private boolean mStreaming = false;
 
     /**
      * Constructs an instance
      * @param bus usb
      * @param portAddress usb
+     * @param tunerErrorListener to receive tuner error notifications.
      */
     public HackRFTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
-                tunerErrorListener);
+        super(tunerErrorListener);
+        mBus = bus;
+        mPortAddress = portAddress;
+        setMinimumFrequency(MINIMUM_TUNABLE_FREQUENCY_HZ);
+        setMaximumFrequency(MAXIMUM_TUNABLE_FREQUENCY_HZ);
+        setMiddleUnusableHalfBandwidth(DC_HALF_BANDWIDTH);
+        setUsableBandwidthPercentage(USABLE_BANDWIDTH);
     }
 
     /**
-     * Tuner type for this HackRf
+     * Tuner type for this HackRF, available once the tuner is started.
      */
     @Override
     public TunerType getTunerType()
     {
-        if(isRunning())
-        {
-            try
-            {
-                BoardID boardID = getBoardID();
-
-                switch(boardID)
-                {
-                    case RAD1O:
-                        return TunerType.HACKRF_RAD1O;
-                    case JAWBREAKER:
-                        return TunerType.HACKRF_JAWBREAKER;
-                    case HACKRF_ONE:
-                        return TunerType.HACKRF_ONE;
-                };
-            }
-            catch(UsbException ue)
-            {
-                mLog.error("Couldn't read HackRF board ID - " + ue.getLocalizedMessage());
-            }
-        }
-
-        return TunerType.HACKRF_ONE;
-    }
-
-    @Override
-    protected INativeBufferFactory getNativeBufferFactory()
-    {
-        return mNativeBufferFactory;
-    }
-
-    @Override
-    protected int getTransferBufferSize()
-    {
-        return USB_TRANSFER_BUFFER_SIZE;
+        return mTunerType;
     }
 
     @Override
     public int getBufferSampleCount()
     {
-        return USB_TRANSFER_BUFFER_SIZE / 2;
+        return mBufferSampleCount;
     }
 
-    /**
-     * Device startup actions invoked by the parent start() method.
-     * @throws SourceException if there is an error performing these operations
-     */
-    protected void deviceStart() throws SourceException
+    @Override
+    public void start() throws SourceException
     {
+        String serialNumber = readSerialNumber();
+
+        getLock().lock();
+
         try
         {
-            setMode(Mode.RECEIVE);
+            mDevice = open(serialNumber);
+
+            BoardId boardId = mDevice.boardId();
+            mBoardName = boardId.name();
+            mTunerType = getTunerType(boardId);
+
+            BoardInfo boardInfo = mDevice.boardInfo();
+            mSerialNumber = formatSerialNumber(boardInfo.serialNumber());
+            mPartId = String.format(Locale.ROOT, "%08X-%08X", boardInfo.partId1(), boardInfo.partId2());
+            mFirmwareVersion = mDevice.firmwareVersion();
+            mBufferSampleCount = mDevice.transferBufferSize() / 2;
+
+            //The device keeps its previous settings, so force the default sample rate to be applied.
+            mSampleRate = null;
+            setSampleRate(HackRFSampleRate.RATE_5_0);
             setFrequency(DEFAULT_FREQUENCY);
         }
-        catch(Exception e)
+        catch(HackRfException | SourceException | RuntimeException | LinkageError e)
         {
-            mLog.error("Error on Hack RF startup", e);
-            throw new SourceException("HackRF Tuner Controller - couldn't claim USB interface or get endpoint or pipe", e);
+            closeDevice(mDevice);
+            mDevice = null;
+            throw new SourceException("Can't start HackRF tuner - " + e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        HackRfDevice device;
+
+        getLock().lock();
+
+        try
+        {
+            device = mDevice;
+            mDevice = null;
+            mStreaming = false;
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+
+        mNativeBufferBroadcaster.clear();
+        closeDevice(device);
+    }
+
+    /**
+     * Opens the device by serial number, or when the device doesn't report a USB serial number, opens it when it is
+     * the only HackRF device connected.
+     * @param serialNumber from the USB serial string descriptor, or null.
+     * @return opened device
+     */
+    private static HackRfDevice open(String serialNumber) throws HackRfException, SourceException
+    {
+        if(serialNumber != null)
+        {
+            return HackRf.open(serialNumber);
+        }
+
+        if(HackRf.listDevices().size() == 1)
+        {
+            return HackRf.open(0);
+        }
+
+        throw new SourceException("HackRF doesn't report a USB serial number and can't be distinguished from the " +
+                "other HackRF devices - update the HackRF firmware");
+    }
+
+    /**
+     * Closes the device, which also stops streaming.
+     * @param device to close, or null
+     */
+    private static void closeDevice(HackRfDevice device)
+    {
+        if(device != null)
+        {
+            try
+            {
+                device.setAntennaEnable(false);
+            }
+            catch(HackRfException | RuntimeException e)
+            {
+                mLog.error("Error disabling HackRF Bias-T antenna power", e);
+            }
+
+            try
+            {
+                device.close();
+            }
+            catch(HackRfException | RuntimeException e)
+            {
+                mLog.error("Error closing HackRF device", e);
+            }
         }
     }
 
     /**
-     * Devices shutdown actions invoked by the parent stop() method
+     * Maps the board identifier to a tuner type.
      */
-    @Override
-    protected void deviceStop()
+    private static TunerType getTunerType(BoardId boardId)
+    {
+        return switch(boardId.code())
+        {
+            case 1 -> TunerType.HACKRF_JAWBREAKER;
+            case 3 -> TunerType.HACKRF_RAD1O;
+            case BoardId.PRALINE -> TunerType.HACKRF_PRO;
+            default -> TunerType.HACKRF_ONE;
+        };
+    }
+
+    /**
+     * Formats the 32 hex digit serial number as four dash-separated groups, as sdrtrunk has always identified HackRF
+     * tuners, so that existing tuner configurations continue to match.
+     */
+    private static String formatSerialNumber(String serialNumber)
+    {
+        String serial = serialNumber.toUpperCase(Locale.ROOT);
+
+        if(serial.length() != 32)
+        {
+            return serial;
+        }
+
+        return serial.substring(0, 8) + "-" + serial.substring(8, 16) + "-" + serial.substring(16, 24) + "-" +
+                serial.substring(24, 32);
+    }
+
+    /**
+     * Reads the USB serial number of the device at this controller's USB bus and port, since libhackrf opens a
+     * specific device by serial number.
+     * @return serial number or null if the device doesn't report a serial number.
+     * @throws SourceException if the device isn't found or can't be accessed.
+     */
+    private String readSerialNumber() throws SourceException
+    {
+        String serial = UsbDeviceLookup.readSerialNumber(mBus, mPortAddress);
+
+        //libhackrf compares, at most, the last 32 characters of the serial string
+        if(serial != null && serial.length() > 32)
+        {
+            serial = serial.substring(serial.length() - 32);
+        }
+
+        return serial == null || serial.isEmpty() ? null : serial;
+    }
+
+    /**
+     * Operation that requires the device.
+     */
+    private interface DeviceOperation
+    {
+        void execute(HackRfDevice device) throws HackRfException;
+    }
+
+    /**
+     * Executes the operation under the controller lock so that the device can't be closed while it is in use.  The
+     * operation is ignored when the device isn't open, which allows for calls that arrive during tuner shutdown.
+     * @param operation to execute
+     * @throws SourceException if the operation fails
+     */
+    private void execute(DeviceOperation operation) throws SourceException
+    {
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                operation.execute(mDevice);
+            }
+        }
+        catch(HackRfException | IllegalArgumentException | IllegalStateException e)
+        {
+            throw new SourceException(e.getMessage(), e);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
+    }
+
+    /**
+     * Receives samples on the libusb event thread and dispatches them to the buffer listeners.  Exceptions are
+     * contained here since an exception reaching the library would stop the sample stream.
+     * @param buffer from the library, which is only valid until this method returns.
+     * @return true to continue streaming
+     */
+    private boolean receive(SampleBuffer buffer)
     {
         try
         {
-            setMode(Mode.OFF);
+            //The buffer factory copies the samples from native memory
+            broadcast(mNativeBufferFactory.getBuffer(buffer.samples().asByteBuffer(), System.currentTimeMillis()));
         }
-        catch(UsbException ue)
+        catch(RuntimeException e)
         {
-            mLog.error("Error while setting HackRF mode to OFF", ue);
+            mLog.error("Error dispatching HackRF sample buffer", e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Starts the sample stream if it's not already started.
+     */
+    private void startStreaming() throws SourceException
+    {
+        if(!mStreaming)
+        {
+            execute(device -> device.startRx(this::receive));
+            mStreaming = mDevice != null;
+
+            //The firmware turns off antenna power when the transceiver returns to idle, so restore it
+            if(mBiasTEnabled)
+            {
+                execute(device -> device.setAntennaEnable(true));
+            }
         }
     }
 
     /**
-     * HackRF board identifier/type
+     * Stops the sample stream if it's started.
      */
-    public BoardID getBoardID() throws UsbException
+    private void stopStreaming() throws SourceException
     {
-        int id = readByte(Request.BOARD_ID_READ, (byte)0, (byte)0, false);
-        return BoardID.lookup(id);
+        if(mStreaming)
+        {
+            mStreaming = false;
+            execute(HackRfDevice::stopRx);
+        }
     }
 
     /**
-     * HackRF firmware version string
+     * Adds the IQ buffer listener and automatically starts streaming, if not already started.
      */
-    public String getFirmwareVersion() throws UsbException
+    @Override
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
-        ByteBuffer buffer = readArray(Request.VERSION_STRING_READ, 0, 0, 255);
-        byte[] data = new byte[255];
-        buffer.get(data);
-        return new String(data);
+        getLock().lock();
+
+        try
+        {
+            if(mDevice != null)
+            {
+                super.addBufferListener(listener);
+                startStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error starting streaming on HackRF tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
     }
 
     /**
-     * HackRF part id number and serial number
+     * Removes the IQ buffer listener and stops streaming if there are no more listeners.
      */
-    public Serial getSerial() throws UsbException
+    @Override
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        ByteBuffer buffer = readArray(Request.BOARD_PARTID_SERIALNO_READ, 0, 0, 24);
-        return new Serial(buffer);
+        getLock().lock();
+
+        try
+        {
+            super.removeBufferListener(listener);
+
+            if(!hasBufferListeners())
+            {
+                stopStreaming();
+            }
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error stopping streaming on HackRF tuner", se);
+        }
+        finally
+        {
+            getLock().unlock();
+        }
     }
 
     /**
-     * Sets the HackRF transceiver mode
+     * HackRF board name, available once the tuner is started.
+     * @return board name or null
      */
-    public void setMode(Mode mode) throws UsbException
+    public String getBoardName()
     {
-        write(Request.SET_TRANSCEIVER_MODE, mode.getNumber(), 0);
+        return mBoardName;
+    }
+
+    /**
+     * HackRF firmware version string, available once the tuner is started.
+     * @return firmware version or null
+     */
+    public String getFirmwareVersion()
+    {
+        return mFirmwareVersion;
+    }
+
+    /**
+     * HackRF serial number, formatted as four dash-separated groups of 8 hex digits, available once the tuner is
+     * started.
+     * @return serial number or null
+     */
+    public String getSerialNumber()
+    {
+        return mSerialNumber;
+    }
+
+    /**
+     * HackRF microcontroller part ID, available once the tuner is started.
+     * @return part ID or null
+     */
+    public String getPartId()
+    {
+        return mPartId;
     }
 
     /**
      * Sets the HackRF baseband filter
      */
-    public  void setBasebandFilter(BasebandFilter filter) throws UsbException
+    public void setBasebandFilter(BasebandFilter filter) throws SourceException
     {
-        write(Request.BASEBAND_FILTER_BANDWIDTH_SET, filter.getLowValue(), filter.getHighValue());
+        execute(device -> device.setBasebandFilterBandwidth(filter.getBandwidth()));
     }
 
     /**
      * Enables (true) or disables (false) the amplifier
      */
-    public void setAmplifierEnabled(boolean enabled) throws UsbException
+    public void setAmplifierEnabled(boolean enabled) throws SourceException
     {
-        write(Request.AMP_ENABLE, (enabled ? 1 : 0), 0);
+        execute(device -> device.setAmpEnable(enabled));
         mAmplifierEnabled = enabled;
     }
 
@@ -211,34 +462,36 @@ public class HackRFTunerController extends USBTunerController
     }
 
     /**
+     * Enables (true) or disables (false) the Bias-T power on the antenna port.
+     */
+    public void setBiasTEnabled(boolean enabled) throws SourceException
+    {
+        execute(device -> device.setAntennaEnable(enabled));
+        mBiasTEnabled = enabled;
+    }
+
+    public boolean isBiasTEnabled()
+    {
+        return mBiasTEnabled;
+    }
+
+    /**
      * Sets the IF LNA Gain
      */
-    public void setLNAGain(HackRFLNAGain gain) throws UsbException
+    public void setLNAGain(HackRFLNAGain gain) throws SourceException
     {
-        int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
-
-        if(result != 1)
-        {
-            throw new UsbException("couldn't set lna gain to " + gain);
-        }
+        execute(device -> device.setLnaGain(gain.getValue()));
     }
 
     /**
      * Sets the Baseband VGA Gain
      */
-    public void setVGAGain(HackRFVGAGain gain) throws UsbException
+    public void setVGAGain(HackRFVGAGain gain) throws SourceException
     {
-        int result = readByte(Request.SET_VGA_GAIN, 0, gain.getValue(), true);
-
-        if(result != 1)
-        {
-            throw new UsbException("couldn't set vga gain to " + gain);
-        }
+        execute(device -> device.setVgaGain(gain.getValue()));
     }
 
-    /**
-     * Not implemented
-     */
+    @Override
     public long getTunedFrequency() throws SourceException
     {
         return mFrequencyController.getTunedFrequency();
@@ -247,32 +500,21 @@ public class HackRFTunerController extends USBTunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(8);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-        int mhz = (int)(frequency / 1E6);
-        int hz = (int)(frequency - (mhz * 1E6));
-
-        buffer.putInt(mhz);
-        buffer.putInt(hz);
-
-        buffer.rewind();
-
-        try
+        if(MINIMUM_TUNABLE_FREQUENCY_HZ <= frequency && frequency <= MAXIMUM_TUNABLE_FREQUENCY_HZ)
         {
-            write(Request.SET_FREQUENCY, 0, 0, buffer);
+            execute(device -> device.setFrequency(frequency));
         }
-        catch(UsbException e)
+        else
         {
-            mLog.error("error setting frequency [" + frequency + "]", e);
-            throw new SourceException("error setting frequency [" + frequency + "]", e);
+            throw new SourceException("Frequency [" + frequency + "] outside of tunable range " +
+                    MINIMUM_TUNABLE_FREQUENCY_HZ + "-" + MAXIMUM_TUNABLE_FREQUENCY_HZ);
         }
     }
 
     @Override
     public double getCurrentSampleRate()
     {
-        return mSampleRate.getRate();
+        return mSampleRate != null ? mSampleRate.getRate() : 0;
     }
 
     @Override
@@ -295,10 +537,11 @@ public class HackRFTunerController extends USBTunerController
             {
                 setSampleRate(hackRFConfig.getSampleRate());
                 setAmplifierEnabled(hackRFConfig.getAmplifierEnabled());
+                setBiasTEnabled(hackRFConfig.isBiasT());
                 setLNAGain(hackRFConfig.getLNAGain());
                 setVGAGain(hackRFConfig.getVGAGain());
             }
-            catch(UsbException e)
+            catch(SourceException e)
             {
                 throw new SourceException("Error while applying tuner configuration", e);
             }
@@ -309,153 +552,39 @@ public class HackRFTunerController extends USBTunerController
         }
     }
 
-    public ByteBuffer readArray(Request request, int value, int index, int length) throws UsbException
-    {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(length);
-
-        int transferred = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_IN, request.getRequestNumber(),
-                (short)value, (short)index, buffer, USB_TIMEOUT_US);
-
-        if(transferred < 0)
-        {
-            throw new LibUsbException("read error", transferred);
-        }
-
-        return buffer;
-    }
-
-    public int read(Request request, int value, int index, int length) throws UsbException
-    {
-        if(!(length == 1 || length == 2 || length == 4))
-        {
-            throw new IllegalArgumentException("invalid length [" + length +
-                "] must be: byte=1, short=2, int=4 to read a primitive");
-        }
-
-        ByteBuffer buffer = readArray(request, value, index, length);
-
-        byte[] data = new byte[buffer.capacity()];
-
-        buffer.get(data);
-
-        switch(data.length)
-        {
-            case 1:
-                return data[0];
-            case 2:
-                return EndianUtils.readSwappedShort(data, 0);
-            case 4:
-                return EndianUtils.readSwappedInteger(data, 0);
-            default:
-                throw new UsbException("read() primitive returned an "
-                    + "unrecognized byte array " + Arrays.toString(data));
-        }
-    }
-
-    public synchronized int readByte(Request request, int value, int index, boolean signed) throws UsbException
-    {
-        ByteBuffer buffer = readArray(request, value, index, 1);
-
-        if(signed)
-        {
-            return buffer.get();
-        }
-        else
-        {
-            return (buffer.get() & 0xFF);
-        }
-    }
-
-    public synchronized void write(Request request, int value, int index, ByteBuffer buffer) throws UsbException
-    {
-        int status = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_OUT, request.getRequestNumber(),
-                (short)value, (short)index, buffer, USB_TIMEOUT_US);
-
-        if(status < LibUsb.SUCCESS)
-        {
-            throw new LibUsbException("error writing control transfer for request [" + request.name() +
-                    "] value [" + value + "]", status);
-        }
-    }
-
     /**
-     * Sends a request that doesn't have a data payload
+     * Sets the sample rate and the baseband filter for the sample rate.  Setting the sample rate resets the
+     * baseband filter, so the filter is set afterward.
      */
-    public void write(Request request, int value, int index) throws UsbException
+    public void setSampleRate(HackRFSampleRate rate) throws SourceException
     {
-        write(request, value, index, ByteBuffer.allocateDirect(0));
-    }
-
-    /**
-     * Sample Rate
-     *
-     * Note: the libhackrf set sample rate method is designed to allow fractional
-     * sample rates.  However, since we're only using integral sample rates, we
-     * simply invoke the setSampleRateManual method directly.
-     */
-    public void setSampleRate(HackRFSampleRate rate) throws UsbException, SourceException
-    {
-        if(!rate.isValidSampleRate())
+        if(rate == null || !rate.isValidSampleRate())
         {
             rate = HackRFSampleRate.RATE_5_0;
         }
 
-        setSampleRateManual(rate.getRate(), 1);
-        mFrequencyController.setSampleRate(rate.getRate());
-        setBasebandFilter(rate.getFilter());
-        mSampleRate = rate;
-        getNativeBufferFactory().setSamplesPerMillisecond((float)getSampleRate() / 1000.0f);
-    }
-
-    public void setSampleRateManual(int frequency, int divider) throws UsbException
-    {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(8);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(frequency);
-        buffer.putInt(divider);
-        write(Request.SET_SAMPLE_RATE, 0, 0, buffer);
-    }
-
-    public double getSampleRate()
-    {
-        return mSampleRate.getRate();
-    }
-
-    public enum Request
-    {
-        SET_TRANSCEIVER_MODE(1),
-        MAX2837_TRANSCEIVER_WRITE(2),
-        MAX2837_TRANSCEIVER_READ(3),
-        SI5351C_CLOCK_GENERATOR_WRITE(4),
-        SI5351C_CLOCK_GENERATOR_READ(5),
-        SET_SAMPLE_RATE(6),
-        BASEBAND_FILTER_BANDWIDTH_SET(7),
-        RFFC5071_MIXER_WRITE(8),
-        RFFC5071_MIXER_READ(9),
-        SPIFLASH_ERASE(10),
-        SPIFLASH_WRITE(11),
-        SPIFLASH_READ(12),
-        BOARD_ID_READ(14),
-        VERSION_STRING_READ(15),
-        SET_FREQUENCY(16),
-        AMP_ENABLE(17),
-        BOARD_PARTID_SERIALNO_READ(18),
-        SET_LNA_GAIN(19),
-        SET_VGA_GAIN(20),
-        SET_TXVGA_GAIN(21),
-        ANTENNA_ENABLE(23),
-        SET_FREQUENCY_EXPLICIT(24);
-
-        private byte mRequestNumber;
-
-        Request(int number)
+        if(rate == mSampleRate)
         {
-            mRequestNumber = (byte)number;
+            return;
         }
 
-        public byte getRequestNumber()
+        HackRFSampleRate sampleRate = rate;
+
+        getLock().lock();
+
+        try
         {
-            return mRequestNumber;
+            execute(device -> {
+                device.setSampleRateManual(sampleRate.getRate(), 1);
+                device.setBasebandFilterBandwidth(sampleRate.getFilter().getBandwidth());
+            });
+            mSampleRate = sampleRate;
+            mNativeBufferFactory.setSamplesPerMillisecond(sampleRate.getRate() / 1000.0f);
+            mFrequencyController.setSampleRate(sampleRate.getRate());
+        }
+        finally
+        {
+            getLock().unlock();
         }
     }
 
@@ -571,99 +700,7 @@ public class HackRFTunerController extends USBTunerController
             return mBandwidth;
         }
 
-        public int getHighValue()
-        {
-            return mBandwidth >> 16;
-        }
-
-        public int getLowValue()
-        {
-            return mBandwidth & 0xFFFF;
-        }
-
         public String getLabel()
-        {
-            return mLabel;
-        }
-    }
-
-    public enum BoardID
-    {
-        JELLYBEAN(0x00, "HackRF Jelly Bean"),
-        JAWBREAKER(0x01, "HackRF Jaw Breaker"),
-        HACKRF_ONE(0x02, "HackRF One"),
-        RAD1O(0x03, "RAD1O"),
-        INVALID(0xFF, "HackRF Unknown Board");
-
-        private byte mIDNumber;
-        private String mLabel;
-
-        BoardID(int number, String label)
-        {
-            mIDNumber = (byte)number;
-            mLabel = label;
-        }
-
-        public String toString()
-        {
-            return mLabel;
-        }
-
-        public String getLabel()
-        {
-            return mLabel;
-        }
-
-        public byte getNumber()
-        {
-            return mIDNumber;
-        }
-
-        public static BoardID lookup(int value)
-        {
-            switch(value)
-            {
-                case 0:
-                    return JELLYBEAN;
-                case 1:
-                    return JAWBREAKER;
-                case 2:
-                    return HACKRF_ONE;
-                case 3:
-                    return RAD1O;
-                default:
-                    return INVALID;
-            }
-        }
-    }
-
-    public enum Mode
-    {
-        OFF(0, "Off"),
-        RECEIVE(1, "Receive"),
-        TRANSMIT(2, "Transmit"),
-        SS(3, "SS");
-
-        private byte mNumber;
-        private String mLabel;
-
-        Mode(int number, String label)
-        {
-            mNumber = (byte)number;
-            mLabel = label;
-        }
-
-        public byte getNumber()
-        {
-            return mNumber;
-        }
-
-        public String getLabel()
-        {
-            return mLabel;
-        }
-
-        public String toString()
         {
             return mLabel;
         }
@@ -749,55 +786,6 @@ public class HackRFTunerController extends USBTunerController
         public String toString()
         {
             return mValue + " dB";
-        }
-    }
-
-    /**
-     * HackRF part id and serial number parsing class
-     */
-    public class Serial
-    {
-        private byte[] mData;
-
-        public Serial(ByteBuffer buffer)
-        {
-            mData = new byte[buffer.capacity()];
-
-            buffer.get(mData);
-        }
-
-        public String getPartID()
-        {
-            int part0 = EndianUtils.readSwappedInteger(mData, 0);
-            int part1 = EndianUtils.readSwappedInteger(mData, 4);
-
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(String.format("%08X", part0));
-            sb.append("-");
-            sb.append(String.format("%08X", part1));
-
-            return sb.toString();
-        }
-
-        public String getSerialNumber()
-        {
-            int serial0 = EndianUtils.readSwappedInteger(mData, 8);
-            int serial1 = EndianUtils.readSwappedInteger(mData, 12);
-            int serial2 = EndianUtils.readSwappedInteger(mData, 16);
-            int serial3 = EndianUtils.readSwappedInteger(mData, 20);
-
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(String.format("%08X", serial0));
-            sb.append("-");
-            sb.append(String.format("%08X", serial1));
-            sb.append("-");
-            sb.append(String.format("%08X", serial2));
-            sb.append("-");
-            sb.append(String.format("%08X", serial3));
-
-            return sb.toString();
         }
     }
 }

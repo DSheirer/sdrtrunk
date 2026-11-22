@@ -20,26 +20,30 @@
 package io.github.dsheirer.module.decode.nxdn.layer3.type;
 
 /**
- * Transmission mode and symbol rate
+ * Transmission mode, symbol rate and outer (+/-3) symbol deviation per NXDN TS 1-A Table 3.3-1.
  */
 public enum TransmissionMode
 {
-    M4800("4800", 2400),
-    M9600("9600", 4800),
-    TYPE_D("TYPE D", 2400);
+    M4800("4800", 2400, 1050),
+    M9600("9600", 4800, 2400),
+    TYPE_D("TYPE D", 2400, 1050);
 
     private final String mLabel;
     private final int mSymbolRate;
+    private final int mOuterSymbolDeviation;
 
     /**
      * Constructs an instance
      *
      * @param label to display
+     * @param symbolRate in symbols per second
+     * @param outerSymbolDeviation frequency deviation of the +/-3 symbols in Hertz
      */
-    TransmissionMode(String label, int symbolRate)
+    TransmissionMode(String label, int symbolRate, int outerSymbolDeviation)
     {
         mLabel = label;
         mSymbolRate = symbolRate;
+        mOuterSymbolDeviation = outerSymbolDeviation;
     }
 
     public String getLabel()
@@ -53,6 +57,14 @@ public enum TransmissionMode
     public int getSymbolRate()
     {
         return mSymbolRate;
+    }
+
+    /**
+     * Frequency deviation of the outer (+/-3) symbols in Hertz.
+     */
+    public int getOuterSymbolDeviation()
+    {
+        return mOuterSymbolDeviation;
     }
 
     /**

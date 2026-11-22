@@ -98,7 +98,7 @@ public class TwoChannelMixerAssembler extends MixerAssembler
         ComplexSamples channel1 = mChannel1SampleAssembler.getBufferAndReset(timestamp);
         ComplexSamples channel2 = mChannel2SampleAssembler.getBufferAndReset(timestamp);
 
-        //Synthesize two channels into one, reducing sample rate by 2 so it's same as single channel rate
+        //Synthesize two channels into one at the single channel sample rate, centered on the channel boundary at +FS/4
         ComplexSamples buffer = mTwoChannelSynthesizer.process(channel1, channel2);
 
         //Mix to baseband

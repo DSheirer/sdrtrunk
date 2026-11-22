@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,14 @@ public class JmbeCreator
 {
     private final static Logger mLog = LoggerFactory.getLogger(JmbeCreator.class);
     public static final String GITHUB_JMBE_RELEASES_URL = "https://api.github.com/repos/dsheirer/jmbe/releases";
+
+    /**
+     * Major version of the JMBE API (com.github.DSheirer.jmbe:api) that this application is compiled against.  Only
+     * JMBE creator releases with this same major version are downloaded, so that a newer, incompatible major version
+     * release can't replace the user's library.  Update this value whenever the JMBE API dependency major version
+     * changes.  JmbeCreatorTest verifies that this value matches the API jar on the classpath.
+     */
+    public static final int JMBE_API_MAJOR_VERSION = 3;
     public static final String CREATOR_SCRIPT_LINUX = "creator";
     public static final String CREATOR_SCRIPT_WINDOWS = "creator.bat";
 
@@ -331,7 +339,7 @@ public class JmbeCreator
 
     public static void main(String[] args)
     {
-        Release release = GitHub.getLatestRelease(GITHUB_JMBE_RELEASES_URL);
+        Release release = GitHub.getLatestRelease(GITHUB_JMBE_RELEASES_URL, JMBE_API_MAJOR_VERSION);
         Path library = Paths.get("/home/denny/temp/jmbe.jar");
         JmbeCreator jmbeCreator = new JmbeCreator(release, library);
 

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
-import java.awt.Image;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,8 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.beans.property.SimpleStringProperty;
@@ -44,7 +41,6 @@ import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
 
 public class IconModel
 {
@@ -60,7 +56,6 @@ public class IconModel
     private AtomicBoolean mSavingIcons = new AtomicBoolean();
     private ObservableList<Icon> mIcons = FXCollections.observableArrayList(Icon.extractor());
     private StringProperty mDefaultIconName = new SimpleStringProperty();
-    private Map<String,ImageIcon> mResizedIcons = new HashMap<>();
     private Icon mDefaultIcon;
     private IconSet mStandardIcons;
 
@@ -173,81 +168,8 @@ public class IconModel
         return mDefaultIcon;
     }
 
-    /**
-     * Returns named icon scaled to the specified height.  Utilizes an internal map to retain scaled icons so that they
-     * are only scaled/generated once.
-     *
-     * @param name - name of icon
-     * @param height - height of icon in pixels
-     * @return - scaled named icon (if it exists) or a scaled version of the default icon
-     */
-    public ImageIcon getIcon(String name, int height)
-    {
-        if(name == null)
-        {
-            name = getDefaultIcon().getName();
-        }
 
-        String scaledIconName = name + height;
 
-        ImageIcon mapValue = mResizedIcons.get(scaledIconName);
-        if (mapValue != null)
-        {
-            return mapValue;
-        }
-
-        Icon icon = getIcon(name);
-
-        ImageIcon scaledIcon = getScaledIcon(icon.getIcon(), height);
-
-        if(scaledIcon != null)
-        {
-            mResizedIcons.put(scaledIconName, scaledIcon);
-        }
-
-        return scaledIcon;
-    }
-
-    /**
-     * Scales the icon to the new pixel height value
-     *
-     * @param original image icon
-     * @param height new height to scale the image (width will be scaled accordingly)
-     * @return
-     */
-    public static ImageIcon getScaledIcon(ImageIcon original, int height)
-    {
-        if(original != null)
-        {
-            double scale = (double) original.getIconHeight() / (double) height;
-
-            int scaledWidth = (int) ((double) original.getIconWidth() / scale);
-
-            Image scaledImage = original.getImage().getScaledInstance(scaledWidth,
-                height, java.awt.Image.SCALE_SMOOTH);
-
-            return new ImageIcon(scaledImage);
-        }
-
-        return null;
-    }
-
-    /**
-     * Constructs an icon and scales it to the specified height
-     * @param path
-     * @param height
-     * @return
-     */
-    public static ImageIcon getScaledIcon(String path, int height)
-    {
-        if(path != null)
-        {
-            Icon icon = new Icon("", path);
-            return getScaledIcon(icon.getIcon(), height);
-        }
-
-        return null;
-    }
 
     /**
      * Folder where icon, backup and lock files are stored

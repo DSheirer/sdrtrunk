@@ -21,6 +21,7 @@ package io.github.dsheirer.source.tuner.channel;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.SerializedListener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
@@ -46,12 +47,13 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     private final static Logger mLog = LoggerFactory.getLogger(MultiFrequencyTunerChannelSource.class);
 
     private TunerManager mTunerManager;
-    private TunerChannelSource mTunerChannelSource;
+    private volatile TunerChannelSource mTunerChannelSource;
     private List<Long> mFrequencies;
     private List<Long> mLockedFrequencies = new ArrayList<>();
     private int mFrequencyListPointer = 0;
     private ChannelSpecification mChannelSpecification;
-    private Listener<ComplexSamples> mComplexSamplesListener;
+    //Rotating to the next source can overlap the outgoing and incoming dispatcher threads and consumers aren't thread safe
+    private final SerializedListener<ComplexSamples> mComplexSamplesListener = new SerializedListener<>();
     private Listener<Heartbeat> mHeartbeatListener;
     private String mPreferredTuner;
     private AtomicBoolean mChangingChannels = new AtomicBoolean();
@@ -69,6 +71,17 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
         mFrequencies = frequencies;
         mChannelSpecification = channelSpecification;
         mPreferredTuner = preferredTuner;
+    }
+
+    /**
+     * Name of the tuner that provides the current frequency's tuner channel source, which can change as the
+     * frequencies rotate.
+     */
+    @Override
+    public String getTunerName()
+    {
+        TunerChannelSource source = mTunerChannelSource;
+        return source != null ? source.getTunerName() : null;
     }
 
     /**
@@ -285,11 +298,11 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     @Override
     public void setListener(Listener<ComplexSamples> complexSamplesListener)
     {
-        mComplexSamplesListener = complexSamplesListener;
+        mComplexSamplesListener.setListener(complexSamplesListener);
 
         if(mTunerChannelSource != null)
         {
-            mTunerChannelSource.setListener(complexSamplesListener);
+            mTunerChannelSource.setListener(mComplexSamplesListener);
         }
     }
 

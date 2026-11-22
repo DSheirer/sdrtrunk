@@ -396,6 +396,7 @@ public class StreamingEditor extends SplitPane
         if(mConfiguredBroadcastTableView == null)
         {
             mConfiguredBroadcastTableView = new TableView<>();
+            mConfiguredBroadcastTableView.setAccessibleText("Streams");
             mConfiguredBroadcastTableView.setPlaceholder(new Label("Click the New button to create a new " +
                 "audio streaming configuration"));
             mConfiguredBroadcastTableView.setItems(mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts());
@@ -414,12 +415,14 @@ public class StreamingEditor extends SplitPane
                         if(empty || item == null || !item)
                         {
                             setGraphic(null);
+                            setAccessibleText(empty ? null : "No");
                         }
                         else
                         {
                             IconNode iconNode = new IconNode(FontAwesome.CHECK);
                             iconNode.setFill(Color.GREEN);
                             setGraphic(iconNode);
+                            setAccessibleText("Yes");
                         }
                     }
                 };

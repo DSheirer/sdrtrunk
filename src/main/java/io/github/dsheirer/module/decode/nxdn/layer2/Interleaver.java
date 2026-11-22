@@ -75,6 +75,24 @@ public class Interleaver
     }
 
     /**
+     * Performs deinterleave of the interleaved soft bit values.
+     * @param interleaved soft bit values containing the interleaved payload starting at the offset
+     * @param offset into the soft bit values to the start of the interleaved payload.
+     * @return deinterleaved soft bit values starting at index 0
+     */
+    public float[] deinterleave(float[] interleaved, int offset)
+    {
+        float[] deinterleaved = new float[mInterleaveIndexes.length];
+
+        for(int index = 0; index < mInterleaveIndexes.length; index++)
+        {
+            deinterleaved[mInterleaveIndexes[index]] = interleaved[index + offset];
+        }
+
+        return deinterleaved;
+    }
+
+    /**
      * Performs deinterleave of the interleaved message
      * @param interleaved containing the interleaved payload starting at the offset
      * @param offset into the message to the start of the interleaved payload.

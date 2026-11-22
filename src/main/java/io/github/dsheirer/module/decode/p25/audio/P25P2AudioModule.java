@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import jmbe.frame.CorrectedAMBEFrame;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +120,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 {
                     if(!mEncryptedCall)
                     {
-                        processAudio(abstractVoiceTimeslot.getVoiceFrames(), message.getTimestamp());
+                        processAudio(abstractVoiceTimeslot, message.getTimestamp());
                     }
                 }
                 else
@@ -174,20 +175,27 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
     /**
      * Process the audio voice frames
-     * @param voiceFrames to process
+     * @param timeslot containing the voice frames to process
      * @param timestamp of the carrier message
      */
-    private void processAudio(List<BinaryMessage> voiceFrames, long timestamp)
+    private void processAudio(AbstractVoiceTimeslot timeslot, long timestamp)
     {
         if(hasAudioCodec())
         {
-            for(BinaryMessage voiceFrame: voiceFrames)
+            List<BinaryMessage> voiceFrames = timeslot.getVoiceFrames();
+
+            //Only error correct the frames in sdrtrunk when the JMBE library (version 3+) can synthesize from them
+            List<CorrectedAMBEFrame> correctedFrames = isCorrectedFrameSupported() ?
+                timeslot.getCorrectedVoiceFrames() : null;
+
+            for(int x = 0; x < voiceFrames.size(); x++)
             {
-                byte[] voiceFrameBytes = voiceFrame.getBytes();
+                byte[] voiceFrameBytes = voiceFrames.get(x).getBytes();
 
                 try
                 {
-                    IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
+                    IAudioWithMetadata audioWithMetadata = getAudioWithMetadata(voiceFrameBytes,
+                        correctedFrames != null ? correctedFrames.get(x) : null);
                     addAudio(audioWithMetadata.getAudio());
                     processMetadata(audioWithMetadata, timestamp);
                 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,112 +19,38 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.UpdateReason;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoTuner2;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.RspDuoDevice;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Base control wrapper for an RSPduo Tuner 2
  */
-public abstract class ControlRspDuoTuner2 extends ControlRspDuo<RspDuoTuner2> implements IControlRspDuoTuner2
+public abstract class ControlRspDuoTuner2 extends ControlRspDuo implements IControlRspDuoTuner2
 {
-    private Logger mLog = LoggerFactory.getLogger(ControlRspDuoTuner2.class);
+    private static final Logger mLog = LoggerFactory.getLogger(ControlRspDuoTuner2.class);
 
     /**
      * Constructs an instance
-     *
-     * @param device for the device, obtained from the API
+     * @param deviceInfo for the device, obtained from the API
      */
-    public ControlRspDuoTuner2(RspDuoDevice device)
+    public ControlRspDuoTuner2(DeviceInfo deviceInfo)
     {
-        super(device);
-    }
-
-    /**
-     * Access tuner 2.
-     * @return tuner
-     * @throws SDRPlayException if the device is not started.
-     */
-    protected RspDuoTuner2 getTuner() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return (RspDuoTuner2) getDevice().getTuner();
-        }
-
-        throw new SDRPlayException("RSPduo device is not started");
+        super(deviceInfo);
     }
 
     @Override
-    public TunerSelect getTunerSelect()
+    public boolean isBiasT() throws RspException
     {
-        return TunerSelect.TUNER_2;
+        return query("get Bias-T", RspDuoDevice::isBiasT);
     }
 
     @Override
-    protected ControlParameters getControlParameters()
+    public void setBiasT(boolean enabled) throws RspException
     {
-        return getDevice().getCompositeParameters().getControlBParameters();
-    }
-
-    @Override
-    protected TunerParameters getTunerParameters()
-    {
-        return getDevice().getCompositeParameters().getTunerBParameters();
-    }
-
-    @Override
-    public boolean isBiasT() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getTuner().isBiasT();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setBiasT(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getTuner().setBiasT(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    /**
-     * Current IF AGC mode setting.
-     * @return AGC mode.
-     */
-    @Override
-    public AgcMode getAgcMode()
-    {
-        return getDevice().getCompositeParameters().getControlBParameters().getAgc().getAgcMode();
-    }
-
-    /**
-     * Sets the IF AGC mode
-     * @param mode to set.
-     */
-    @Override
-    public void setAgcMode(AgcMode mode) throws SDRPlayException
-    {
-        getDevice().getCompositeParameters().getControlBParameters().getAgc().setAgcMode(mode);
-        getDevice().update(getTunerSelect(), UpdateReason.CONTROL_AGC);
+        command("set Bias-T", device -> device.setBiasT(enabled));
     }
 
     /**
@@ -150,9 +76,8 @@ public abstract class ControlRspDuoTuner2 extends ControlRspDuo<RspDuoTuner2> im
             {
                 return 6;
             }
-
         }
-        catch(SDRPlayException se)
+        catch(RspException se)
         {
             mLog.error("Error getting tuned frequency while determining maximum LNA setting.");
         }

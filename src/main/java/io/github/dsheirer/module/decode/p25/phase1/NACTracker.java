@@ -21,7 +21,6 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,10 +31,14 @@ import java.util.Map;
 public class NACTracker
 {
     private static final Comparator<Tracker> COUNT_DESCENDING_COMPARATOR = new CountDescendingSorter();
-    private static final Comparator<Tracker> TIME_ASCENDING_COMPARATOR = new TimeAscendingSorter();
+    private static final Comparator<Tracker> OBSERVATION_ASCENDING_COMPARATOR = new ObservationAscendingSorter();
     private final Map<Integer, Tracker> mTrackerMap = new HashMap<>();
     private static final int MAX_TRACKER_COUNT = 3;
     private static final int MIN_OBSERVATION_THRESHOLD = 3;
+    //Observation sequence number, used instead of the system clock to order the trackers by their last observation.
+    //Recordings decode faster than real time, so many observations share the same millisecond, and the clock would
+    //make the eviction choice (and the decoded output) depend on the processing speed.
+    private long mObservationCount = 0;
 
     /**
      * Removes all tracked NAC values.  Invoke this method after an extended loss of sync.
@@ -47,13 +50,14 @@ public class NACTracker
 
     /**
      * Tracks the NAC value.  Each time the NAC value is observed, the observation count is incremented so that the
-     * dominant NAC value will have the highest observation count.  Additionally, the last updated timestamp for the
-     * tracker is updated to now.  When the tracker count exceeds the max tracker threshold, the tracker with the
-     * oldest updated timestamp is thrown out.
+     * dominant NAC value will have the highest observation count.  Additionally, the tracker's last observation is
+     * updated to this observation.  When the tracker count exceeds the max tracker threshold, the tracker with the
+     * oldest last observation is thrown out.
      * @param nac to track
      */
     public void track(int nac)
     {
+        mObservationCount++;
         Tracker tracker = mTrackerMap.get(nac);
 
         if(tracker == null)
@@ -63,7 +67,7 @@ public class NACTracker
             if(mTrackerMap.size() > MAX_TRACKER_COUNT)
             {
                 List<Tracker> trackerList = new ArrayList<>(mTrackerMap.values());
-                trackerList.sort(TIME_ASCENDING_COMPARATOR);
+                trackerList.sort(OBSERVATION_ASCENDING_COMPARATOR);
                 Tracker oldest = trackerList.getFirst();
                 mTrackerMap.remove(oldest.nac());
             }
@@ -104,11 +108,12 @@ public class NACTracker
     private class Tracker
     {
         private int mNAC;
-        private long mTimestamp = System.currentTimeMillis();
+        private long mLastObservation = mObservationCount;
         private int mCount = 1;
 
         /**
-         * Constructs an instance to track the NAC.  Note: count is set to 1 and timestamp is set to now.
+         * Constructs an instance to track the NAC.  Note: count is set to 1 and the last observation is set to the
+         * current observation.
          * @param nac to track.
          */
         private Tracker(int nac)
@@ -126,7 +131,7 @@ public class NACTracker
         }
 
         /**
-         * Increments the observation count for this tracker and updates the timestamp.
+         * Increments the observation count for this tracker and updates the last observation.
          */
         public void increment()
         {
@@ -138,16 +143,16 @@ public class NACTracker
                 mCount = Integer.MAX_VALUE;
             }
 
-            mTimestamp = System.currentTimeMillis();
+            mLastObservation = mObservationCount;
         }
 
         /**
-         * Last observation timestamp.
-         * @return timestamp.
+         * Observation sequence number of the last observation of this tracker's NAC.
+         * @return last observation.
          */
-        public long timestamp()
+        public long lastObservation()
         {
-            return mTimestamp;
+            return mLastObservation;
         }
 
         /**
@@ -165,7 +170,7 @@ public class NACTracker
         @Override
         public String toString()
         {
-            return "NAC [" + mNAC + "] COUNT [" + mCount + "] " + new Date(mTimestamp);
+            return "NAC [" + mNAC + "] COUNT [" + mCount + "] LAST OBSERVATION [" + mLastObservation + "]";
         }
     }
 
@@ -183,14 +188,14 @@ public class NACTracker
     }
 
     /**
-     * Sorts the tracked NACs in time order where index 0 is the oldest tracked value.
+     * Sorts the tracked NACs in last observation order where index 0 is the least recently observed value.
      */
-    public static class TimeAscendingSorter implements Comparator<Tracker>
+    public static class ObservationAscendingSorter implements Comparator<Tracker>
     {
         @Override
         public int compare(Tracker o1, Tracker o2)
         {
-            return Long.compare(o1.timestamp(), o2.timestamp());
+            return Long.compare(o1.lastObservation(), o2.lastObservation());
         }
     }
 }

@@ -186,18 +186,4 @@ public class Settings
 
         return icons;
     }
-
-    public MapViewSetting getMapViewSetting(String name)
-    {
-        for(Setting setting : mSettings)
-        {
-            if(setting instanceof MapViewSetting &&
-                setting.getName().contentEquals(name))
-            {
-                return (MapViewSetting)setting;
-            }
-        }
-
-        return null;
-    }
 }

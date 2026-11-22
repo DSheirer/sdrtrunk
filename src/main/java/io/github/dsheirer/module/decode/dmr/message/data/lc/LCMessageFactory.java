@@ -39,8 +39,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGr
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraXptChannelGrant;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAlias;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxTalkerAliasContinuation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityMaxVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
@@ -170,12 +168,6 @@ public class LCMessageFactory
             case FULL_CAPACITY_MAX_GROUP_VOICE_CHANNEL_USER:
                 flc = new CapacityMaxVoiceChannelUser(message, timestamp, timeslot);
                 break;
-            case FULL_CAPACITY_MAX_TALKER_ALIAS:
-                flc = new CapacityMaxTalkerAlias(message, timestamp, timeslot);
-                break;
-            case FULL_CAPACITY_MAX_TALKER_ALIAS_CONTINUATION:
-                flc = new CapacityMaxTalkerAliasContinuation(message, timestamp, timeslot);
-                break;
             case FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusEncryptedVoiceChannelUser(message, timestamp, timeslot);
                 break;
@@ -197,18 +189,22 @@ public class LCMessageFactory
                 break;
             case FULL_STANDARD_TALKER_ALIAS_HEADER:
             case FULL_HYTERA_TALKER_ALIAS_HEADER:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_HEADER:
                 flc = new TalkerAliasHeader(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_1:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_1:
                 flc = new TalkerAliasBlock1(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_2:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_2:
                 flc = new TalkerAliasBlock2(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
             case FULL_HYTERA_TALKER_ALIAS_BLOCK_3:
+            case FULL_CAPACITY_MAX_TALKER_ALIAS_BLOCK_3:
                 flc = new TalkerAliasBlock3(message, timestamp, timeslot);
                 break;
             case FULL_HYTERA_XPT_CHANNEL_GRANT:

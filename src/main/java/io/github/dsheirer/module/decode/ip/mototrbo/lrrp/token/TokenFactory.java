@@ -26,10 +26,32 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
  */
 public class TokenFactory
 {
+    /**
+     * Creates a token using the response packet meaning of the token identifier.
+     *
+     * @param id hexadecimal token identifier
+     * @param message containing the token
+     * @param offset to the start of the token identifier
+     * @param remainingCharacterCount number of payload bytes remaining, counting from the token identifier
+     * @return token
+     */
     public static Token createToken(String id, CorrectedBinaryMessage message, int offset, int remainingCharacterCount)
     {
-        TokenType tokenType = TokenType.fromValue(id);
+        return createToken(TokenType.fromValue(id), message, offset, remainingCharacterCount);
+    }
 
+    /**
+     * Creates a token of the specified type.
+     *
+     * @param tokenType resolved by the caller, using TokenType.fromRequestValue() for request packets
+     * @param message containing the token
+     * @param offset to the start of the token identifier
+     * @param remainingCharacterCount number of payload bytes remaining, counting from the token identifier
+     * @return token
+     */
+    public static Token createToken(TokenType tokenType, CorrectedBinaryMessage message, int offset,
+                                    int remainingCharacterCount)
+    {
         switch(tokenType)
         {
             case HEADING:
@@ -52,14 +74,17 @@ public class TokenFactory
                 return new Success(message, offset);
             case TIMESTAMP:
                 return new Timestamp(message, offset);
+            case TRIGGER_CONDITION:
+                return new TriggerCondition(message, offset);
             case TRIGGER_DISTANCE:
-                return new TriggerDistance(message, offset);
-            case TRIGGER_GPIO:
-                return new TriggerGpio(message, offset);
-            case TRIGGER_ON_MOVE:
-                return new TriggerOnMove(message, offset);
+                return new TriggerDistance(message, offset, remainingCharacterCount);
+            case TRIGGER_INTERVAL:
+                return new TriggerInterval(message, offset, remainingCharacterCount);
             case TRIGGER_PERIODIC:
                 return new TriggerPeriodic(message, offset);
+            case REQUEST_PARAMETER_42:
+            case REQUEST_PARAMETER_44:
+                return new RequestParameter(tokenType, message, offset, remainingCharacterCount);
             case VERSION:
                 return new Version(message, offset);
             case UNKNOWN_23:

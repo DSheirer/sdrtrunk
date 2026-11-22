@@ -19,6 +19,16 @@
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
+import io.github.dsheirer.module.decode.DecoderFactory;
+import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase1.Modulation;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.rrapi.type.RadioNetwork;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
@@ -382,7 +392,7 @@ public class RadioReferenceDecoder
 
                 TimeslotFrequency timeslotFrequency = new TimeslotFrequency();
                 timeslotFrequency.setNumber(lcn);
-                timeslotFrequency.setDownlinkFrequency((long)(siteFrequency.getFrequency() * 1E6));
+                timeslotFrequency.setDownlinkFrequency(siteFrequency.getFrequencyHz());
                 frequencies.add(timeslotFrequency);
             }
 
@@ -432,7 +442,7 @@ public class RadioReferenceDecoder
                     }
                 }
 
-                frequencies.add(new ChannelFrequency(lcn, (long)(siteFrequency.getFrequency() * 1E6), 0));
+                frequencies.add(new ChannelFrequency(lcn, siteFrequency.getFrequencyHz(), 0));
             }
 
             return frequencies;
@@ -576,5 +586,127 @@ public class RadioReferenceDecoder
         }
 
         return null;
+    }
+
+    /**
+     * Creates a channel decode configuration for the specified site.
+     * @param decoderType to create
+     * @param site information and frequencies
+     * @param systemInformation with frequency mapping
+     * @return decode configuration
+     */
+    public DecodeConfiguration getDecodeConfiguration(DecoderType decoderType, Site site, SystemInformation systemInformation)
+    {
+        if(decoderType == null)
+        {
+            return null;
+        }
+
+        switch(decoderType)
+        {
+            case DMR:
+                DecodeConfigDMR dmr = new DecodeConfigDMR();
+                List<TimeslotFrequency> timeslotFrequencies = getTimeslotFrequencies(systemInformation, site);
+                dmr.setTimeslotMap(timeslotFrequencies);
+                return dmr;
+            case NXDN:
+                Flavor flavor = getFlavor(systemInformation);
+
+                TransmissionMode mode = TransmissionMode.M4800;
+
+                /**
+                 * 9600 bps Flavors
+                 * ----------------------------
+                 * 29 - NEXEDGE 9600
+                 * 45 - Conventional Networked
+                 *
+                 * 4800 bps Flavors
+                 * ---------------------------
+                 * 11 - Narrowband Networked
+                 * 42 - NEXEDGE 4800
+                 * 44 - Icom IDAS Type C
+                 *
+                 * Type-D (also 4800 bps)  Flavors
+                 * ---------------------------
+                 * 36 - Icom IDAS Type D
+                 * 47 - Kenwood Type D
+                 */
+                mode = switch(flavor.getName())
+                {
+                    case "NEXEDGE 9600", "Conventional Networked" -> TransmissionMode.M9600;
+                    case "Icom IDAS Type D", "Kenwood Type D" -> TransmissionMode.TYPE_D;
+                    default -> TransmissionMode.M4800;
+                };
+
+                DecodeConfigNXDN nxdn = new DecodeConfigNXDN(mode);
+                List<ChannelFrequency> channelMap = getChannelMap(systemInformation, site);
+                nxdn.setChannelMap(channelMap);
+                return nxdn;
+            case P25_PHASE1:
+                DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
+
+                if(isLSM(site))
+                {
+                    if(p1config instanceof DecodeConfigP25Phase1)
+                    {
+                        ((DecodeConfigP25Phase1)p1config).setModulation(Modulation.CQPSK);
+                    }
+                }
+                return p1config;
+            case P25_PHASE2:
+                DecodeConfigP25Phase2 config = new DecodeConfigP25Phase2();
+
+                int nac = 0;
+
+                if(site != null && site.getNac() != null)
+                {
+                    try
+                    {
+                        nac = Integer.parseInt(site.getNac(), 16);
+                    }
+                    catch(Exception e)
+                    {
+                        //Do nothing
+                    }
+                }
+
+                int wacn = 0;
+                int system = 0;
+
+                if(systemInformation != null && systemInformation.getRadioNetworks() != null &&
+                    !systemInformation.getRadioNetworks().isEmpty())
+                {
+                    RadioNetwork radioNetwork = systemInformation.getRadioNetworks().get(0);
+
+                    if(radioNetwork.getWacn() != null)
+                    {
+                        try
+                        {
+                            wacn = Integer.parseInt(radioNetwork.getWacn(), 16);
+                        }
+                        catch(Exception e)
+                        {
+                            //Do nothing
+                        }
+                    }
+
+                    if(radioNetwork.getSystemId() != null)
+                    {
+                        try
+                        {
+                            system = Integer.parseInt(radioNetwork.getSystemId(), 16);
+                        }
+                        catch(Exception e)
+                        {
+                            //Do nothing
+                        }
+                    }
+                }
+
+                config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
+                return config;
+            default:
+                return DecoderFactory.getDecodeConfiguration(decoderType);
+        }
     }
 }

@@ -43,6 +43,7 @@ public class FCD2TunerController extends FCDTunerController
     public static final int MINIMUM_TUNABLE_FREQUENCY_HZ = 150000;
     public static final int MAXIMUM_TUNABLE_FREQUENCY_HZ = 2050000000;
     public static final int SAMPLE_RATE = 192000;
+    private boolean mBiasTEnabled = false;
 
     /**
      * Constructs an instance
@@ -98,6 +99,48 @@ public class FCD2TunerController extends FCDTunerController
         send(FCDCommand.APP_SET_MIXER_GAIN, enabled ? 1 : 0);
     }
 
+    /**
+     * Enables/disables the Bias-T (RF bias tee) power output for active antennas
+     *
+     * @param enabled true to enable Bias-T, false to disable
+     * @throws SourceException on error
+     */
+    public void setBiasT(boolean enabled) throws SourceException
+    {
+        try
+        {
+            send(FCDCommand.APP_SET_BIAS_TEE, enabled ? 1 : 0);
+            mBiasTEnabled = enabled;
+        }
+        catch(Exception e)
+        {
+            throw new SourceException("Couldn't set FCD Pro Plus bias-T", e);
+        }
+    }
+
+    /**
+     * Turns off the bias-T, when enabled, before closing the device.
+     */
+    @Override
+    public void stop()
+    {
+        if(mBiasTEnabled)
+        {
+            try
+            {
+                setBiasT(false);
+            }
+            catch(Exception e)
+            {
+                mLog.warn("Error turning off FCD Pro Plus bias-T before closing the device - " + e.getMessage());
+            }
+
+            mBiasTEnabled = false;
+        }
+
+        super.stop();
+    }
+
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
@@ -108,6 +151,7 @@ public class FCD2TunerController extends FCDTunerController
         {
             setLNAGain(fcd2.getGainLNA());
             setMixerGain(fcd2.getGainMixer());
+            setBiasT(fcd2.isBiasT());
         }
     }
 

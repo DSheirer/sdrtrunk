@@ -22,7 +22,6 @@ import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
-import io.github.dsheirer.source.tuner.airspy.AirspyTunerController.BoardID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +70,7 @@ public class AirspyTuner extends Tuner
             mLog.error("error getting serial number", e);
         }
 
-        return BoardID.AIRSPY.getLabel();
+        return "Airspy";
     }
 
     @Override

@@ -26,21 +26,37 @@ import java.util.Map;
 /**
  * LRRP Token Types
  *
- * Variable length tokens consist of an identifier, a length indicator, and then a sequence of bytes equal in length
- * to the length indicator.
+ * Fixed length tokens consist of an identifier followed by a fixed number of value bytes.  Variable length tokens
+ * consist of an identifier, a length indicator, and then a sequence of bytes equal in length to the length indicator.
+ * Varint tokens consist of an identifier followed by a 7-bit variable length integer (see VarInt).
+ *
+ * A few identifiers have a different meaning in a request than in a response (0x34 is the periodic trigger flag in a
+ * request and the timestamp in a response).  Use fromRequestValue() for request packets and fromValue() otherwise.
+ *
+ * Note: the declaration order (ordinal) controls the order that tokens are listed when a packet is rendered as text.
  */
 public enum TokenType
 {
+    //Tokens common to request and response packets
     IDENTITY("22", -1, "IDENTITY"),
     UNKNOWN_23("23", 1, "UNKNOWN 23"),
-    TRIGGER_PERIODIC("31", 1, "TRIGGER PERIODIC"),
+
+    //Request parameter tokens.  Integer values are 7-bit variable length integers (varints).
+    TRIGGER_PERIODIC("34", 0, "PERIODIC", true), //Request meaning of 0x34.  See TIMESTAMP for the response meaning.
+    TRIGGER_INTERVAL("31", -2, "TRIGGER INTERVAL"),
+    TRIGGER_CONDITION("4A", 1, "TRIGGER CONDITION"),
+    TRIGGER_DISTANCE("78", -2, "TRIGGER DISTANCE"),
+    REQUEST_PARAMETER_42("42", -2, "PARAM-42"), //Meaning unknown.  Observed value: 3600
+    REQUEST_PARAMETER_44("44", -2, "PARAM-44"), //Meaning unknown.  Observed value: 100
+    REQUEST_61("61", 1, "REQUEST-61"),
+    REQUEST_73("73", 1, "REQUEST-73"),
+
+    //Response tokens and single-byte requested field flags
     TIMESTAMP("34", 5, "TIMESTAMP"),
     VERSION("36", 1, "VERSION"),
     RESPONSE("37", -1, "RESPONSE"),
     SUCCESS( "38", 0, "SUCCESS"),
     REQUEST_3A("3A", 0,"REQUEST-3A"),
-    TRIGGER_GPIO("42", 0, "TRIGGER GPIO"),
-    TRIGGER_DISTANCE("4A", 1, "TRIGGER DISTANCE"), //Guess - not sure
     ALTITUDE_ACCURACY("50", 0,"ALTITUDE ACCURACY"),
     CIRCLE_2D("51", 10, "CIRCLE 2D"),
     TIME("52", 0,"TIME"),
@@ -48,37 +64,55 @@ public enum TokenType
     CIRCLE_3D("55", 15, "CIRCLE 3D"),
     HEADING("56", 1, "HEADING"),
     HORIZONTAL_DIRECTION("57", 0,"HORIZONTAL DIRECTION"),
-    REQUEST_61("61", 1, "REQUEST-61"),
-    REQUEST_62("62", 0,"REQUEST-62"),
+    HORIZONTAL_SPEED("62", 0,"HORIZONTAL SPEED"),
     REQUEST_64("64", 0,"REQUEST-64"),
     POINT_2D("66", 8, "POINT 2D"),
     POINT_3D("69", 11, "POINT 3D"),
     SPEED("6C", 2, "SPEED"),
-    REQUEST_73("73", 1, "REQUEST-73"),
-    TRIGGER_ON_MOVE("78", 1, "TRIGGER ON MOVE"),
     REQUESTED_TOKENS("000", 0, "REQUESTED TOKENS"),
     UNKNOWN("0",0, "UNKNOWN");
+
+    private static final int VARIABLE_LENGTH = -1;
+    private static final int VARINT_LENGTH = -2;
 
     private String mValue;
     private int mLength;
     private String mLabel;
+    private boolean mRequestOnly;
 
     /**
      * Tokens that have parameters in request packet messages
      */
-    private static EnumSet<TokenType> REQUEST_PARAMETER_TOKENS = EnumSet.of(IDENTITY, TRIGGER_DISTANCE, TRIGGER_GPIO,
-            TRIGGER_ON_MOVE, TRIGGER_PERIODIC, REQUEST_61, REQUEST_73);
+    private static EnumSet<TokenType> REQUEST_PARAMETER_TOKENS = EnumSet.of(IDENTITY, TRIGGER_PERIODIC,
+            TRIGGER_INTERVAL, TRIGGER_CONDITION, TRIGGER_DISTANCE, REQUEST_PARAMETER_42, REQUEST_PARAMETER_44,
+            REQUEST_61, REQUEST_73);
 
     /**
      * Constructs an instance
      * @param value of the token
-     * @param length of the token, exclusive of the identifier, where -1 indicates a variable length token.
+     * @param length of the token, exclusive of the identifier, where -1 indicates a variable length token and -2
+     * indicates a 7-bit variable length integer (varint) value.
+     * @param label for pretty printing
      */
     TokenType(String value, int length, String label)
+    {
+        this(value, length, label, false);
+    }
+
+    /**
+     * Constructs an instance
+     * @param value of the token
+     * @param length of the token, exclusive of the identifier, where -1 indicates a variable length token and -2
+     * indicates a 7-bit variable length integer (varint) value.
+     * @param label for pretty printing
+     * @param requestOnly true when this meaning of the value applies to request packets only
+     */
+    TokenType(String value, int length, String label, boolean requestOnly)
     {
         mValue = value;
         mLength = length;
         mLabel = label;
+        mRequestOnly = requestOnly;
     }
 
     /**
@@ -94,7 +128,23 @@ public enum TokenType
      */
     public boolean isVariableLength()
     {
-        return mLength == -1;
+        return mLength == VARIABLE_LENGTH;
+    }
+
+    /**
+     * Indicates if this token's value is a 7-bit variable length integer (varint).
+     */
+    public boolean isVarInt()
+    {
+        return mLength == VARINT_LENGTH;
+    }
+
+    /**
+     * Indicates if this meaning of the token value applies to request packets only.
+     */
+    public boolean isRequestOnly()
+    {
+        return mRequestOnly;
     }
 
     /**
@@ -116,17 +166,26 @@ public enum TokenType
 
 
     private static final Map<String,TokenType> LOOKUP_MAP = new HashMap<>();
+    private static final Map<String,TokenType> REQUEST_LOOKUP_MAP = new HashMap<>();
 
     static
     {
         for(TokenType tokenType: TokenType.values())
         {
-            LOOKUP_MAP.put(tokenType.getValue(), tokenType);
+            if(tokenType.isRequestOnly())
+            {
+                REQUEST_LOOKUP_MAP.put(tokenType.getValue(), tokenType);
+            }
+            else
+            {
+                LOOKUP_MAP.put(tokenType.getValue(), tokenType);
+                REQUEST_LOOKUP_MAP.putIfAbsent(tokenType.getValue(), tokenType);
+            }
         }
     }
 
     /**
-     * Lookup a token from a 2-character string value
+     * Lookup a token from a 2-character string value, using the response packet meaning of the value.
      * @param value that represents the token
      * @return matching token or UNKNOWN.
      */
@@ -135,6 +194,21 @@ public enum TokenType
         if(value != null && LOOKUP_MAP.containsKey(value))
         {
             return LOOKUP_MAP.get(value);
+        }
+
+        return UNKNOWN;
+    }
+
+    /**
+     * Lookup a token from a 2-character string value, using the request packet meaning of the value.
+     * @param value that represents the token
+     * @return matching token or UNKNOWN.
+     */
+    public static TokenType fromRequestValue(String value)
+    {
+        if(value != null && REQUEST_LOOKUP_MAP.containsKey(value))
+        {
+            return REQUEST_LOOKUP_MAP.get(value);
         }
 
         return UNKNOWN;

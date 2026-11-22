@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.audio.broadcast.rdioscanner;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
@@ -123,6 +124,15 @@ public class RdioScannerConfiguration extends BroadcastConfiguration
     public BroadcastServerType getBroadcastServerType()
     {
         return BroadcastServerType.RDIOSCANNER_CALL;
+    }
+
+    /**
+     * Product name written to connection and upload logs.
+     */
+    @JsonIgnore
+    public String getServiceName()
+    {
+        return "Rdio Scanner";
     }
 
     @Override

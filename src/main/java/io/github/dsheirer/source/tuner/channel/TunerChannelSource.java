@@ -40,6 +40,8 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private Listener<SourceEvent> mConsumerSourceEventListener;
     protected String mThreadName;
     private final ChannelFrequencyErrorManager mChannelFrequencyErrorManager;
+    private volatile long mStartTimestamp;
+    private volatile String mTunerName;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -112,6 +114,34 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     }
 
     /**
+     * Name of the tuner that provides this channel source.
+     * @return preferred name of the tuner or null if not set
+     */
+    public String getTunerName()
+    {
+        return mTunerName;
+    }
+
+    /**
+     * Sets the name of the tuner that provides this channel source.
+     * @param tunerName preferred name of the tuner
+     */
+    public void setTunerName(String tunerName)
+    {
+        mTunerName = tunerName;
+    }
+
+    /**
+     * Sets the timestamp for the oldest samples to provide to this channel when it starts.  This only applies to
+     * sources where the producer incorporates a sample delay buffer.
+     * @param timestamp in milliseconds since epoch, or 0 to start with current samples.
+     */
+    public void setStartTimestamp(long timestamp)
+    {
+        mStartTimestamp = timestamp;
+    }
+
+    /**
      * Starts this tuner channel source producing sample stream.
      */
     public void start()
@@ -120,7 +150,8 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
 
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
-        broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
+        broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this,
+            mStartTimestamp > 0 ? mStartTimestamp : System.currentTimeMillis()));
     }
 
     /**
@@ -192,6 +223,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
             case NOTIFICATION_CHANNEL_POWER:
             case NOTIFICATION_SQUELCH_THRESHOLD:
+            case NOTIFICATION_SQUELCH_USER_THRESHOLD:
             case NOTIFICATION_SQUELCH_AUTO_TRACK:
             case REQUEST_CHANGE_SQUELCH_THRESHOLD:
             case REQUEST_CURRENT_SQUELCH_THRESHOLD:

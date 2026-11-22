@@ -260,7 +260,7 @@ public class MixerReader<T>
                 {
                     while(bytesRead < buffer.length)
                     {
-                        bytesRead += mTargetDataLine.read(buffer, bytesRead, buffer.length);
+                        bytesRead += mTargetDataLine.read(buffer, bytesRead, buffer.length - bytesRead);
                     }
                 }
                 catch(ArrayIndexOutOfBoundsException aioobe)

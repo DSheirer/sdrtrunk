@@ -24,7 +24,7 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerController;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setAgcMode(rtc.getAgcMode());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
             }
@@ -72,7 +72,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setAntenna(rtc.getAntenna());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx antenna to " + rtc.getAntenna());
             }
@@ -81,7 +81,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setBiasT(rtc.isBiasT());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx bias-T enabled to " + rtc.isBiasT());
             }
@@ -90,7 +90,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setHighDynamicRange(rtc.isHdrMode());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx high dynamic range mode enabled to " + rtc.isHdrMode());
             }
@@ -99,7 +99,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setRfNotch(rtc.isRfNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx RF Notch enabled to " + rtc.isRfNotch());
             }
@@ -108,7 +108,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setRfDabNotch(rtc.isRfDabNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx RF DAB Notch enabled to " + rtc.isRfDabNotch());
             }
@@ -117,7 +117,7 @@ public class RspDxTunerController extends RspTunerController<IControlRspDx>
             {
                 getControlRsp().setHdrModeBandwidth(rtc.getHdrModeBandwidth());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPdx HDR mode bandwdidth to " + rtc.getHdrModeBandwidth());
             }

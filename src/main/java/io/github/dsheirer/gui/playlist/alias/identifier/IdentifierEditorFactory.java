@@ -20,6 +20,10 @@
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
 import io.github.dsheirer.alias.id.AliasIDType;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
+import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroup;
+import io.github.dsheirer.alias.id.talkgroup.NXDNTypeDTalkgroupRange;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +45,14 @@ public class IdentifierEditorFactory
                 return new EsnEditor();
             case LOJACK:
                 return new LojackEditor();
+            case NXDN_TYPE_D_RADIO_ID:
+                return new NXDNTypeDEditor<NXDNTypeDRadio>("Radio");
+            case NXDN_TYPE_D_RADIO_ID_RANGE:
+                return new NXDNTypeDRangeEditor<NXDNTypeDRadioRange>("Radio Range");
+            case NXDN_TYPE_D_TALKGROUP:
+                return new NXDNTypeDEditor<NXDNTypeDTalkgroup>("Talkgroup");
+            case NXDN_TYPE_D_TALKGROUP_RANGE:
+                return new NXDNTypeDRangeEditor<NXDNTypeDTalkgroupRange>("Talkgroup Range");
             case P25_FULLY_QUALIFIED_RADIO_ID:
                 return new P25FullyQualifiedRadioIdEditor(userPreferences);
             case P25_FULLY_QUALIFIED_TALKGROUP:

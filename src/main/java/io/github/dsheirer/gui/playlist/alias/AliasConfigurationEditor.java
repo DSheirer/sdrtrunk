@@ -19,16 +19,26 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
+import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.service.radioreference.AliasListSynchronizer;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +55,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -58,10 +69,12 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -101,6 +114,13 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
     private FilteredList<Alias> mAliasFilteredList;
     private SortedList<Alias> mAliasSortedList;
     private AliasPredicate mAliasPredicate;
+    private VBox mRadioReferenceBox;
+    private Label mRadioReferenceSystemLabel;
+    private Label mRadioReferenceStatusLabel;
+    private CheckBox mAutoUpdateCheckBox;
+    private Button mRefreshAliasListButton;
+    private boolean mRefreshInProgress;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /**
      * Constructs an instance
@@ -115,7 +135,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
 
         VBox leftBox = new VBox();
         VBox.setVgrow(getAliasTableView(), Priority.ALWAYS);
-        leftBox.getChildren().addAll(getSearchAndListSelectionBox(), getAliasTableView());
+        leftBox.getChildren().addAll(getSearchAndListSelectionBox(), getRadioReferenceBox(), getAliasTableView());
 
         HBox topBox = new HBox();
         HBox.setHgrow(leftBox, Priority.ALWAYS);
@@ -124,6 +144,202 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
         setOrientation(Orientation.VERTICAL);
         mCurrentEditor = getAliasItemEditor();
         getItems().addAll(topBox, getAliasItemEditor());
+
+        //Configuration changes (e.g. a background Radio Reference check) update the Radio Reference controls
+        mPlaylistManager.getAliasModel().aliasListConfigurations()
+            .addListener((ListChangeListener<AliasListConfiguration>)c -> updateRadioReferenceControls());
+        updateRadioReferenceControls();
+
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Configuration for the alias list selected in the combo box, or null.
+     */
+    private AliasListConfiguration getSelectedConfiguration()
+    {
+        String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
+        return mPlaylistManager.getAliasModel().getAliasListConfiguration(aliasListName);
+    }
+
+    /**
+     * Radio Reference system tracking controls for the selected alias list.  Disabled when the alias list doesn't
+     * track a Radio Reference system.
+     */
+    private VBox getRadioReferenceBox()
+    {
+        if(mRadioReferenceBox == null)
+        {
+            //Two rows so that a long system name doesn't push the controls and status off the editor
+            Label label = new Label("Radio Reference:");
+            label.setLabelFor(getRadioReferenceSystemLabel());
+            label.setMinWidth(Region.USE_PREF_SIZE);
+            HBox systemRow = new HBox(10, label, getRadioReferenceSystemLabel());
+            systemRow.setAlignment(Pos.CENTER_LEFT);
+
+            HBox controlsRow = new HBox(10, getAutoUpdateCheckBox(), getRefreshAliasListButton(),
+                getRadioReferenceStatusLabel());
+            controlsRow.setAlignment(Pos.CENTER_LEFT);
+
+            mRadioReferenceBox = new VBox(5, systemRow, controlsRow);
+            mRadioReferenceBox.setPadding(new Insets(0, 0, 10, 10));
+        }
+
+        return mRadioReferenceBox;
+    }
+
+    private Label getRadioReferenceSystemLabel()
+    {
+        if(mRadioReferenceSystemLabel == null)
+        {
+            mRadioReferenceSystemLabel = new Label();
+        }
+
+        return mRadioReferenceSystemLabel;
+    }
+
+    private Label getRadioReferenceStatusLabel()
+    {
+        if(mRadioReferenceStatusLabel == null)
+        {
+            mRadioReferenceStatusLabel = new Label();
+        }
+
+        return mRadioReferenceStatusLabel;
+    }
+
+    private CheckBox getAutoUpdateCheckBox()
+    {
+        if(mAutoUpdateCheckBox == null)
+        {
+            mAutoUpdateCheckBox = new CheckBox("Auto-Update Talkgroups");
+            mAutoUpdateCheckBox.setTooltip(new Tooltip("Automatically add or update talkgroup aliases when the " +
+                "system changes on Radio Reference.  Set how often to check in User Preferences > Radio Reference > Alias Lists."));
+            mAutoUpdateCheckBox.setOnAction(event -> {
+                AliasListConfiguration configuration = getSelectedConfiguration();
+
+                if(configuration != null && configuration.isTrackingRadioReferenceSystem())
+                {
+                    configuration.setAutoUpdate(getAutoUpdateCheckBox().isSelected());
+                }
+            });
+        }
+
+        return mAutoUpdateCheckBox;
+    }
+
+    private Button getRefreshAliasListButton()
+    {
+        if(mRefreshAliasListButton == null)
+        {
+            mRefreshAliasListButton = new Button("Refresh Now");
+            mRefreshAliasListButton.setTooltip(new Tooltip("Add or update talkgroup aliases from Radio Reference now"));
+            mRefreshAliasListButton.setOnAction(event -> {
+                AliasListConfiguration configuration = getSelectedConfiguration();
+
+                if(configuration == null || !configuration.isTrackingRadioReferenceSystem())
+                {
+                    return;
+                }
+
+                mRefreshInProgress = true;
+                updateRadioReferenceControls();
+                getRadioReferenceStatusLabel().setText("Refreshing from Radio Reference...");
+
+                mPlaylistManager.getAliasListSynchronizer().refresh(configuration)
+                    .whenComplete((result, throwable) -> Platform.runLater(() -> {
+                        mRefreshInProgress = false;
+                        updateRadioReferenceControls();
+
+                        if(throwable != null)
+                        {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to refresh alias list [" +
+                                configuration.getName() + "] from Radio Reference.\n\n" +
+                                AliasListSynchronizer.getMessage(throwable), ButtonType.OK);
+                            alert.setTitle("Refresh Alias List");
+                            alert.setHeaderText("Radio Reference Refresh Failed");
+                            alert.initOwner(getRefreshAliasListButton().getScene().getWindow());
+                            alert.show();
+                        }
+                        else if(result != null && result.applied() && configuration == getSelectedConfiguration())
+                        {
+                            getRadioReferenceStatusLabel().setText("Added " + result.added() + ", updated " +
+                                result.updated() + " aliases.  " + getStatusText(configuration));
+                        }
+                    }));
+            });
+        }
+
+        return mRefreshAliasListButton;
+    }
+
+    /**
+     * Updates the Radio Reference controls for the currently selected alias list.
+     */
+    private void updateRadioReferenceControls()
+    {
+        AliasListConfiguration configuration = getSelectedConfiguration();
+        boolean tracking = configuration != null && configuration.isTrackingRadioReferenceSystem();
+
+        getAutoUpdateCheckBox().setDisable(!tracking);
+        getAutoUpdateCheckBox().setSelected(tracking && configuration.isAutoUpdate());
+        getRefreshAliasListButton().setDisable(!tracking || mRefreshInProgress);
+
+        if(tracking)
+        {
+            String name = configuration.getRadioReferenceSystemName();
+            getRadioReferenceSystemLabel().setText((name != null && !name.isEmpty() ? name : "System") + " [" +
+                configuration.getRadioReferenceSystemId() + "]");
+
+            if(!mRefreshInProgress)
+            {
+                getRadioReferenceStatusLabel().setText(getStatusText(configuration));
+            }
+        }
+        else
+        {
+            getRadioReferenceSystemLabel().setText("Not tracking a system");
+            getRadioReferenceStatusLabel().setText(null);
+        }
+    }
+
+    /**
+     * Status text for a tracked alias list: Radio Reference last updated and synchronized timestamps.
+     */
+    private static String getStatusText(AliasListConfiguration configuration)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Updated on Radio Reference: ").append(format(configuration.getRadioReferenceLastUpdated()));
+        sb.append("  Synchronized: ").append(format(configuration.getSynchronizedLastUpdated()));
+
+        if(configuration.isUpdateAvailable())
+        {
+            sb.append("  (Update Available)");
+        }
+
+        return sb.toString();
+    }
+
+    private static String format(long timestamp)
+    {
+        if(timestamp <= 0)
+        {
+            return "never";
+        }
+
+        return DATE_FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()));
+    }
+
+    /**
+     * Redraws the alias color swatches after a change to the application theme.
+     */
+    @Subscribe
+    public void onPreferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.APPLICATION)
+        {
+            Platform.runLater(() -> getAliasTableView().refresh());
+        }
     }
 
     /**
@@ -254,7 +470,9 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
 
 
             Label listLabel = new Label("Alias List");
+            listLabel.setLabelFor(getAliasListNameComboBox());
             Label searchLabel = new Label("Search");
+            searchLabel.setLabelFor(getSearchField());
             searchLabel.setAlignment(Pos.CENTER_RIGHT);
 
             HBox searchBox = new HBox();
@@ -310,6 +528,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                     {
                         getNewAliasButton().setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST));
                         update();
+                        updateRadioReferenceControls();
                     });
 
             if(mAliasListNameComboBox.getItems().size() > 1)
@@ -432,6 +651,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
         if(mAliasTableView == null)
         {
             mAliasTableView = new TableView<>();
+            mAliasTableView.setAccessibleText("Aliases");
 
             TableColumn nameColumn = new TableColumn();
             nameColumn.setText("Alias");
@@ -439,7 +659,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
             nameColumn.setPrefWidth(140);
 
             TableColumn groupColumn = new TableColumn();
-            groupColumn.setText("Group");
+            groupColumn.setText("Category");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(140);
 
@@ -727,16 +947,23 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                         if(alias != null)
                         {
                             rectangle.setVisible(true);
-                            rectangle.setFill(ColorUtil.fromInteger(alias.getColor()));
+                            java.awt.Color color = alias.getDisplayColor();
+                            java.awt.Color readable = ThemeManager.getInstance().getReadableColor(color,
+                                ThemeManager.getInstance().getInnerBackground());
+                            rectangle.setFill(ColorUtil.fromInteger(readable.equals(color) ? alias.getColor() :
+                                readable.getRGB()));
+                            setAccessibleText(String.format("#%06X", alias.getColor() & 0xFFFFFF));
                         }
                         else
                         {
                             rectangle.setVisible(false);
+                            setAccessibleText(null);
                         }
                     }
                     else
                     {
                         rectangle.setVisible(false);
+                        setAccessibleText(null);
                     }
                 }
             };
@@ -775,13 +1002,15 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                 {
                     super.updateItem(item, empty);
 
-                    if(!empty && getTableRow() != null)
+                    if(!empty && getTableRow() != null && item != null)
                     {
                         iconNode.setVisible(item);
+                        setAccessibleText(item ? "Yes" : "No");
                     }
                     else
                     {
                         iconNode.setVisible(false);
+                        setAccessibleText(null);
                     }
                 }
             };
@@ -896,6 +1125,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                 {
                     super.updateItem(item, empty);
                     setAlignment(Pos.CENTER);
+                    setAccessibleText(null);
 
                     if(empty)
                     {
@@ -914,6 +1144,7 @@ public class AliasConfigurationEditor extends SplitPane implements IAliasListRef
                                 if(icon != null && icon.getFxImage() != null)
                                 {
                                     setGraphic(new ImageView(icon.getFxImage()));
+                                    setAccessibleText(icon.getName());
                                 }
                                 else
                                 {

@@ -26,7 +26,7 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerController;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +67,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
                 {
                     getControlRsp().setAgcMode(rtc.getAgcMode());
                 }
-                catch(SDRPlayException se)
+                catch(RspException se)
                 {
                     mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
                 }
@@ -77,7 +77,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
             {
                 getControlRsp().setRfNotch(rtc.isRfNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPduo tuner 2 RF notch enabled to " + rtc.isRfNotch());
             }
@@ -86,7 +86,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
             {
                 getControlRsp().setRfDabNotch(rtc.isRfDabNotch());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPduo tuner 2 RF DAB notch enabled to " + rtc.isRfDabNotch());
             }
@@ -95,7 +95,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
             {
                 getControlRsp().setBiasT(rtc.isBiasT());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPduo tuner 2 Bias-T enabled to " + rtc.isBiasT());
             }
@@ -104,7 +104,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
             {
                 getControlRsp().setExternalReferenceOutput(rtc.isExternalReferenceOutput());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSPduo tuner 2 external reference output enabled to " + rtc.isExternalReferenceOutput());
             }
@@ -119,10 +119,10 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
      * Overrides the default RSP controller to ensure the sample rate is compatible with the
      * configuration of the RSP duo.
      * @param rspSampleRate to apply
-     * @throws SDRPlayException
+     * @throws RspException
      */
     @Override
-    public void setSampleRate(RspSampleRate rspSampleRate) throws SDRPlayException
+    public void setSampleRate(RspSampleRate rspSampleRate) throws RspException
     {
         if(getControlRsp().getDeviceSelectionMode().isSingleTunerMode())
         {
@@ -137,7 +137,7 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
         }
         else
         {
-            if(rspSampleRate.isDualTunerSampleRate())
+            if(RspSampleRate.DUAL_TUNER_SAMPLE_RATES.contains(rspSampleRate))
             {
                 super.setSampleRate(rspSampleRate);
             }

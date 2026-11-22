@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,10 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
@@ -40,14 +39,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * APCO25 Phase 2 super-frame fragment detector uses a pair of sync pattern detectors and a circular dibit buffer to
- * detect sync patterns and correctly frame a (720-dibit / 1440-bit) super-frame fragment containing 4x timeslots and
- * 4x ISCH fragments.  The first ISCH fragment consisting of 20-bits from the preceding fragment and 20-bits from
+ * APCO25 Phase 2 super-frame fragment detector uses sync detection notifications and a circular dibit buffer to
+ * correctly frame a (720-dibit / 1440-bit) super-frame fragment containing 4x timeslots and 4x ISCH fragments.  Sync
+ * detections are provided by the symbol processor's soft sync detector (see syncDetected()) or by checking the dibit
+ * buffer for the sync pattern (see processWithHardSyncDetect()) when processing a stream of dibits without soft
+ * symbols.  The first ISCH fragment consisting of 20-bits from the preceding fragment and 20-bits from
  * the current fragment are reassembled into a contiguous ISCH chunk.  The layout for the super frame fragment is:
  *
  * I-ISCH1 + TIMESLOT1 + I-ISCH2 + TIMESLOT2 + S-SISCH1(sync1) + TIMESLOT3 + S-SISCH2(sync2) + TIMESLOT4
  */
-public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectListener
+public class P25P2SuperFrameDetector
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2SuperFrameDetector.class);
 
@@ -70,8 +71,8 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     private static final int DIBIT_COUNT_MISALIGNED_SYNC = FRAGMENT_DIBIT_LENGTH - 180;
 
     /**
-     * Threshold for broadcasting a sync loss message once per second.  Size is the quantity of dibits per second (3000)
-     * plus the length of one super frame (720).
+     * Threshold for broadcasting a sync loss message every 3000 dibits (0.5 seconds at 6000 dibits per second) when not
+     * synchronized.  Size is the sync loss broadcast interval (3000) plus the length of one super frame fragment (720).
      */
     private static final int BROADCAST_SYNC_LOSS_DIBIT_COUNT = 3720;
 
@@ -98,14 +99,34 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
      */
     private static final int UN_SYNCHRONIZED_SYNC_MATCH_THRESHOLD = 4;
 
+    /**
+     * Dibit count between the final dibit of a detected sync pattern and the fragment check, which aligns the detected
+     * sync pattern with sync pattern 2 in the fragment buffer.  This is the 160 dibits between the end of the second
+     * sync pattern and the end of the fragment plus the extra dibits for the oversized fragment buffer.
+     */
+    private static final int SYNC_DETECTION_DELAY = 160 + FRAGMENT_BUFFER_OVERSIZE;
+
+    /**
+     * Dibits per second (6000 baud) for calculating message timestamps.
+     */
+    private static final double DIBITS_PER_SECOND = 6000.0;
+
+    /**
+     * Maximum number of fragments (1.44 seconds) following a fragment with a valid I-ISCH that the ISCH sequence can be
+     * predicted for.  Testing against Phase 2 recordings with injected noise: the predicted sequence matched the
+     * decoded sequence for all 5,256 fragments with a valid I-ISCH, and increasing the maximum to 48 fragments only
+     * added predictions at 6 dB in-band C/N.
+     */
+    private static final int MAX_PREDICTION_FRAGMENT_COUNT = 12;
+
+    /**
+     * Maximum offset (dibits) from a whole number of fragments since the anchor fragment for an ISCH sequence
+     * prediction, which matches the dibit stuffing/deletion offset range that the fragment checks can correct.
+     */
+    private static final int MAX_PREDICTION_DIBIT_OFFSET = 2;
+
     private ScramblingSequence mScramblingSequence = new ScramblingSequence();
     private Listener<IMessage> mMessageListener;
-    private P25P2SyncDetector mSyncDetector;
-    /**
-     * The sync detection delay buffer is sized per the 160 dibits (320 bits) distance between the end of the fragment
-     * and the end of the second sync pattern (160) plus any extra dibits to account for the oversized fragment buffer.
-     */
-    private DibitDelayBuffer mSyncDetectionDelayBuffer = new DibitDelayBuffer(160 + FRAGMENT_BUFFER_OVERSIZE);
 
     /**
      * The fragment buffer is sized to hold a complete super frame fragment (720 dibits) plus two extra preceding and
@@ -113,13 +134,28 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
      * stuffed or deleted dibits in the sequence.
      */
     private DibitDelayBuffer mFragmentBuffer = new DibitDelayBuffer(720 + (2 * FRAGMENT_BUFFER_OVERSIZE));
-    private int mDibitsProcessed = 0;
-    private boolean mSynchronized = false;
-    private ISyncDetectListener mSyncDetectListener;
 
-    public P25P2SuperFrameDetector(IPhaseLockedLoop phaseLockedLoop)
+    /**
+     * Soft symbol buffer, parallel to the fragment buffer, for soft decision decoding.
+     */
+    private final float[] mSoftSymbolBuffer = new float[720 + (2 * FRAGMENT_BUFFER_OVERSIZE)];
+    private int mSoftSymbolPointer = 0;
+    private boolean mSoftSymbolsAvailable = false;
+    private int mDibitsProcessed = 0;
+    private long mDibitCounter = 0;
+    private long mAnchorDibitCounter = -1;
+    private ISCHSequence mAnchorIschSequence = ISCHSequence.UNKNOWN;
+    private int mSyncDetectionCountdown = 0;
+    private int mDibitsSinceTimestamp = 0;
+    private long mReferenceTimestamp = 0;
+    private boolean mSynchronized = false;
+    private boolean mValidFragment = false;
+
+    /**
+     * Constructs an instance
+     */
+    public P25P2SuperFrameDetector()
     {
-        mSyncDetector = new P25P2SyncDetector(this, phaseLockedLoop);
     }
 
     /**
@@ -131,89 +167,154 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         mScramblingSequence.update(scramblingSequence);
     }
 
-    /**
-     * Sets an external sync detect listener to receive sync detect/loss notifications
-     */
-    public void setSyncDetectListener(ISyncDetectListener listener)
-    {
-        mSyncDetectListener = listener;
-    }
-
     public void setListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
     }
 
     /**
-     * Sets the sample rate for the phase inversion sync detector
+     * Sets or updates the current dibit stream time from an incoming sample buffer.
+     * @param timestamp to use as a reference timestamp.
      */
-    public void setSampleRate(double sampleRate)
+    public void setTimestamp(long timestamp)
     {
-        mSyncDetector.setSampleRate(sampleRate);
+        mReferenceTimestamp = timestamp;
+        mDibitsSinceTimestamp = 0;
     }
 
-    public void reset()
-    {
-    }
-
-    @Override
-    public void syncDetected(int bitErrors)
-    {
-        checkFragmentSync(bitErrors);
-
-        //Rebroadcast to an external listener
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncDetected(bitErrors);
-        }
-    }
-
-    @Override
-    public void syncLost(int bitsProcessed)
-    {
-        //Rebroadcast to an external listener
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncLost(bitsProcessed);
-        }
-    }
-
+    /**
+     * Calculates the timestamp accurate to the currently received dibit.
+     * @return timestamp in milliseconds.
+     */
     private long getCurrentTimestamp()
     {
-        //TODO: implement a dibit counter and timestamp calculator.  We should receive a timestamp update with each
-        //TODO: buffer that arrives.  Use the timestamp dibit counter to calculate the exact timestamp of where we're at.
+        if(mReferenceTimestamp > 0)
+        {
+            return mReferenceTimestamp + (long)(1000.0 * mDibitsSinceTimestamp / DIBITS_PER_SECOND);
+        }
+
         return System.currentTimeMillis();
     }
 
-    @Override
-    public void receive(Dibit dibit)
+    /**
+     * Notification that a sync pattern was detected where the final sync dibit is the most recently processed dibit.
+     * When not synchronized, schedules a fragment check once the detected sync pattern aligns with the sync pattern 2
+     * location in the fragment buffer.  Ignored when synchronized since the fragment is checked at each fragment
+     * interval.
+     */
+    public void syncDetected()
     {
+        if(!mSynchronized && mSyncDetectionCountdown == 0)
+        {
+            mSyncDetectionCountdown = SYNC_DETECTION_DELAY;
+        }
+    }
+
+    /**
+     * Processes the dibit and detects sync patterns from the dibits in the fragment buffer, for use when processing a
+     * stream of dibits without access to the soft symbol sync detection (see syncDetected()).
+     * @param dibit to process
+     * @return true if a valid super frame fragment was produced.
+     */
+    public boolean processWithHardSyncDetect(Dibit dibit)
+    {
+        boolean valid = process(dibit);
+
+        if(!mSynchronized && mSyncDetectionCountdown == 0)
+        {
+            int bitErrorCount = getSyncBitErrorCount(DIBIT_DELAY_BUFFER_INDEX_SYNC_2);
+
+            if(bitErrorCount <= UN_SYNCHRONIZED_SYNC_MATCH_THRESHOLD)
+            {
+                mValidFragment = false;
+                checkFragmentSync(bitErrorCount);
+                valid |= mValidFragment;
+            }
+        }
+
+        return valid;
+    }
+
+    /**
+     * Processes the dibit and the soft symbol it was decided from.
+     * @param dibit to process
+     * @param softSymbol for the dibit (radians)
+     * @return true if a valid super frame fragment (ie contains at least one valid MAC message) was produced.
+     */
+    public boolean process(Dibit dibit, float softSymbol)
+    {
+        mSoftSymbolBuffer[mSoftSymbolPointer++] = softSymbol;
+        mSoftSymbolPointer %= mSoftSymbolBuffer.length;
+        mSoftSymbolsAvailable = true;
+        return process(dibit);
+    }
+
+    /**
+     * Extracts soft symbols from the soft symbol buffer, using the same indexing as the fragment buffer.
+     * @param start index relative to the oldest soft symbol in the buffer
+     * @param length number of soft symbols
+     * @return soft symbols or null if soft symbols are not available.
+     */
+    private float[] getSoftSymbols(int start, int length)
+    {
+        if(!mSoftSymbolsAvailable)
+        {
+            return null;
+        }
+
+        float[] softSymbols = new float[length];
+        int pointer = (mSoftSymbolPointer + start) % mSoftSymbolBuffer.length;
+
+        for(int x = 0; x < length; x++)
+        {
+            softSymbols[x] = mSoftSymbolBuffer[pointer++];
+            pointer %= mSoftSymbolBuffer.length;
+        }
+
+        return softSymbols;
+    }
+
+    /**
+     * Processes the dibit.
+     * @param dibit to process
+     * @return true if a valid super frame fragment (ie contains at least one valid MAC message) was produced.
+     */
+    public boolean process(Dibit dibit)
+    {
+        mValidFragment = false;
         mDibitsProcessed++;
+        mDibitsSinceTimestamp++;
+        mDibitCounter++;
 
         mFragmentBuffer.put(dibit);
 
         if(mSynchronized)
         {
-            mSyncDetectionDelayBuffer.put(dibit);
+            mSyncDetectionCountdown = 0;
 
             if(mDibitsProcessed >= FRAGMENT_DIBIT_LENGTH)
             {
                 checkFragmentSync(0);
             }
         }
-        else
+        else if(mSyncDetectionCountdown > 0)
         {
-            //Only feed the sync pattern detector if we're not synchronized
-            Dibit delayed = mSyncDetectionDelayBuffer.getAndPut(dibit);
-            mSyncDetector.receive(delayed);
+            mSyncDetectionCountdown--;
+
+            if(mSyncDetectionCountdown == 0)
+            {
+                checkFragmentSync(getSyncBitErrorCount(DIBIT_DELAY_BUFFER_INDEX_SYNC_2));
+            }
         }
 
-        //Broadcast sync loss message once a second (3000 dibits/6000 bits) when we're not synchronized
+        //Broadcast sync loss message every 3000 dibits (6000 bits) when we're not synchronized
         if(mDibitsProcessed > BROADCAST_SYNC_LOSS_DIBIT_COUNT)
         {
             mDibitsProcessed -= 3000;
             broadcastSyncLoss(3000);
         }
+
+        return mValidFragment;
     }
 
     /**
@@ -234,8 +335,12 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         mDibitsProcessed = 0 + dibitOffset;
         CorrectedBinaryMessage message = mFragmentBuffer.getMessage(FRAGMENT_BUFFER_OVERSIZE + dibitOffset, 720);
         message.setCorrectedBitCount(bitErrors);
-        SuperFrameFragment frameFragment = new SuperFrameFragment(message, getCurrentTimestamp(), mScramblingSequence);
+        float[] softSymbols = getSoftSymbols(FRAGMENT_BUFFER_OVERSIZE + dibitOffset, 720);
+        SuperFrameFragment frameFragment = new SuperFrameFragment(message, softSymbols, getCurrentTimestamp(),
+                mScramblingSequence);
+        updateIschSequence(frameFragment, mDibitCounter - FRAGMENT_BUFFER_OVERSIZE + dibitOffset);
         updateScramblingCode(frameFragment);
+        mValidFragment = hasValidMacMessage(frameFragment);
         broadcast(frameFragment);
     }
 
@@ -269,9 +374,49 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         //Xor the two messages to produce a unified super frame fragment
         message1.xor(message2);
         message1.setCorrectedBitCount(bitErrors); //Not even sure what the correct bit error count is here?
-        SuperFrameFragment frameFragment = new SuperFrameFragment(message1, getCurrentTimestamp(), mScramblingSequence);
+        //Soft symbols are similarly aligned to sync 1 before dibit 540 and to sync 2 from dibit 540 onward
+        float[] softSymbols = getSoftSymbols(FRAGMENT_BUFFER_OVERSIZE + sync1Offset, 720);
+        float[] softSymbols2 = getSoftSymbols(FRAGMENT_BUFFER_OVERSIZE + sync2Offset, 720);
+
+        if(softSymbols != null)
+        {
+            System.arraycopy(softSymbols2, 540, softSymbols, 540, 180);
+        }
+
+        SuperFrameFragment frameFragment = new SuperFrameFragment(message1, softSymbols, getCurrentTimestamp(),
+                mScramblingSequence);
+        updateIschSequence(frameFragment, mDibitCounter - FRAGMENT_BUFFER_OVERSIZE + sync2Offset);
         updateScramblingCode(frameFragment);
+        mValidFragment = hasValidMacMessage(frameFragment);
         broadcast(frameFragment);
+    }
+
+    /**
+     * Tracks the ISCH sequence (ie fragment 1, 2 or 3 of the superframe) of fragments with a valid I-ISCH as an anchor
+     * and predicts the ISCH sequence for fragments where neither I-ISCH is valid, from the number of whole fragments
+     * since the anchor fragment.  The ISCH sequence determines the scrambling sequence offset and the order of the
+     * final two timeslots in the fragment.
+     * @param fragment to update
+     * @param fragmentEnd dibit counter value for the final dibit of the fragment
+     */
+    private void updateIschSequence(SuperFrameFragment fragment, long fragmentEnd)
+    {
+        if(fragment.hasDecodedIschSequence())
+        {
+            mAnchorDibitCounter = fragmentEnd;
+            mAnchorIschSequence = fragment.getIschSequence();
+        }
+        else if(mAnchorDibitCounter >= 0)
+        {
+            long elapsed = fragmentEnd - mAnchorDibitCounter;
+            long fragments = Math.round(elapsed / (double)FRAGMENT_DIBIT_LENGTH);
+
+            if(fragments >= 1 && fragments <= MAX_PREDICTION_FRAGMENT_COUNT &&
+                Math.abs(elapsed - fragments * FRAGMENT_DIBIT_LENGTH) <= MAX_PREDICTION_DIBIT_OFFSET)
+            {
+                fragment.setPredictedIschSequence(mAnchorIschSequence.advance((int)fragments));
+            }
+        }
     }
 
     /**
@@ -314,6 +459,30 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         {
             superFrameFragment.resetTimeslots();
         }
+    }
+
+    /**
+     * Indicates if the super frame fragment contains at least one valid (ie CRC check passes) MAC message.
+     * @param superFrameFragment to inspect
+     * @return true if valid.
+     */
+    private static boolean hasValidMacMessage(SuperFrameFragment superFrameFragment)
+    {
+        for(Timeslot timeslot: superFrameFragment.getTimeslots())
+        {
+            if(timeslot instanceof AbstractSignalingTimeslot abstractSignalingTimeslot)
+            {
+                for(MacMessage macMessage: abstractSignalingTimeslot.getMacMessages())
+                {
+                    if(macMessage.isValid())
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private void broadcastSyncLoss(int dibitsProcessed)

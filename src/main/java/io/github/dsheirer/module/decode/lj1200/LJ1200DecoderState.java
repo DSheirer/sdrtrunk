@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.lj1200;
 
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -103,28 +104,17 @@ public class LJ1200DecoderState extends DecoderState
     @Override
     public String getActivitySummary()
     {
-        StringBuilder sb = new StringBuilder();
+        ActivitySummary summary = new ActivitySummary("LJ-1200I");
+        summary.section("Transponder Addresses");
+        List<String> addresses = new ArrayList<>(mAddresses);
+        Collections.sort(addresses);
 
-        sb.append("=============================\n");
-        sb.append("Decoder:\tLJ-1200I\n\n");
-
-        if(!mAddresses.isEmpty())
+        for(String address : addresses)
         {
-            sb.append("Transponder Addresses:\n");
-
-            List<String> addresses = new ArrayList<>(mAddresses);
-
-            Collections.sort(addresses);
-
-            for(String address : addresses)
-            {
-                sb.append("\t");
-                sb.append(address);
-                sb.append("\n");
-            }
+            summary.text(address);
         }
 
-        return sb.toString();
+        return summary.toString();
     }
 
     @Override

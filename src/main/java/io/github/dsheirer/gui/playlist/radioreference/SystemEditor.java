@@ -103,7 +103,9 @@ public class SystemEditor extends VBox
         systemBox.setAlignment(Pos.CENTER_LEFT);
         systemBox.setSpacing(5);
         systemBox.setMaxWidth(Double.MAX_VALUE);
-        systemBox.getChildren().addAll(new Label("System"), getSystemComboBox());
+        Label systemLabel = new Label("System");
+        systemLabel.setLabelFor(getSystemComboBox());
+        systemBox.getChildren().addAll(systemLabel, getSystemComboBox());
         VBox.setVgrow(getTabPane(), Priority.ALWAYS);
         getChildren().addAll(systemBox, getTabPane());
     }
@@ -137,8 +139,9 @@ public class SystemEditor extends VBox
 
         if(systems != null && !systems.isEmpty())
         {
-            Collections.sort(systems, new SystemComparator());
+            //The systems list belongs to a cached state or county info shared with other callers, so sort the items
             getSystemComboBox().getItems().addAll(systems);
+            getSystemComboBox().getItems().sort(new SystemComparator());
 
             int preferredSystemId = mUserPreferences.getRadioReferencePreference().getPreferredSystemId(mLevel);
 
@@ -151,6 +154,41 @@ public class SystemEditor extends VBox
                 }
             }
         }
+    }
+
+    /**
+     * Prepares to show the system with the site selected when the systems are next set.
+     * @param systemId of the system
+     * @param siteId to select, or -1 for none
+     */
+    public void prepareView(int systemId, int siteId)
+    {
+        mUserPreferences.getRadioReferencePreference().setPreferredSystemId(systemId, mLevel);
+        getTabPane().getSelectionModel().select(getSystemTab());
+        getSystemSiteSelectionEditor().viewSite(systemId, siteId);
+    }
+
+    /**
+     * Shows the system with the site selected
+     * @param systemId of the system
+     * @param siteId to select, or -1 for none
+     * @return false when the editor doesn't list the system
+     */
+    public boolean view(int systemId, int siteId)
+    {
+        prepareView(systemId, siteId);
+
+        for(System system: getSystemComboBox().getItems())
+        {
+            if(system.getSystemId() == systemId)
+            {
+                //Selecting the shown system again doesn't reload it - the site is selected in the shown system
+                getSystemComboBox().getSelectionModel().select(system);
+                return true;
+            }
+        }
+
+        return getSystemComboBox().getItems().isEmpty();
     }
 
     private TabPane getTabPane()
@@ -300,7 +338,16 @@ public class SystemEditor extends VBox
                         //have a county ID of 99,999 as observed from API (undocumented).
                         if(countyId > 0 && countyId != 99999)
                         {
-                            countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                            //The county name is only for display, so a failed lookup shouldn't fail the system load
+                            try
+                            {
+                                countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                            }
+                            catch(RadioReferenceException rre)
+                            {
+                                mLog.warn("Unable to retrieve county [" + countyId + "] for site [" +
+                                    site.getSiteNumber() + "] of system [" + system.getSystemId() + "] - " + rre.getMessage());
+                            }
                         }
 
                         enrichedSites.add(new EnrichedSite(site, countyInfo));
@@ -388,11 +435,14 @@ public class SystemEditor extends VBox
                 setGraphic(null);
                 mName.setText(null);
                 mProtocol.setText(null);
+                setAccessibleText(null);
             }
             else
             {
                 mName.setText(item.getName());
                 mProtocol.setText(getType(item));
+                //Text is shown in nested labels, so expose it as the cell's accessible text
+                setAccessibleText(item.getName() + ", " + getType(item));
 
                 if(isSupported(item))
                 {

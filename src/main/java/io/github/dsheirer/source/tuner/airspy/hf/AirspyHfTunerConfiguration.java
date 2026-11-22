@@ -32,6 +32,7 @@ public class AirspyHfTunerConfiguration extends TunerConfiguration
     private boolean mAgc;
     private boolean mLna;
     private int mAttenuation;
+    private boolean mBiasT;
 
     /**
      * Default constructor for JAXB
@@ -112,6 +113,25 @@ public class AirspyHfTunerConfiguration extends TunerConfiguration
     public void setLna(boolean lna)
     {
         mLna = lna;
+    }
+
+    /**
+     * Indicates if the Bias-T power output is enabled.  Only applies to devices whose firmware supports a bias-T.
+     * @return bias-T enabled state
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasT;
+    }
+
+    /**
+     * Sets the Bias-T power output enabled state
+     * @param enabled true to enable
+     */
+    public void setBiasT(boolean enabled)
+    {
+        mBiasT = enabled;
     }
 
     /**

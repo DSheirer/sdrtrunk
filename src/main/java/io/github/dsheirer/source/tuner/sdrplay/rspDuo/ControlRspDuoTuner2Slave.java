@@ -20,9 +20,9 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
+import io.github.dsheirer.source.tuner.sdrplay.DeviceSelectionMode;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
+import io.github.dsheirer.sdrplay.DeviceInfo;
 import java.util.EnumSet;
 
 /**
@@ -35,11 +35,11 @@ public class ControlRspDuoTuner2Slave extends ControlRspDuoTuner2
     /**
      * Constructs an instance
      *
-     * @param device to control
+     * @param deviceInfo for the device
      */
-    public ControlRspDuoTuner2Slave(RspDuoDevice device, MasterSlaveBridge bridge)
+    public ControlRspDuoTuner2Slave(DeviceInfo deviceInfo, MasterSlaveBridge bridge)
     {
-        super(device);
+        super(deviceInfo);
         mMasterSlaveBridge = bridge;
     }
 
@@ -79,23 +79,7 @@ public class ControlRspDuoTuner2Slave extends ControlRspDuoTuner2
     }
 
     @Override
-    public void setSampleRate(RspSampleRate sampleRate) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            mSampleRate = sampleRate;
-            getDevice().getTuner().setBandwidth(sampleRate.getBandwidth());
-            getControlParameters().getDecimation().setWideBandSignal(true);
-            getDevice().setDecimation(sampleRate.getDecimation());
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setExternalReferenceOutput(boolean enabled) throws SDRPlayException
+    public void setExternalReferenceOutput(boolean enabled) throws RspException
     {
         //Ignore ... tuner 2 configured for slave mode does not control the external reference output
     }

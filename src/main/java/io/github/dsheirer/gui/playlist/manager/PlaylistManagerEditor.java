@@ -127,6 +127,7 @@ public class PlaylistManagerEditor extends HBox
         if(mPlaylistTableView == null)
         {
             mPlaylistTableView = new TableView<>();
+            mPlaylistTableView.setAccessibleText("Playlists");
             TableColumn<Path,String> iconColumn = new TableColumn("Selected");
             iconColumn.setPrefWidth(100);
             iconColumn.setCellFactory(new Callback<TableColumn<Path,String>,TableCell<Path,String>>()
@@ -144,6 +145,7 @@ public class PlaylistManagerEditor extends HBox
                             if(empty || getTableRow() == null || getTableRow().getItem() == null)
                             {
                                 setGraphic(null);
+                                setAccessibleText(null);
                             }
                             else
                             {
@@ -154,16 +156,19 @@ public class PlaylistManagerEditor extends HBox
                                     IconNode iconNode  = new IconNode(FontAwesome.CHECK);
                                     iconNode.setFill(Color.GREEN);
                                     setGraphic(iconNode);
+                                    setAccessibleText("Selected");
                                 }
                                 else if(!path.toFile().exists())
                                 {
                                     IconNode iconNode  = new IconNode(FontAwesome.TIMES);
                                     iconNode.setFill(Color.RED);
                                     setGraphic(iconNode);
+                                    setAccessibleText("File not found");
                                 }
                                 else
                                 {
                                     setGraphic(null);
+                                    setAccessibleText("Not selected");
                                 }
                             }
                         }

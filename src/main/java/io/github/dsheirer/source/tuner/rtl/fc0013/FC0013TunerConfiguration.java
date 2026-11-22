@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.rtl.fc0013;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerConfiguration;
 
@@ -28,15 +28,38 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832TunerConfiguration;
  */
 public class FC0013TunerConfiguration extends RTL2832TunerConfiguration
 {
-    private FC0013EmbeddedTuner.LNAGain mLnaGain = FC0013EmbeddedTuner.LNAGain.G10;
-    private boolean mAgc = false;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 13_500_000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1_907_999_890l;
+    public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
+    public static final int DC_SPIKE_AVOID_BUFFER = 15000;
+    /**
+     * Gains in tenths of a dB for the legacy LNA gain settings G00 to G23, from the librtlsdr FC0013 LNA gain table.
+     * The legacy settings used the same 24 register values in the same order.  Two of them (G03 and G04) are both
+     * listed as -6.3 dB, so librtlsdr reports only 23 distinct gains.
+     */
+    private static final int[] LEGACY_GAINS = {-99, -73, -65, -63, -63, -60, -58, -54, 58, 61, 63, 65, 67, 68, 70, 71,
+            179, 181, 182, 184, 186, 188, 191, 197};
+    /**
+     * Default gain in tenths of a dB
+     */
+    public static final int DEFAULT_GAIN = 67;
 
     /**
-     * Default constructor for JAXB
+     * Default constructor for Jackson
      */
     public FC0013TunerConfiguration()
     {
-        super(FC0013EmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ, FC0013EmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ);
+        super(MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, DEFAULT_GAIN);
+    }
+
+    /**
+     * Constructs an instance
+     *
+     * @param uniqueID for the tuner
+     */
+    public FC0013TunerConfiguration(String uniqueID)
+    {
+        super(uniqueID, DEFAULT_GAIN);
     }
 
     @JsonIgnore
@@ -47,50 +70,15 @@ public class FC0013TunerConfiguration extends RTL2832TunerConfiguration
     }
 
     /**
-     * Constructs an instance
-     *
-     * @param uniqueID for the tuner
+     * Converts the legacy LNA gain setting, G00 (lowest) to G23 (highest), to the librtlsdr gain for the same
+     * LNA register value.
      */
-    public FC0013TunerConfiguration(String uniqueID)
+    @JsonSetter("lnaGain")
+    public void setLegacyLNAGain(String lnaGain)
     {
-        super(uniqueID);
-    }
-
-    /**
-     * LNA gain value.
-     * @return value
-     */
-    @JacksonXmlProperty(isAttribute = true, localName = "lna_gain")
-    public FC0013EmbeddedTuner.LNAGain getLnaGain()
-    {
-        return mLnaGain;
-    }
-
-    /**
-     * Sets the LNA gain value.
-     * @param lnaGain value.
-     */
-    public void setLnaGain(FC0013EmbeddedTuner.LNAGain lnaGain)
-    {
-        mLnaGain = lnaGain;
-    }
-
-    /**
-     * Automatic Gain Control (AGC) state
-     * @return AGC enabled state
-     */
-    @JacksonXmlProperty(isAttribute = true, localName = "agc")
-    public boolean getAGC()
-    {
-        return mAgc;
-    }
-
-    /**
-     * Sets the AGC
-     * @param enabled state of the AGC
-     */
-    public void setAGC(boolean enabled)
-    {
-        mAgc = enabled;
+        if(lnaGain != null && lnaGain.matches("G\\d\\d"))
+        {
+            setGain(LEGACY_GAINS[Math.min(Integer.parseInt(lnaGain.substring(1)), LEGACY_GAINS.length - 1)]);
+        }
     }
 }

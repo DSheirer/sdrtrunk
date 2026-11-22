@@ -123,25 +123,23 @@ public class LRRPPacket extends Packet
             }
             else
             {
-                String message = getMessage().getSubMessage(getOffset(), getOffset() + ((characterCount + 2) * 8)).toHexString();
-                int x = 0;
-
                 RequestedTokens requestedTokens = new RequestedTokens();
 
                 while(characterCount > 0 && offset < getMessage().size())
                 {
                     String tokenId = getTokenIdentifier(offset);
-                    TokenType tokenType = TokenType.fromValue(tokenId);
+                    TokenType tokenType = TokenType.fromRequestValue(tokenId);
 
                     if(tokenType.isRequestParameterToken())
                     {
-                        Token token = TokenFactory.createToken(tokenId, getMessage(), offset, characterCount);
+                        Token token = TokenFactory.createToken(tokenType, getMessage(), offset, characterCount);
                         mTokens.add(token);
                         characterCount -= token.getByteLength();
                         offset += (8 * token.getByteLength());
                     }
                     else
                     {
+                        //Single-byte flag naming a field that the radio should include in its location report
                         if(tokenType != TokenType.UNKNOWN)
                         {
                             requestedTokens.add(tokenType);

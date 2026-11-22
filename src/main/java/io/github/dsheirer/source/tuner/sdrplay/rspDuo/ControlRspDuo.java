@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,334 +19,128 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
+import io.github.dsheirer.sdrplay.DeviceInfo;
+import io.github.dsheirer.sdrplay.IfMode;
+import io.github.dsheirer.sdrplay.RspDevice;
+import io.github.dsheirer.sdrplay.RspDuoDevice;
+import io.github.dsheirer.sdrplay.RxChannel;
+import io.github.dsheirer.sdrplay.SDRplay;
+import io.github.dsheirer.sdrplay.SDRplayException;
+import io.github.dsheirer.sdrplay.Tuner;
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
-import io.github.dsheirer.source.tuner.sdrplay.ITunerStatusListener;
+import io.github.dsheirer.source.tuner.sdrplay.DeviceSelectionMode;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
-import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
-import io.github.dsheirer.source.tuner.sdrplay.api.Status;
-import io.github.dsheirer.source.tuner.sdrplay.api.UpdateReason;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoTuner;
-import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
-import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base control wrapper for an RSPduo operating in either single-tuner or master or slave mode.
  */
-public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<RspDuoDevice> implements IControlRspDuo
+public abstract class ControlRspDuo extends ControlRsp<RspDuoDevice> implements IControlRspDuo
 {
-    private final Logger mLog = LoggerFactory.getLogger(ControlRspDuo.class);
+    /**
+     * Sample rate for both tuners when tuner 1 is selected as master.
+     */
+    protected static final double MASTER_SAMPLE_RATE = 8_000_000;
 
     /**
      * Constructs an instance
-     *
-     * @param device for the device, obtained from the API
+     * @param deviceInfo for the device, obtained from the API
      */
-    public ControlRspDuo(RspDuoDevice device)
+    public ControlRspDuo(DeviceInfo deviceInfo)
     {
-        super(device);
+        super(deviceInfo, RspDuoDevice.class);
     }
 
     /**
-     * Access the tuner
-     * @return tuner
-     * @throws SDRPlayException if the device is not started/selected
-     */
-    protected abstract T getTuner() throws SDRPlayException;
-
-    /**
-     * Device selection mode - tuner 1 or tuner 2
+     * Device selection mode - tuner 1 or tuner 2, single or master/slave
      * @return mode
      */
     public abstract DeviceSelectionMode getDeviceSelectionMode();
 
-    /**
-     * Control parameters for either tuner 1 or tuner 2
-     * @return control parameters
-     */
-    protected abstract ControlParameters getControlParameters();
-
-    /**
-     * Tuner parameters for either tuner 1 or tuner 2
-     */
-    protected abstract TunerParameters getTunerParameters();
-
     @Override
-    public void start() throws SDRPlayException
+    public Tuner getSdrplayTuner()
     {
-        if(hasDevice())
-        {
-            getDevice().setRspDuoMode(getDeviceSelectionMode().getRspDuoMode());
-            getDevice().setTunerSelect(getDeviceSelectionMode().getTunerSelect());
+        return getDeviceSelectionMode().getTuner();
+    }
 
-            //In master mode, we have to set the sample rate here, before we select the device
-            if(getDeviceSelectionMode().isMasterMode())
-            {
-                getDevice().setRspDuoSampleFrequency(8_000_000);
-            }
+    /**
+     * Selects the RSPduo in the mode and tuner specified by the device selection mode.
+     */
+    @Override
+    protected RspDevice select(SDRplay session, DeviceInfo deviceInfo) throws SDRplayException
+    {
+        DeviceSelectionMode mode = getDeviceSelectionMode();
+        return session.selectRspDuo(deviceInfo, mode.getRspDuoMode(), mode.getTuner(),
+                mode.isMasterMode() ? MASTER_SAMPLE_RATE : 0);
+    }
 
-            getDevice().select();
+    /**
+     * In master/slave dual-tuner mode use IF 2.048 MHz, otherwise use zero IF
+     */
+    @Override
+    protected IfMode getIfMode()
+    {
+        return getDeviceSelectionMode().isSingleTunerMode() ? IfMode.ZERO : IfMode.KHZ_2048;
+    }
 
-            //Enable automatic DC and I/Q correction
-            getControlParameters().getDcOffset().setDC(true);
-            getControlParameters().getDcOffset().setIQ(true);
+    /**
+     * Sets the sample rate.  In single tuner mode, sets the ADC sample rate.  In master/slave mode, the ADC sample
+     * rate (8 MHz) is shared by both tuners and is fixed when the master is selected, so this only sets the bandwidth
+     * and the decimation.
+     * @param sampleRate enumeration value.
+     * @throws RspException if the device is not started/initialized
+     */
+    @Override
+    public void setSampleRate(RspSampleRate sampleRate) throws RspException
+    {
+        command("set sample rate " + sampleRate, device -> {
+            RxChannel channel = device.channel();
+            channel.setBandwidth(sampleRate.getBandwidth());
 
-            //Setup LO Mode
-            getTunerParameters().setLoMode(LoMode.AUTO);
-
-            //Setup IF mode. In master/slave dual-tuner mode use IF_2048, otherwise use IF_ZERO
             if(getDeviceSelectionMode().isSingleTunerMode())
             {
-                getTunerParameters().setIfMode(IfMode.IF_ZERO);
-            }
-            else
-            {
-                getTunerParameters().setIfMode(IfMode.IF_2048);
-            }
-        }
-        else
-        {
-            throw new SDRPlayException("Unable to start - no device");
-        }
-    }
-
-    @Override
-    public void startStream()
-    {
-        mStreamingLock.lock();
-
-        try
-        {
-            if(hasDevice() && !mStreaming)
-            {
-                if(getDeviceSelectionMode().isSlaveMode())
-                {
-                    getDevice().initStreamB(getDeviceEventListener(), getStreamListener());
-                }
-                else
-                {
-                    getDevice().initStreamA(getDeviceEventListener(), getStreamListener());
-                }
-
-                mStreaming = true;
-            }
-        }
-        catch(SDRPlayException se)
-        {
-            if(se.getStatus() == Status.FAIL)
-            {
-                if(getDeviceEventListener() != null)
-                {
-                    getDeviceEventListener().processDeviceRemoval(getTunerSelect());
-                }
-            }
-            else
-            {
-                mLog.error("Unable to initialize/start streaming for RSPduo", se);
-            }
-        }
-        finally
-        {
-            mStreamingLock.unlock();
-        }
-    }
-
-    @Override
-    public void stopStream()
-    {
-        mStreamingLock.lock();
-
-        try
-        {
-            if(hasDevice() && mStreaming)
-            {
-                getDevice().uninitialize();
-                mStreaming = false;
-            }
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error while stopping RSPduo stream", e);
-        }
-        finally
-        {
-            mStreamingLock.unlock();
-        }
-    }
-
-    /**
-     * Sets the sample rate
-     * @param sampleRate enumeration value.
-     * @throws SDRPlayException if the device is not started/initialized
-     */
-    @Override
-    public void setSampleRate(RspSampleRate sampleRate) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            mSampleRate = sampleRate;
-
-            getDevice().getTuner().setBandwidth(sampleRate.getBandwidth());
-            getDevice().getCompositeParameters().getDeviceParameters().getSamplingFrequency()
-                    .setSampleRate(sampleRate.getSampleRate());
-            //Only send an update if we're in single-tuner mode ... not sure why we don't have to for dual-tuner mode.
-            if(getDeviceSelectionMode() != DeviceSelectionMode.MASTER_TUNER_1)
-            {
-                getDevice().update(getTunerSelect(), UpdateReason.DEVICE_SAMPLE_RATE);
+                device.setSampleRate(sampleRate.getSampleRate());
             }
 
-            getControlParameters().getDecimation().setWideBandSignal(true);
-            getDevice().setDecimation(sampleRate.getDecimation());
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+            channel.setDecimation(sampleRate.getDecimation(), true);
+        });
+
+        mSampleRate = sampleRate;
     }
 
     @Override
-    public void setGain(int lna, int gr) throws SDRPlayException
+    public boolean isRfDabNotch() throws RspException
     {
-        if(mLNA != lna && mBasebandGainReduction != gr)
-        {
-            mLNA = lna;
-            mBasebandGainReduction = gr;
-            getTuner().setGain(lna, gr);
-        }
+        return query("get RF DAB notch", device -> device.isRfDabNotch(getSdrplayTuner()));
     }
 
     @Override
-    public void acknowledgePowerOverload(TunerSelect tunerSelect) throws SDRPlayException
+    public void setRfDabNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getDevice().acknowledgePowerOverload(tunerSelect);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-
-        //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
-        if(mGainOverloadReference != null)
-        {
-            ITunerStatusListener listener = mGainOverloadReference.get();
-
-            if(listener != null)
-            {
-                ThreadPool.CACHED.submit(() -> listener.notifyGainOverload(tunerSelect));
-            }
-        }
+        command("set RF DAB notch", device -> device.setRfDabNotch(getSdrplayTuner(), enabled));
     }
 
     @Override
-    public long getTunedFrequency() throws SDRPlayException
+    public boolean isRfNotch() throws RspException
     {
-        if(hasDevice())
-        {
-            return getTuner().getFrequency();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get RF notch", device -> device.isRfNotch(getSdrplayTuner()));
     }
 
     @Override
-    public void setTunedFrequency(long frequency) throws SDRPlayException
+    public void setRfNotch(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getTuner().setFrequency(frequency);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set RF notch", device -> device.setRfNotch(getSdrplayTuner(), enabled));
     }
 
     @Override
-    public boolean isRfDabNotch() throws SDRPlayException
+    public boolean isExternalReferenceOutput() throws RspException
     {
-        if(hasDevice())
-        {
-            return getTuner().isRfDabNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        return query("get external reference output", RspDuoDevice::isExternalReferenceOutput);
     }
 
     @Override
-    public void setRfDabNotch(boolean enabled) throws SDRPlayException
+    public void setExternalReferenceOutput(boolean enabled) throws RspException
     {
-        if(hasDevice())
-        {
-            getTuner().setRfDabNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public boolean isRfNotch() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getTuner().isRFNotch();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setRfNotch(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getTuner().setRfNotch(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public boolean isExternalReferenceOutput() throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            return getTuner().isExternalReferenceOutput();
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
-    }
-
-    @Override
-    public void setExternalReferenceOutput(boolean enabled) throws SDRPlayException
-    {
-        if(hasDevice())
-        {
-            getTuner().setExternalReferenceOutput(enabled);
-        }
-        else
-        {
-            throw new SDRPlayException("Device is not initialized");
-        }
+        command("set external reference output", device -> device.setExternalReferenceOutput(enabled));
     }
 }

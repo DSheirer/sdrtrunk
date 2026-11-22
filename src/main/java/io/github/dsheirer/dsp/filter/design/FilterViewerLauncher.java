@@ -1,16 +1,14 @@
 package io.github.dsheirer.dsp.filter.design;
 
+import io.github.dsheirer.gui.FxToolkit;
 import javafx.application.Platform;
-import javafx.embed.swing.JFXPanel;
 import javafx.stage.Stage;
 
 public class FilterViewerLauncher
 {
-    private JFXPanel mJFXPanel;
-
     public FilterViewerLauncher()
     {
-        mJFXPanel = new JFXPanel();
+        FxToolkit.ensureStarted();
 
         Platform.runLater(() ->
         {

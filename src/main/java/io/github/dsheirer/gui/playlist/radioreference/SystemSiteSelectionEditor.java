@@ -58,6 +58,8 @@ public class SystemSiteSelectionEditor extends GridPane
     private UserPreferences mUserPreferences;
     private PlaylistManager mPlaylistManager;
     private ProgressIndicator mProgressIndicator;
+    private int mPendingSystemId = -1;
+    private int mPendingSiteId = -1;
     private Label mPlaceholderLabel;
     private Label mProtocolLabel;
     private Label mFlavorLabel;
@@ -132,6 +134,46 @@ public class SystemSiteSelectionEditor extends GridPane
         Collections.sort(sites, Ordering.natural());
         getSiteTableView().getItems().addAll(sites);
         setLoading(false);
+
+        if(system != null && system.getSystemId() == mPendingSystemId)
+        {
+            selectSite(mPendingSiteId);
+        }
+    }
+
+    /**
+     * Selects the site once the system is shown, or now when it's already shown.
+     * @param systemId of the system
+     * @param siteId to select, or -1 for none
+     */
+    public void viewSite(int systemId, int siteId)
+    {
+        if(mCurrentSystem != null && mCurrentSystem.getSystemId() == systemId &&
+            !getSiteTableView().getItems().isEmpty())
+        {
+            selectSite(siteId);
+        }
+        else
+        {
+            mPendingSystemId = systemId;
+            mPendingSiteId = siteId;
+        }
+    }
+
+    private void selectSite(int siteId)
+    {
+        mPendingSystemId = -1;
+        mPendingSiteId = -1;
+
+        for(EnrichedSite site: getSiteTableView().getItems())
+        {
+            if(site.getSite() != null && site.getSite().getSiteId() == siteId)
+            {
+                getSiteTableView().getSelectionModel().select(site);
+                getSiteTableView().scrollTo(site);
+                return;
+            }
+        }
     }
 
     public void clear()
@@ -214,6 +256,7 @@ public class SystemSiteSelectionEditor extends GridPane
         if(mSiteTableView == null)
         {
             mSiteTableView = new TableView<>();
+            mSiteTableView.setAccessibleText("Sites");
             mSiteTableView.setPlaceholder(getPlaceholderLabel());
 
             TableColumn systemColumn = new TableColumn();

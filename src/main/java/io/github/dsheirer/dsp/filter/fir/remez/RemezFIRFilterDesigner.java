@@ -100,7 +100,7 @@ public class RemezFIRFilterDesigner
     	}
     	catch( FilterDesignException fde )
     	{
-    		mLog.error( "Filter design error - couldn't find extremal indices at count [" + 
+    		mLog.warn( "Filter design error - couldn't find extremal indices at count [" + 
     				iterationCount + "] try changing filter order up/down from [" +
     				mSpecification.getOrder() + "]" );
     		

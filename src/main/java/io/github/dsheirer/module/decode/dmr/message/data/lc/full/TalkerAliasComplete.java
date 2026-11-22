@@ -24,6 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.alias.DmrTalkerAliasIdentifier;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCOpcode;
 import io.github.dsheirer.module.decode.dmr.message.type.TalkerAliasDataFormat;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -98,7 +99,7 @@ public class TalkerAliasComplete extends FullLCMessage
                     {
                         try
                         {
-                            mAlias = getMessage().parseUTF8(1, mCharacterCount);
+                            mAlias = parseUTF8();
                         }
                         catch(Exception e)
                         {
@@ -122,6 +123,35 @@ public class TalkerAliasComplete extends FullLCMessage
         }
 
         return mAlias;
+    }
+
+    /**
+     * Parses all of the assembled bytes as UTF-8 and limits the result to the character count, instead of limiting the
+     * bytes to the character count, since characters outside of the ASCII range are encoded in two or more bytes.
+     * @return alias, excluding null padding and any trailing character that is missing its remaining bytes.
+     */
+    private String parseUTF8() throws UnsupportedEncodingException
+    {
+        String alias = getMessage().parseUTF8(1, (getMessage().size() - 1) / 8);
+
+        int nullIndex = alias.indexOf('\0');
+
+        if(nullIndex >= 0)
+        {
+            alias = alias.substring(0, nullIndex);
+        }
+
+        if(alias.endsWith("\uFFFD"))
+        {
+            alias = alias.substring(0, alias.length() - 1);
+        }
+
+        if(alias.codePointCount(0, alias.length()) > mCharacterCount)
+        {
+            alias = alias.substring(0, alias.offsetByCodePoints(0, mCharacterCount));
+        }
+
+        return alias;
     }
 
     /**

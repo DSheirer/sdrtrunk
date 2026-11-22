@@ -35,6 +35,7 @@ public class FCD1TunerConfiguration extends TunerConfiguration
     private LNAGain mLNAGain = LNAGain.LNA_GAIN_PLUS_20_0;
     private LNAEnhance mLNAEnhance = LNAEnhance.LNA_ENHANCE_OFF;
     private MixerGain mMixerGain = MixerGain.MIXER_GAIN_PLUS_12_0;
+    private boolean mBiasT = false;
 
     /**
      * Default constructor for JAXB
@@ -131,5 +132,16 @@ public class FCD1TunerConfiguration extends TunerConfiguration
     public void setGainCorrection(double value)
     {
         mGainCorrection = value;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean isBiasT()
+    {
+        return mBiasT;
+    }
+
+    public void setBiasT(boolean enabled)
+    {
+        mBiasT = enabled;
     }
 }

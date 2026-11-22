@@ -1,35 +1,29 @@
 ![Gradle Build](https://github.com/dsheirer/sdrtrunk/actions/workflows/gradle.yml/badge.svg)
 ![Nightly Release](https://github.com/dsheirer/sdrtrunk/actions/workflows/nightly.yml/badge.svg)
-
-# MacOS Tahoe 26.1 Users - Attention:
-Changes to USB support in Tahoe version 26.x cause sdrtrunk to fail to launch.  Do the following to install the latest libusb and create a symbolic link and then use the nightly build which includes an updated usb4java native library for Tahoe with ARM processor.  There may still be issue(s) with MacOS accessing your USB SDR tuners.
-
-```
-brew install libusb --HEAD
-cd /opt
-sudo mkdir local
-cd local
-sudo mkdir lib
-```
-Next, find where brew installed the libusb library, for example: ```/opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib```    Note: the folder "HEAD-9ceaa52" is the version stamp for HEAD when you installed from it.
-
-Finally, create a symbolic link from the installed library to the place where usb4java is expecting to find libusb (/opt/local/lib/libusb-1.0.0.dylib)
-
-```
-sudo ln -s /opt/homebrew/Cellar/libusb/HEAD-9ceaa52/lib/libusb-1.0.0.dylib /opt/local/lib/libusb-1.0.0.dylib
-```
+[![Latest Release](https://img.shields.io/github/v/release/DSheirer/sdrtrunk?label=release)](https://github.com/DSheirer/sdrtrunk/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/DSheirer/sdrtrunk/total)](https://github.com/DSheirer/sdrtrunk/releases)
+[![License](https://img.shields.io/github/license/DSheirer/sdrtrunk)](LICENSE)
+[![Discord](https://img.shields.io/badge/chat-on%20Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/HJQaKYE)
+[![support-google_groups-blue](https://img.shields.io/badge/support-google_groups-blue)](https://groups.google.com/g/sdrtrunk)
 
 # sdrtrunk
 A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
 
+> ## 📖 [Read the sdrtrunk User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
+> New to sdrtrunk? Start with the **[Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/Getting-Started)** guide,
+> then use the **[User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)** and
+> **[How-To Guides](https://github.com/DSheirer/sdrtrunk/wiki/How-To-Guides)** to set up tuners, playlists, aliases and streaming.
+
 * [Help/Wiki Home Page](https://github.com/DSheirer/sdrtrunk/wiki)
 * [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/Getting-Started)
-* [User's Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
+* [User Manual](https://github.com/DSheirer/sdrtrunk/wiki/User-Manual)
+* [How-To Guides](https://github.com/DSheirer/sdrtrunk/wiki/How-To-Guides)
+* [FAQ](https://github.com/DSheirer/sdrtrunk/wiki/FAQ)
 * [Download](https://github.com/DSheirer/sdrtrunk/releases)
 * [Support](https://github.com/DSheirer/sdrtrunk/wiki/Support)
 
-![sdrtrunk Application](https://github.com/DSheirer/sdrtrunk/wiki/images/sdrtrunk.png)
-**Figure 1:** sdrtrunk Application Screenshot
+![sdrtrunk primary application window decoding a P25 trunked radio system](https://github.com/DSheirer/sdrtrunk/wiki/images/application_overview.png)
+**Figure 1:** sdrtrunk decoding a P25 Phase 1 simulcast trunked radio system
 
 ## Download the Latest Release
 All release versions of sdrtrunk are available from the [releases](https://github.com/DSheirer/sdrtrunk/releases) tab.
@@ -49,3 +43,30 @@ committed to the code base, so it's not really 'nightly' as much as it is 'curre
 * **Operating System:** Windows (~~32 or~~ 64-bit), Linux (~~32 or~~ 64-bit) or Mac (64-bit, 12.x or higher)
 * **CPU:** 4-core
 * **RAM:** 8GB or more (preferred).  Depending on usage, 4GB may be sufficient.
+
+## Creating a Release (Maintainers)
+Releases are built and published automatically by the [Release](.github/workflows/release.yml) GitHub workflow
+whenever a version tag is pushed to the repository.
+
+The version is taken from the tag, so there is no version number to update in the code. Create and push a tag
+with a leading `v`, following the naming convention described in `gradle.properties` (e.g. `v0.6.2-alpha-1`,
+`v0.6.2-beta-1` or `v0.6.2`):
+```
+git tag v0.6.2-beta-1
+git push origin v0.6.2-beta-1
+```
+
+Builds made from an untagged commit get a version like `0.6.2-beta-1-14-g4626d567` (14 commits after the
+`v0.6.2-beta-1` tag, at commit `4626d567`), with `-dirty` appended when there are uncommitted changes.
+
+The workflow then:
+* Verifies that the version the build derives from git matches the tag and fails if it does not.
+* Builds and tests the code, then creates the release zips for Linux, Mac and Windows (x86-64 and aarch64).
+* Creates a GitHub release titled `Version <version>` with auto-generated release notes (a "What's Changed" list of
+the PRs merged since the previous version tag), and attaches the six zip
+files plus a `SHA256SUMS` checksum file.
+* Marks tags containing a dash (alpha and beta versions) as pre-releases. Tags without a dash become full releases.
+
+If the workflow fails part way through, fix the problem and re-run it from the Actions tab. It resumes from the
+draft release left behind. It won't modify a release that has already been published. To rebuild a published
+release, delete the release and the tag on GitHub, then push the tag again.

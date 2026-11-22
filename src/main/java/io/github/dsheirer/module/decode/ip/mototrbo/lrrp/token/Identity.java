@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
  * LRRP Identity Token
  *
  * Start Token: 0x22
- * Total Length: 6 bytes
+ * Total Length: 2 bytes plus a 1-4 byte request identifier
  */
 public class Identity extends Token
 {
@@ -34,9 +34,9 @@ public class Identity extends Token
     private static final int[] BYTE_VALUE = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
 
     /**
-     * Constructs an instance of a heading token.
+     * Constructs an instance of an identity token.
      *
-     * @param message containing the heading
+     * @param message containing the identity
      * @param offset to the start of the token
      */
     public Identity(CorrectedBinaryMessage message, int offset)
@@ -50,47 +50,47 @@ public class Identity extends Token
         return TokenType.IDENTITY;
     }
 
-    private BinaryMessage getTokenContents()
+    /**
+     * Request identifier bytes, as transmitted.  The read is clamped to the end of the message so that a corrupted
+     * length field cannot produce bytes that were never received.
+     */
+    private BinaryMessage getIdentifierBytes()
     {
-        return getMessage().getSubMessage(getOffset(), getOffset() + 48);
+        int start = getOffset() + IDENTIFIER_START;
+        int available = Math.max(0, getMessage().size() - start);
+        int length = Math.min(getVariableLengthPayloadSize() * 8, available);
+        return getMessage().getSubMessage(start, start + length);
     }
 
     /**
-     * Extracts the payload contents.
+     * Request identifier assembled big-endian from the 1-4 payload bytes.  Moto.Net (LRRPPacket.cs) and node-dmr-lib
+     * (LRRP.js) both read the identifier this way.
      *
-     * Note: assumes that the values are 1-4 bytes in big-endian format?  Not sure if this is correct because the
-     * values that I observed only had value in the LSB and the 3 MSBs were all zeros.
+     * @return identifier, or zero when the payload length is not 1-4 bytes.
      */
     public int getID()
     {
         int length = getVariableLengthPayloadSize();
-        int payloadOffset = 16;
+
+        if(length < 1 || length > 4)
+        {
+            return 0;
+        }
+
         int value = 0;
 
-        while(0 < length && length <= 4)
+        for(int x = 0; x < length; x++)
         {
-            int byteValue = getMessage().getInt(BYTE_VALUE, getOffset() + payloadOffset);
-
-            byteValue = Integer.rotateLeft(byteValue, payloadOffset - 16);
-            value += byteValue;
-            payloadOffset += 8;
-            length--;
+            value = (value << 8) | getMessage().getInt(BYTE_VALUE, getOffset() + IDENTIFIER_START + (x * 8));
         }
 
         return value;
     }
 
-
     @Override
     public String toString()
     {
-        int id = getID();
-
-        if(id != 0)
-        {
-            return "ID:" + id;
-        }
-
-        return "ID:" + getTokenContents().toHexString();
+        //Hexadecimal, as transmitted (e.g. ID:FFFFEE)
+        return "ID:" + getIdentifierBytes().toHexString();
     }
 }

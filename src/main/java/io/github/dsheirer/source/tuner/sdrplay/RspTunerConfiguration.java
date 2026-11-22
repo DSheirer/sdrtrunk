@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1.Rsp1TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1b.Rsp1bTunerConfiguration;
@@ -53,7 +52,7 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
     private RspSampleRate mRspSampleRate = DEFAULT_SINGLE_TUNER_SAMPLE_RATE;
     private int mLNA = 0;
     private int mBasebandGainReduction = 50;
-    private AgcMode mAgcMode = AgcMode.ENABLE;
+    private RspAgcMode mAgcMode = RspAgcMode.ENABLE;
 
     /**
      * JAXB Constructor
@@ -132,7 +131,7 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
      * @return mode
      */
     @JacksonXmlProperty(isAttribute = true, localName = "agcMode")
-    public AgcMode getAgcMode()
+    public RspAgcMode getAgcMode()
     {
         return mAgcMode;
     }
@@ -141,7 +140,7 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
      * Sets the IF AGC mode
      * @param mode to set
      */
-    public void setAgcMode(AgcMode mode)
+    public void setAgcMode(RspAgcMode mode)
     {
         mAgcMode = mode;
     }

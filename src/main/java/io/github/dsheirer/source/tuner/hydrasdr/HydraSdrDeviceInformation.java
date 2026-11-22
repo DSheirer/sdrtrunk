@@ -1,156 +1,60 @@
 package io.github.dsheirer.source.tuner.hydrasdr;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.hydrasdr.DeviceInfo;
 
-import java.util.Arrays;
-
+/**
+ * HydraSDR device information, formatted for display and for identifying the tuner.
+ */
 public class HydraSdrDeviceInformation
 {
-	private final static Logger mLog =
-			LoggerFactory.getLogger( HydraSdrDeviceInformation.class );
-
-	private HydraSdrTunerController.BoardID mBoardID = HydraSdrTunerController.BoardID.UNKNOWN;
-	private String mFirmwareVersion = "Unknown";
-	private String mPartNumber = "Unknown";
-	private String mSerialNumber = "Unknown";
+	private final DeviceInfo mDeviceInfo;
 
 	/**
-	 * HydraSDR Device Information - provides parsing and access to device
-	 * information components.
+	 * Constructs an instance
+	 * @param deviceInfo from the device
 	 */
-	public HydraSdrDeviceInformation()
+	public HydraSdrDeviceInformation(DeviceInfo deviceInfo)
 	{
+		mDeviceInfo = deviceInfo;
 	}
 
-	public void setBoardID( int boardID )
+	public String getBoardName()
 	{
-		mBoardID = HydraSdrTunerController.BoardID.fromValue( boardID );
-	}
-
-	public HydraSdrTunerController.BoardID getBoardID()
-	{
-		return mBoardID;
-	}
-
-	public void setVersion( byte[] data )
-	{
-		if( data != null && data.length > 0 )
-		{
-			/* Truncate the version string if we have a line break - ASCII 10 */
-			for( int x = 0; x < data.length; x++ )
-			{
-				if( data[ x ] == (byte)10 )
-				{
-					mFirmwareVersion = new String( Arrays.copyOf( data, x ) );
-					mFirmwareVersion = mFirmwareVersion.replace( "HydraSDR ", "" );
-					return;
-				}
-			}
-
-			mFirmwareVersion = new String( data );
-			mFirmwareVersion = mFirmwareVersion.replace( "HydraSDR ", "" );
-		}
-		else
-		{
-			mLog.error( "Error setting HydraSDR version byte data - null:" +
-				( data == null ? " TRUE" : " FALSE length:" + data.length ) );
-		}
+		return mDeviceInfo.boardName();
 	}
 
 	public String getVersion()
 	{
-		return mFirmwareVersion;
+		return mDeviceInfo.firmwareVersion().replace("HydraSDR ", "");
 	}
 
-	public void setPartAndSerialNumber( byte[] data )
-	{
-		if( data != null && data.length == 24 )
-		{
-			//Note: values are byte-reversed (big-endian) 32-bit chunks
-			StringBuilder part = new StringBuilder();
-
-			part.append( format( data[ 3 ] ) );
-			part.append( format( data[ 2 ] ) );
-			part.append( format( data[ 1 ] ) );
-			part.append( format( data[ 0 ] ) );
-			part.append( format( data[ 7 ] ) );
-			part.append( format( data[ 6 ] ) );
-			part.append( format( data[ 5 ] ) );
-			part.append( format( data[ 4 ] ) );
-
-			mPartNumber = part.toString();
-
-			StringBuilder serial = new StringBuilder();
-
-			//Note: current library only exposes 64-bits of serial number
-			//address space, but appears to have room for 128-bits.  We won't
-			//add the first 64 bits if it's zeros
-			if( !( data[ 8 ] == 0 && data[ 9 ] == 0 && data[ 10 ] == 0 && data[ 11 ] == 0 ) )
-			{
-				serial.append( format( data[ 11 ] ) );
-				serial.append( format( data[ 10 ] ) );
-				serial.append( format( data[ 9 ] ) );
-				serial.append( format( data[ 8 ] ) );
-				serial.append( "-" );
-			}
-
-			if( !( data[ 12 ] == 0 && data[ 13 ] == 0 && data[ 14 ] == 0 && data[ 15 ] == 0 ) )
-			{
-				serial.append( format( data[ 15 ] ) );
-				serial.append( format( data[ 14 ] ) );
-				serial.append( format( data[ 13 ] ) );
-				serial.append( format( data[ 12 ] ) );
-				serial.append( "-" );
-			}
-
-			serial.append( format( data[ 19 ] ) );
-			serial.append( format( data[ 18 ] ) );
-			serial.append( format( data[ 17 ] ) );
-			serial.append( format( data[ 16 ] ) );
-			serial.append( "-" );
-			serial.append( format( data[ 23 ] ) );
-			serial.append( format( data[ 22 ] ) );
-			serial.append( format( data[ 21 ] ) );
-			serial.append( format( data[ 20 ] ) );
-
-			mSerialNumber = serial.toString();
-		}
-		else
-		{
-			mLog.error( "Error setting HydraSDR part and serial byte data - null:" +
-					( data == null ? " TRUE" : " FALSE length:" + data.length ) );
-		}
-	}
-
-	private String format( byte value )
-	{
-		return String.format( "%02X", value );
-	}
-
+	/**
+	 * Serial number, formatted as the identifier that tuner configurations are saved under.
+	 */
 	public String getSerialNumber()
 	{
-		return mSerialNumber;
+		long serial = mDeviceInfo.serialNumber();
+		return String.format("%08X-%08X", serial >>> 32, serial & 0xFFFFFFFFL);
 	}
 
 	public String getPartNumber()
 	{
-		return mPartNumber;
+		return String.format("%016X", mDeviceInfo.partId());
 	}
 
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( "HydraSDR Device Information\n" );
-		sb.append( "Board: " );
-		sb.append( getBoardID().getLabel() );
-		sb.append( "\nPart Number: " );
-		sb.append( getPartNumber() );
-		sb.append( "\nSerial Number: " );
-		sb.append( getSerialNumber() );
-		sb.append( "\nFirmware: " );
-		sb.append( getVersion() );
+		sb.append("HydraSDR Device Information\n");
+		sb.append("Board: ");
+		sb.append(getBoardName());
+		sb.append("\nPart Number: ");
+		sb.append(getPartNumber());
+		sb.append("\nSerial Number: ");
+		sb.append(getSerialNumber());
+		sb.append("\nFirmware: ");
+		sb.append(getVersion());
 
 		return sb.toString();
 	}

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,67 +18,73 @@
  */
 package io.github.dsheirer.channel.metadata;
 
-import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
-import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.sample.Listener;
-import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.table.AbstractTableModel;
-
-public class ChannelMetadataModel extends AbstractTableModel implements IChannelMetadataUpdateListener
+/**
+ * Model of the channel metadata for the currently processing channels, with a map from each channel metadata to the
+ * channel that it belongs to.  The model is thread-safe and isn't tied to a user interface toolkit: listeners are
+ * notified on the thread that changes the model and pass the changes to their user interface thread.
+ */
+public class ChannelMetadataModel implements IChannelMetadataUpdateListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataModel.class);
+    private final List<ChannelMetadata> mChannelMetadata = new ArrayList<>();
+    private final Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap<>();
+    private final List<Listener> mListeners = new CopyOnWriteArrayList<>();
 
-    public static final int COLUMN_DECODER_STATE = 0;
-    public static final int COLUMN_DECODER_TYPE = 1;
-    public static final int COLUMN_USER_FROM = 2;
-    public static final int COLUMN_USER_FROM_ALIAS = 3;
-    public static final int COLUMN_USER_TO = 4;
-    public static final int COLUMN_USER_TO_ALIAS = 5;
-    public static final int COLUMN_DECODER_LOGICAL_CHANNEL_NAME = 6;
-    public static final int COLUMN_CONFIGURATION_FREQUENCY = 7;
-    public static final int COLUMN_CONFIGURATION_CHANNEL = 8;
-
-    private static final String[] COLUMNS = {"Status", "Decoder", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Channel Name"};
-
-    private List<ChannelMetadata> mChannelMetadata = new ArrayList();
-    private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
-    private Listener<ChannelAndMetadata> mChannelAddListener;
-
-    public ChannelMetadataModel()
+    /**
+     * Listener for changes to the channel metadata model.  Notifications arrive on the thread that changed the
+     * model, sometimes while the model is locked, so implementations must not block and must not call back into
+     * the model from the notification thread.
+     */
+    public interface Listener
     {
-        MyEventBus.getGlobalEventBus().register(this);
+        /**
+         * Channel metadata(s) for a channel were added to the model.
+         */
+        void added(ChannelAndMetadata channelAndMetadata);
+
+        /**
+         * Channel metadata was removed from the model.
+         */
+        void removed(ChannelMetadata channelMetadata);
+
+        /**
+         * A field of a channel metadata in the model was updated.
+         */
+        void updated(ChannelMetadata channelMetadata, ChannelMetadataField channelMetadataField);
     }
 
     /**
-     * Receives preference update notifications via the event bus
-     * @param preferenceType that was updated
+     * Constructs an instance
      */
-    @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    public ChannelMetadataModel()
     {
-        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
-        {
-            EventQueue.invokeLater(() -> {
-                for(int row = 0; row < mChannelMetadata.size(); row++)
-                {
-                    fireTableCellUpdated(row, COLUMN_USER_FROM);
-                    fireTableCellUpdated(row, COLUMN_USER_TO);
-                }
-            });
-        }
+    }
+
+    /**
+     * Registers the listener to receive model change notifications.
+     * @param listener to register
+     * @return the channel metadata in the model when the listener is registered, so that the listener starts from
+     * the current state and receives the changes that follow.
+     */
+    public synchronized List<ChannelMetadata> addListener(Listener listener)
+    {
+        mListeners.add(listener);
+        return new ArrayList<>(mChannelMetadata);
+    }
+
+    /**
+     * Removes the listener from receiving model change notifications.
+     */
+    public void removeListener(Listener listener)
+    {
+        mListeners.remove(listener);
     }
 
     /**
@@ -87,10 +93,16 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
      */
     public String getDiagnosticInformation()
     {
-        StringBuilder sb = new StringBuilder();
-        Map<ChannelMetadata,Channel> mapCopy = new HashMap<>(mMetadataChannelMap);
-        List<ChannelMetadata> metadataCopy = new ArrayList<>(mChannelMetadata);
+        Map<ChannelMetadata,Channel> mapCopy;
+        List<ChannelMetadata> metadataCopy;
 
+        synchronized(this)
+        {
+            mapCopy = new HashMap<>(mMetadataChannelMap);
+            metadataCopy = new ArrayList<>(mChannelMetadata);
+        }
+
+        StringBuilder sb = new StringBuilder();
         sb.append("Channel Metadata Model Diagnostics\n");
 
         for(ChannelMetadata channelMetadata: metadataCopy)
@@ -122,51 +134,34 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
         return sb.toString();
     }
 
+    /**
+     * Prepares the model for disposal.
+     */
     public void dispose()
     {
-        MyEventBus.getGlobalEventBus().unregister(this);
+        mListeners.clear();
     }
 
     /**
-     * Lookup model row for the specified channel metadata
+     * Adds the channel metadata(s) for a channel to the model.
      */
-    public int getRow(ChannelMetadata channelMetadata)
+    public synchronized void add(ChannelAndMetadata channelAndMetadata)
     {
-        if(mChannelMetadata.contains(channelMetadata))
+        for(ChannelMetadata channelMetadata: channelAndMetadata.getChannelMetadata())
         {
-            return mChannelMetadata.indexOf(channelMetadata);
-        }
-
-        return -1;
-    }
-
-    /**
-     * Registers the listener to be notified when channel metadata(s) are added to the model.
-     * @param listener to receive channel associated with the channel metadata(s) that were added
-     */
-    public void setChannelAddListener(Listener<ChannelAndMetadata> listener)
-    {
-        mChannelAddListener = listener;
-    }
-
-    public void add(ChannelAndMetadata channelAndMetadata)
-    {
-        //Execute on the swing thread to avoid threading issues
-        EventQueue.invokeLater(() -> {
-            for(ChannelMetadata channelMetadata: channelAndMetadata.getChannelMetadata())
+            if(!mChannelMetadata.contains(channelMetadata))
             {
                 mChannelMetadata.add(channelMetadata);
-                mMetadataChannelMap.put(channelMetadata, channelAndMetadata.getChannel());
-                int index = mChannelMetadata.indexOf(channelMetadata);
-                fireTableRowsInserted(index, index);
-                channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
             }
 
-            if(mChannelAddListener != null)
-            {
-                mChannelAddListener.receive(channelAndMetadata);
-            }
-        });
+            mMetadataChannelMap.put(channelMetadata, channelAndMetadata.getChannel());
+            channelMetadata.setUpdateEventListener(this);
+        }
+
+        for(Listener listener: mListeners)
+        {
+            listener.added(channelAndMetadata);
+        }
     }
 
     /**
@@ -174,7 +169,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
      * @param channelMetadatas
      * @param channel
      */
-    public void updateChannelMetadataToChannelMap(Collection<ChannelMetadata> channelMetadatas, Channel channel)
+    public synchronized void updateChannelMetadataToChannelMap(Collection<ChannelMetadata> channelMetadatas, Channel channel)
     {
         for(ChannelMetadata channelMetadata: channelMetadatas)
         {
@@ -182,178 +177,46 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
         }
     }
 
-    public void remove(ChannelMetadata channelMetadata)
+    /**
+     * Removes the channel metadata from the model.
+     */
+    public synchronized void remove(ChannelMetadata channelMetadata)
     {
-        //Execute on the swing thread to avoid threading issues
-        EventQueue.invokeLater(() -> {
-            channelMetadata.removeUpdateEventListener();
-            int index = mChannelMetadata.indexOf(channelMetadata);
-            mChannelMetadata.remove(channelMetadata);
-            mMetadataChannelMap.remove(channelMetadata);
+        channelMetadata.removeUpdateEventListener();
+        mMetadataChannelMap.remove(channelMetadata);
 
-            if(index >= 0)
+        if(mChannelMetadata.remove(channelMetadata))
+        {
+            for(Listener listener: mListeners)
             {
-                fireTableRowsDeleted(index, index);
+                listener.removed(channelMetadata);
             }
-        });
+        }
     }
 
     /**
-     * Get the channel metadata at the specified model row index
+     * Current channel metadata in the model.
+     * @return copy of the channel metadata list.
      */
-    public ChannelMetadata getChannelMetadata(int row)
+    public synchronized List<ChannelMetadata> getChannelMetadata()
     {
-        if(row < mChannelMetadata.size())
-        {
-            return mChannelMetadata.get(row);
-        }
-
-        return null;
+        return new ArrayList<>(mChannelMetadata);
     }
 
     /**
      * Returns the channel that matches the metadata or null
      */
-    public Channel getChannelFromMetadata(ChannelMetadata channelMetadata)
+    public synchronized Channel getChannelFromMetadata(ChannelMetadata channelMetadata)
     {
         return mMetadataChannelMap.get(channelMetadata);
     }
 
     @Override
-    public int getRowCount()
-    {
-        return mChannelMetadata.size();
-    }
-
-    @Override
-    public int getColumnCount()
-    {
-        return COLUMNS.length;
-    }
-
-    @Override
-    public String getColumnName(int column)
-    {
-        return COLUMNS[column];
-    }
-
-    @Override
-    public Class<?> getColumnClass(int columnIndex)
-    {
-        switch(columnIndex)
-        {
-            case COLUMN_USER_FROM:
-            case COLUMN_USER_TO:
-                return ChannelMetadata.class;
-            case COLUMN_USER_FROM_ALIAS:
-            case COLUMN_USER_TO_ALIAS:
-                return Alias.class;
-            case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
-                return String.class;
-            default:
-                return Identifier.class;
-        }
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
-    {
-        if(rowIndex <= mChannelMetadata.size())
-        {
-            ChannelMetadata channelMetadata = mChannelMetadata.get(rowIndex);
-
-            switch(columnIndex)
-            {
-                case COLUMN_DECODER_STATE:
-                    return channelMetadata.getChannelStateIdentifier();
-                case COLUMN_DECODER_TYPE:
-                    return channelMetadata.getDecoderTypeConfigurationIdentifier();
-                case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
-                    DecoderLogicalChannelNameIdentifier id = channelMetadata.getDecoderLogicalChannelNameIdentifier();
-
-                    if(channelMetadata.hasTimeslot())
-                    {
-                        if(id == null)
-                        {
-                            return "TS:" + channelMetadata.getTimeslot();
-                        }
-                        else
-                        {
-                            String value = id.getValue().replace(" TS1", "")
-                                    .replace(" TS2", "");
-                            return value + " TS:" + channelMetadata.getTimeslot();
-                        }
-                    }
-                    else
-                    {
-                        if(id == null)
-                        {
-                            return null;
-                        }
-                        else
-                        {
-                            return id.getValue();
-                        }
-                    }
-                case COLUMN_CONFIGURATION_FREQUENCY:
-                    return channelMetadata.getFrequencyConfigurationIdentifier();
-                case COLUMN_CONFIGURATION_CHANNEL:
-                    return channelMetadata.getChannelNameConfigurationIdentifier();
-                case COLUMN_USER_TO:
-                    return channelMetadata;
-                case COLUMN_USER_FROM:
-                    return channelMetadata;
-                case COLUMN_USER_FROM_ALIAS:
-                    return channelMetadata.getFromIdentifierAliases();
-                case COLUMN_USER_TO_ALIAS:
-                    return channelMetadata.getToIdentifierAliases();
-            }
-        }
-
-        return null;
-    }
-
-    @Override
     public void updated(ChannelMetadata channelMetadata, ChannelMetadataField channelMetadataField)
     {
-        final int rowIndex = mChannelMetadata.indexOf(channelMetadata);
-
-        if(rowIndex >= 0)
+        for(Listener listener: mListeners)
         {
-            //Execute on the swing thread to avoid threading issues
-            EventQueue.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    switch(channelMetadataField)
-                    {
-                        case CONFIGURATION_CHANNEL:
-                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_CHANNEL);
-                            break;
-                        case CONFIGURATION_FREQUENCY:
-                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_FREQUENCY);
-                            break;
-                        case DECODER_CHANNEL_NAME:
-                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_LOGICAL_CHANNEL_NAME);
-                            break;
-                        case DECODER_TYPE:
-                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_TYPE);
-                            break;
-                        case DECODER_STATE:
-                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_STATE);
-                            break;
-                        case USER_FROM:
-                            fireTableCellUpdated(rowIndex, COLUMN_USER_FROM);
-                            fireTableCellUpdated(rowIndex, COLUMN_USER_FROM_ALIAS);
-                            break;
-                        case USER_TO:
-                            fireTableCellUpdated(rowIndex, COLUMN_USER_TO);
-                            fireTableCellUpdated(rowIndex, COLUMN_USER_TO_ALIAS);
-                            break;
-                    }
-                }
-            });
+            listener.updated(channelMetadata, channelMetadataField);
         }
     }
 }

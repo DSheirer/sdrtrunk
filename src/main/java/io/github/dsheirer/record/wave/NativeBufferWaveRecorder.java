@@ -20,6 +20,7 @@ package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
@@ -50,8 +51,9 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk native buffer wave recorder", 250);
 
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private NativeBufferWaveWriter mWriter;
-    private String mFilePrefix;
+    private NativeBufferWriter mWriter;
+    private final BasebandRecordFormat mRecordFormat;
+    private final IRecordingPathProvider mPathProvider;
     private AudioFormat mAudioFormat;
     private IRecordingStatusListener mStatusListener;
     private String mFilePath;
@@ -59,9 +61,30 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     private long mLastReportedSize = 0;
     private int mRecordingCount = 0;
 
+    /**
+     * Constructs a wave format recorder.
+     * @param sampleRate initial sample rate
+     * @param filePrefix full path and file name prefix.  A timestamp and .wav extension are appended to each file.
+     * @param statusListener to receive recording status updates
+     */
     public NativeBufferWaveRecorder(float sampleRate, String filePrefix, IRecordingStatusListener statusListener)
     {
-        mFilePrefix = filePrefix;
+        this(sampleRate, BasebandRecordFormat.WAVE, rate -> Paths.get(filePrefix + "_" +
+            TimeStamp.getTimeStamp("_") + BasebandRecordFormat.WAVE.getExtension()), statusListener);
+    }
+
+    /**
+     * Constructs an instance
+     * @param sampleRate initial sample rate
+     * @param recordFormat for the recording files
+     * @param pathProvider to provide the file path each time a new recording file is created (start or rollover)
+     * @param statusListener to receive recording status updates
+     */
+    public NativeBufferWaveRecorder(float sampleRate, BasebandRecordFormat recordFormat,
+                                    IRecordingPathProvider pathProvider, IRecordingStatusListener statusListener)
+    {
+        mRecordFormat = recordFormat;
+        mPathProvider = pathProvider;
         mStatusListener = statusListener;
         setSampleRate(sampleRate);
     }
@@ -80,14 +103,14 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
         }
     }
 
-    private String getFileName()
+    /**
+     * Creates a new writer for the next recording file and updates the current file path.
+     */
+    private NativeBufferWriter createWriter() throws IOException
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(mFilePrefix);
-        sb.append("_");
-        sb.append(TimeStamp.getTimeStamp("_"));
-        sb.append(".wav");
-        return sb.toString();
+        Path path = mPathProvider.getPath(mAudioFormat.getSampleRate());
+        mFilePath = path.toString();
+        return new NativeBufferWriter(IBasebandRecordingWriter.create(mRecordFormat, mAudioFormat, path));
     }
 
     public void start()
@@ -100,8 +123,7 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
 
             try
             {
-                mFilePath = getFileName();
-                mWriter = new NativeBufferWaveWriter(mAudioFormat, Paths.get(mFilePath));
+                mWriter = createWriter();
                 mBufferProcessor.setListener(mWriter);
                 mStatusListener.update(mRecordingCount, mFilePath, 0);
                 mBufferProcessor.start();
@@ -135,8 +157,7 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
 
             try
             {
-                mFilePath = getFileName();
-                mWriter = new NativeBufferWaveWriter(mAudioFormat, Paths.get(mFilePath));
+                mWriter = createWriter();
                 mBufferProcessor.setListener(mWriter);
                 mStatusListener.update(++mRecordingCount, mFilePath, 0);
             }
@@ -158,7 +179,9 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
                 mBufferProcessor.setListener(null);
             }
 
-            if(mWriter != null)
+            NativeBufferWriter writer = mWriter;
+
+            if(writer != null)
             {
                 //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
                 //close method will also rename the file and this can sometimes take a few seconds.
@@ -166,7 +189,7 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
                 {
                     try
                     {
-                        mWriter.close();
+                        writer.close();
                     }
                     catch(IOException ioe)
                     {
@@ -212,13 +235,21 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     }
 
     /**
-     * Wave writer implementation for complex samples delivered from buffer processor
+     * Writer for complex samples delivered from buffer processor
      */
-    public class NativeBufferWaveWriter extends WaveWriter implements Listener<INativeBuffer>
+    public class NativeBufferWriter implements Listener<INativeBuffer>, AutoCloseable
     {
-        public NativeBufferWaveWriter(AudioFormat format, Path file) throws IOException
+        private final IBasebandRecordingWriter mBasebandWriter;
+
+        public NativeBufferWriter(IBasebandRecordingWriter basebandWriter)
         {
-            super(format, file);
+            mBasebandWriter = basebandWriter;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            mBasebandWriter.close();
         }
 
         @Override
@@ -239,7 +270,8 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
                         rollRecording();
                     }
 
-                    mWriter.writeData(data);
+                    //Write to the current writer, which changes after a rollover
+                    mWriter.mBasebandWriter.writeData(data);
 
                     mCurrentSize += data.array().length;
                     if(mCurrentSize > (mLastReportedSize + STATUS_UPDATE_BYTE_INTERVAL))

@@ -32,7 +32,9 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,7 +51,8 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     private final static int DELAY_BUFFER_DURATION_MILLISECONDS = 2000;
 
     private List<HalfBandTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
-    private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
+    //Channel sources that are registered with the delay buffer, guarded by the tuner controller lock
+    private Set<HalfBandTunerChannelSource> mStartedChannelSources = new HashSet<>();
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
     private NativeSampleDelayBuffer mSampleDelayBuffer;
@@ -75,7 +78,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     public String getStateDescription()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("Heterodyne Channel Source Manager Providing [").append(mTunerChannels.size()).append("] Channels");
+        sb.append("Heterodyne Channel Source Manager Providing [").append(getTunerChannelCount()).append("] Channels");
         sb.append("\n\tTuner Controller Frequency: ").append(mTunerController.getFrequency());
         for(HalfBandTunerChannelSource channelSource: mChannelSources)
         {
@@ -102,16 +105,28 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
         }
     }
 
+    /**
+     * Tuner channels for the channel sources.  Note: tuner channels are ordered by frequency, so channel sources that
+     * share a frequency have a single entry.
+     * @return new set of tuner channels.
+     */
     @Override
     public SortedSet<TunerChannel> getTunerChannels()
     {
-        return mTunerChannels;
+        SortedSet<TunerChannel> tunerChannels = new TreeSet<>();
+
+        for(HalfBandTunerChannelSource channelSource: mChannelSources)
+        {
+            tunerChannels.add(channelSource.getTunerChannel());
+        }
+
+        return tunerChannels;
     }
 
     @Override
     public int getTunerChannelCount()
     {
-        return mTunerChannels.size();
+        return mChannelSources.size();
     }
 
     @Override
@@ -129,9 +144,17 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
         try
         {
-            if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
+            if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, getTunerChannels()))
             {
-                //Attempt to create the channel source first, in case we get a filter design exception
+                //Update the tuner center frequency first, so that a channel isn't provided if the tuner can't support it
+                SortedSet<TunerChannel> tunerChannels = getTunerChannels();
+                tunerChannels.add(tunerChannel);
+
+                if(!updateTunerFrequency(tunerChannels))
+                {
+                    return null;
+                }
+
                 HalfBandTunerChannelSource<?> tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
                         tunerChannel, mTunerController.getSampleRate(), channelSpecification, threadName,
                         getTunerFrequencyErrorManager());
@@ -141,10 +164,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
                 //Set the current tuner frequency
                 tunerChannelSource.setFrequency(mTunerController.getFrequency());
-
-                //Add to the channel list and update the tuner center frequency as needed
-                mTunerChannels.add(tunerChannel);
-                updateTunerFrequency();
 
                 //Lock the tuner controller frequency and sample rate
                 mTunerController.setLockedSampleRate(true);
@@ -176,18 +195,21 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     }
 
     /**
-     * Calculates a new center frequency and updates the tuner center frequency
+     * Calculates a new center frequency and updates the tuner center frequency when the tuner isn't tuned for the
+     * tuner channels.
+     * @param tunerChannels that the tuner must provide
+     * @return true if the tuner is tuned for the tuner channels.
      */
-    private void updateTunerFrequency()
+    private boolean updateTunerFrequency(SortedSet<TunerChannel> tunerChannels)
     {
-        if(!mTunerController.isTunedFor(getTunerChannels()))
+        if(!mTunerController.isTunedFor(tunerChannels))
         {
-            long centerFrequency = CenterFrequencyCalculator.getCenterFrequency(mTunerController, getTunerChannels());
+            long centerFrequency = CenterFrequencyCalculator.getCenterFrequency(mTunerController, tunerChannels);
 
             if(centerFrequency == CenterFrequencyCalculator.INVALID_FREQUENCY)
             {
                 mLog.error("Couldn't calculate center frequency for tuner and tuner channels");
-                return;
+                return false;
             }
 
             if(centerFrequency != mTunerController.getFrequency())
@@ -199,9 +221,12 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 catch(SourceException se)
                 {
                     mLog.error("Couldn't update tuner center frequency to " + centerFrequency, se);
+                    return false;
                 }
             }
         }
+
+        return true;
     }
 
     @Override
@@ -214,9 +239,18 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 updateTunerFrequency(tunerSourceEvent.getValue().longValue());
 
                 //Clear the delay buffer since any delayed samples will be centered on the previous frequency
-                if(mSampleDelayBuffer != null)
+                mTunerController.getLock().lock();
+
+                try
                 {
-                    mSampleDelayBuffer.clear();
+                    if(mSampleDelayBuffer != null)
+                    {
+                        mSampleDelayBuffer.clear();
+                    }
+                }
+                finally
+                {
+                    mTunerController.getLock().unlock();
                 }
                 break;
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
@@ -291,11 +325,77 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void stopDelayBuffer()
     {
-        if(mSampleDelayBuffer != null && !mSampleDelayBuffer.hasListeners())
+        if(mSampleDelayBuffer != null)
         {
             mTunerController.removeBufferListener(mSampleDelayBuffer);
             mSampleDelayBuffer.dispose();
             mSampleDelayBuffer = null;
+        }
+    }
+
+    /**
+     * Registers the channel source with the delay buffer to start the flow of sample buffers to the channel.
+     * @param channelSource to start
+     * @param timestamp of the oldest delayed sample buffers to preload to the channel
+     */
+    private void startChannelSource(HalfBandTunerChannelSource channelSource, long timestamp)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            startDelayBuffer();
+
+            //The start sample stream request contains a start timestamp and the delay buffer
+            //will preload the channel with delayed sample buffers that either contain the
+            //timestamp or occur later/newer than the timestamp.
+            mSampleDelayBuffer.addListener(channelSource, timestamp);
+            mStartedChannelSources.add(channelSource);
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
+        }
+    }
+
+    /**
+     * Stops the flow of sample buffers to the channel source and releases the tuner channel.  Stops the delay buffer
+     * when this is the last started channel.
+     *
+     * Note: the delay buffer applies listener removal on the next sample buffer, so the started channel sources set
+     * is used to detect the last channel instead of the delay buffer's listeners.
+     * @param channelSource to stop, which may not have been started.
+     */
+    private void stopChannelSource(HalfBandTunerChannelSource channelSource)
+    {
+        mTunerController.getLock().lock();
+
+        try
+        {
+            if(mStartedChannelSources.remove(channelSource))
+            {
+                mSampleDelayBuffer.removeListener(channelSource);
+
+                if(mStartedChannelSources.isEmpty())
+                {
+                    stopDelayBuffer();
+                }
+            }
+
+            mChannelSources.remove(channelSource);
+            channelSource.dispose();
+
+            //Unlock the tuner controller if there are no more channels
+            if(getTunerChannelCount() == 0)
+            {
+                mTunerController.setLockedSampleRate(false);
+            }
+
+            broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+        }
+        finally
+        {
+            mTunerController.getLock().unlock();
         }
     }
 
@@ -309,34 +409,16 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
         {
             switch(sourceEvent.getEvent())
             {
-//TODO: protect start/stop processing with a reentrant lock
                 case REQUEST_START_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
+                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource halfBandSource)
                     {
-                        startDelayBuffer();
-
-                        //The start sample stream request contains a start timestamp and the delay buffer
-                        //will preload the channel with delayed sample buffers that either contain the
-                        //timestamp or occur later/newer than the timestamp.
-                        mSampleDelayBuffer.addListener((HalfBandTunerChannelSource)sourceEvent.getSource(),
-                                sourceEvent.getValue().longValue());
+                        startChannelSource(halfBandSource, sourceEvent.getValue().longValue());
                     }
                     break;
                 case REQUEST_STOP_SAMPLE_STREAM:
                     if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource halfBandSource)
                     {
-                        mSampleDelayBuffer.removeListener(halfBandSource);
-                        stopDelayBuffer();
-                        mChannelSources.remove(halfBandSource);
-                        mTunerChannels.remove(halfBandSource.getTunerChannel());
-                        halfBandSource.dispose();
-
-                        //Unlock the tuner controller if there are no more channels
-                        if(getTunerChannelCount() == 0)
-                        {
-                            mTunerController.setLockedSampleRate(false);
-                        }
-                        broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+                        stopChannelSource(halfBandSource);
                     }
                     break;
                 case NOTIFICATION_CHANNEL_COUNT_CHANGE:

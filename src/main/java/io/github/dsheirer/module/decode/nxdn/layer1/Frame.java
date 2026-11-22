@@ -92,7 +92,23 @@ public class Frame
      */
     public Frame(CorrectedBinaryMessage message, long timestamp, LICHTracker tracker)
     {
+        this(message, null, timestamp, tracker);
+    }
+
+    /**
+     * Constructs a frame using soft decision decoding of the convolutionally encoded payloads when soft bits are
+     * provided.  Note: channel and direction are used as fallback values when we can't exactly match the LICH value
+     * for this frame due to decoding errors.
+     * @param message with frame bits
+     * @param softBits for each frame bit, where a positive value favors a 1 bit and the magnitude is the confidence, or
+     * null for hard decision decoding.  Note: the soft bit values are modified (descrambled) by this constructor.
+     * @param timestamp for the frame.
+     * @param tracker for accessing tracked RF channel type and direction.
+     */
+    public Frame(CorrectedBinaryMessage message, float[] softBits, long timestamp, LICHTracker tracker)
+    {
         message.xor(SCRAMBLE_SEQUENCE_LICH);
+        xor(softBits, SCRAMBLE_SEQUENCE_LICH);
         boolean lichParityValid = checkLICHParity(message);
         int lichValue = message.getInt(LICH_FIELD);
         mLICH = LICH.fromValue(lichValue, tracker.isTypeD());
@@ -115,7 +131,8 @@ public class Frame
             if(mLICH.isOutbound())
             {
                 message.xor(SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND);
-                CorrectedBinaryMessage payload = decodeCAC(message);
+                xor(softBits, SCRAMBLE_SEQUENCE_CONTROL_OUTBOUND);
+                CorrectedBinaryMessage payload = decodeCAC(message, softBits);
                 int ran = payload.getInt(RADIO_ACCESS_NUMBER);
                 CorrectedBinaryMessage cac = payload.getSubMessage(8, 152);
                 cac.setCorrectedBitCount(payload.getCorrectedBitCount());
@@ -127,7 +144,8 @@ public class Frame
             else
             {
                 message.xor(SCRAMBLE_SEQUENCE_CONTROL_INBOUND);
-                CorrectedBinaryMessage payload = mLICH.isLongCAC() ? decodeLongCAC(message) : decodeShortCAC(message);
+                xor(softBits, SCRAMBLE_SEQUENCE_CONTROL_INBOUND);
+                CorrectedBinaryMessage payload = mLICH.isLongCAC() ? decodeLongCAC(message, softBits) : decodeShortCAC(message, softBits);
                 int ran = payload.getInt(RADIO_ACCESS_NUMBER);
                 CorrectedBinaryMessage cac = mLICH.isLongCAC() ? payload.getSubMessage(8, 136) : payload.getSubMessage(8, 104);
                 cac.setCorrectedBitCount(payload.getCorrectedBitCount());
@@ -140,10 +158,11 @@ public class Frame
         else
         {
             message.xor(SCRAMBLE_SEQUENCE_FULL);
+            xor(softBits, SCRAMBLE_SEQUENCE_FULL);
 
             if(mLICH.hasSACCH()) //SACCH + Voice/FACCH frames
             {
-                CorrectedBinaryMessage sacch = decodeSACCH(message);
+                CorrectedBinaryMessage sacch = decodeSACCH(message, softBits);
                 SACCHFragment sacchFragment = new SACCHFragment(sacch, timestamp, mLICH);
                 sacchFragment.setValid(NXDNCRC.checkSACCH(sacch));
                 mMessages.add(sacchFragment);
@@ -171,7 +190,7 @@ public class Frame
 
                 if(mLICH.isFACCH1First())
                 {
-                    CorrectedBinaryMessage payload = decodeFACCH1First(message);
+                    CorrectedBinaryMessage payload = decodeFACCH1First(message, softBits);
                     NXDNMessageType type = NXDNMessageType.getTraffic(payload, mLICH);
                     NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, sacchFragment.getRAN(), mLICH);
                     layer3.setValid(NXDNCRC.checkFACCH1(payload));
@@ -180,7 +199,7 @@ public class Frame
 
                 if(mLICH.isFACCH1Second())
                 {
-                    CorrectedBinaryMessage payload = decodeFACCH1Second(message);
+                    CorrectedBinaryMessage payload = decodeFACCH1Second(message, softBits);
                     NXDNMessageType type = NXDNMessageType.getTraffic(payload, mLICH);
                     NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, sacchFragment.getRAN(), mLICH);
                     layer3.setValid(NXDNCRC.checkFACCH1(payload));
@@ -189,7 +208,7 @@ public class Frame
             }
             else if(mLICH.hasSCCH()) //Type-D segments with SCCH
             {
-                CorrectedBinaryMessage scch = decodeSCCH(message);
+                CorrectedBinaryMessage scch = decodeSCCH(message, softBits);
                 NXDNMessageType typeSCCH = NXDNMessageType.getSCCH(scch, mLICH);
                 NXDNLayer3Message scchMessage = NXDNMessageFactory.get(typeSCCH, scch, timestamp, RAN_TYPE_D, mLICH);
                 scchMessage.setValid(NXDNCRC.checkSCCH(scch));
@@ -197,7 +216,7 @@ public class Frame
 
                 if(mLICH.isFACCH1First())
                 {
-                    CorrectedBinaryMessage payload = decodeFACCH1First(message);
+                    CorrectedBinaryMessage payload = decodeFACCH1First(message, softBits);
                     NXDNMessageType type = NXDNMessageType.getTypeD(payload, mLICH);
                     NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, RAN_TYPE_D, mLICH);
                     layer3.setValid(NXDNCRC.checkFACCH1(payload));
@@ -206,7 +225,7 @@ public class Frame
 
                 if(mLICH.isFACCH1Second())
                 {
-                    CorrectedBinaryMessage payload = decodeFACCH1Second(message);
+                    CorrectedBinaryMessage payload = decodeFACCH1Second(message, softBits);
                     NXDNMessageType type = NXDNMessageType.getTypeD(payload, mLICH);
                     NXDNLayer3Message layer3 = NXDNMessageFactory.get(type, payload, timestamp, RAN_TYPE_D, mLICH);
                     layer3.setValid(NXDNCRC.checkFACCH1(payload));
@@ -215,8 +234,8 @@ public class Frame
 
                 if(mLICH.isData()) //FACCH3 or UDCH2
                 {
-                    CorrectedBinaryMessage payloadA = decodeUDCH2AndFACCH3A(message);
-                    CorrectedBinaryMessage payloadB = decodeUDCH2AndFACCH3B(message);
+                    CorrectedBinaryMessage payloadA = decodeUDCH2AndFACCH3A(message, softBits);
+                    CorrectedBinaryMessage payloadB = decodeUDCH2AndFACCH3B(message, softBits);
                     boolean validA = NXDNCRC.checkFACCH3(payloadA);
                     boolean validB = NXDNCRC.checkFACCH3(payloadB);
                     CorrectedBinaryMessage combined = new CorrectedBinaryMessage(160);
@@ -247,7 +266,7 @@ public class Frame
             }
             else if(mLICH.getRFChannel() != RFChannel.RTCH2) //UDCH or FACCH2 frames on non-Type-D
             {
-                CorrectedBinaryMessage payload = decodeUDCHAndFACCH2(message);
+                CorrectedBinaryMessage payload = decodeUDCHAndFACCH2(message, softBits);
                 int ran = payload.getInt(RADIO_ACCESS_NUMBER);
                 CorrectedBinaryMessage facch2 = payload.getSubMessage(8, 184);
                 facch2.setCorrectedBitCount(payload.getCorrectedBitCount());
@@ -285,6 +304,47 @@ public class Frame
     }
 
     /**
+     * Decodes the frame payload using soft decision Viterbi decoding when soft bits are available, otherwise hard
+     * decision decoding.
+     * @param message from the frame (descrambled)
+     * @param softBits for the frame (descrambled) or null
+     * @param offset to the start of the payload
+     * @param interleaver for the payload type
+     * @param punctureProvider for the payload type
+     * @return decoded message
+     */
+    private static CorrectedBinaryMessage decode(CorrectedBinaryMessage message, float[] softBits, int offset,
+                                                 Interleaver interleaver, PunctureProvider punctureProvider)
+    {
+        if(softBits == null)
+        {
+            return decode(message, offset, interleaver, punctureProvider);
+        }
+
+        float[] deinterleaved = interleaver.deinterleave(softBits, offset);
+        return Convolution.decodeSoft(punctureProvider.depuncture(deinterleaved), punctureProvider);
+    }
+
+    /**
+     * Applies a scrambling sequence to the soft bit values by inverting the sign of each soft bit where the sequence
+     * bit is set, mirroring an XOR of the corresponding message bits.
+     * @param softBits to descramble, or null
+     * @param sequence scrambling sequence
+     */
+    private static void xor(float[] softBits, BinaryMessage sequence)
+    {
+        if(softBits != null)
+        {
+            int length = Math.min(softBits.length, sequence.size());
+
+            for(int x = sequence.nextSetBit(0); x >= 0 && x < length; x = sequence.nextSetBit(x + 1))
+            {
+                softBits[x] = -softBits[x];
+            }
+        }
+    }
+
+    /**
      * Decodes the first FACCH1 frame
      * @param message to decode
      * @return decoded message
@@ -292,6 +352,17 @@ public class Frame
     public static CorrectedBinaryMessage decodeFACCH1First(CorrectedBinaryMessage message)
     {
         return decode(message, 76, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
+    }
+
+    /**
+     * Soft decision variant of decodeFACCH1First(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeFACCH1First(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 76, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
     }
 
     /**
@@ -305,6 +376,17 @@ public class Frame
     }
 
     /**
+     * Soft decision variant of decodeFACCH1Second(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeFACCH1Second(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 220, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
+    }
+
+    /**
      * Decodes the FACCH2 frame
      * @param message to decode
      * @return decoded message
@@ -312,6 +394,17 @@ public class Frame
     public static CorrectedBinaryMessage decodeUDCHAndFACCH2(CorrectedBinaryMessage message)
     {
         return decode(message, 16, INTERLEAVER_12_29, PUNCTURE_PROVIDER_CAC_FACCH2_UDCH);
+    }
+
+    /**
+     * Soft decision variant of decodeUDCHAndFACCH2(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeUDCHAndFACCH2(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_29, PUNCTURE_PROVIDER_CAC_FACCH2_UDCH);
     }
 
     /**
@@ -325,6 +418,17 @@ public class Frame
     }
 
     /**
+     * Soft decision variant of decodeUDCH2AndFACCH3A(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeUDCH2AndFACCH3A(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 76, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
+    }
+
+    /**
      * Decodes the second half of the FACCH3 and UDCH2 frame on Type-D systems
      * @param message to decode
      * @return decoded message
@@ -332,6 +436,17 @@ public class Frame
     public static CorrectedBinaryMessage decodeUDCH2AndFACCH3B(CorrectedBinaryMessage message)
     {
         return decode(message, 220, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
+    }
+
+    /**
+     * Soft decision variant of decodeUDCH2AndFACCH3B(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeUDCH2AndFACCH3B(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 220, INTERLEAVER_16_9, PUNCTURE_PROVIDER_FACCH1_FACCH3_UDCH2);
     }
 
     /**
@@ -345,6 +460,17 @@ public class Frame
     }
 
     /**
+     * Soft decision variant of decodeSACCH(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeSACCH(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_5, PUNCTURE_PROVIDER_SACCH_SCCH);
+    }
+
+    /**
      * Decodes the SCCH frame in a Type-D system
      * @param message to decode
      * @return decoded message
@@ -352,6 +478,17 @@ public class Frame
     public static CorrectedBinaryMessage decodeSCCH(CorrectedBinaryMessage message)
     {
         return decode(message, 16, INTERLEAVER_12_5, PUNCTURE_PROVIDER_SACCH_SCCH);
+    }
+
+    /**
+     * Soft decision variant of decodeSCCH(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeSCCH(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_5, PUNCTURE_PROVIDER_SACCH_SCCH);
     }
 
     /**
@@ -365,6 +502,17 @@ public class Frame
     }
 
     /**
+     * Soft decision variant of decodeCAC(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeCAC(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_25, PUNCTURE_PROVIDER_CAC_FACCH2_UDCH);
+    }
+
+    /**
      * Decodes the inbound long control frame
      * @param message to decode
      * @return decoded message
@@ -375,6 +523,17 @@ public class Frame
     }
 
     /**
+     * Soft decision variant of decodeLongCAC(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeLongCAC(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_21, PUNCTURE_PROVIDER_LONG_CAC);
+    }
+
+    /**
      * Decodes the inbound short control frame
      * @param message to decode
      * @return decoded message
@@ -382,6 +541,17 @@ public class Frame
     public static CorrectedBinaryMessage decodeShortCAC(CorrectedBinaryMessage message)
     {
         return decode(message, 16, INTERLEAVER_12_21, PUNCTURE_PROVIDER_NONE);
+    }
+
+    /**
+     * Soft decision variant of decodeShortCAC(), or hard decision decoding when soft bits are null.
+     * @param message to decode
+     * @param softBits for the frame bits, or null
+     * @return decoded message
+     */
+    public static CorrectedBinaryMessage decodeShortCAC(CorrectedBinaryMessage message, float[] softBits)
+    {
+        return decode(message, softBits, 16, INTERLEAVER_12_21, PUNCTURE_PROVIDER_NONE);
     }
 
     /**

@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.dsp.am;
 
-import io.github.dsheirer.dsp.fm.ISquelchingDemodulator;
 import io.github.dsheirer.dsp.magnitude.IMagnitudeCalculator;
 import io.github.dsheirer.dsp.magnitude.MagnitudeFactory;
 import io.github.dsheirer.dsp.squelch.AdaptiveSquelch;
@@ -32,32 +31,63 @@ import io.github.dsheirer.source.SourceEvent;
 public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener<SourceEvent>
 {
     private static final float ZERO = 0.0f;
+    private static final float ENVELOPE_GAIN = 1.0f;
+    private static final double DEFAULT_SAMPLE_RATE = 50000.0;
+    private static final double FADE_SECONDS = 0.005;
+
+    /**
+     * Audio delay, longer than the worst case 25 ms for the squelch to detect loss of signal plus the fade duration, so
+     * that the audio fades out before the carrier drop reaches the audio normalizer, which would otherwise produce a
+     * thump at the end of a transmission.
+     */
+    private static final double AUDIO_DELAY_SECONDS = 0.032;
     private final IMagnitudeCalculator mMagnitudeCalculator = MagnitudeFactory.getMagnitudeCalculator();
     private final IAmDemodulator mAmDemodulator;
     private final AdaptiveSquelch mAdaptiveSquelch;
+    private final AmAudioNormalizer mAudioNormalizer = new AmAudioNormalizer(DEFAULT_SAMPLE_RATE);
+    private float[] mDelayedEnvelope;
+    private boolean[] mDelayedAudioEnabled;
+    private int mDelayPointer = 0;
+    private float mFadeGain = 0.0f;
+    private float mFadeStep = (float)(1.0 / (DEFAULT_SAMPLE_RATE * FADE_SECONDS));
     private boolean mSquelchChanged = false;
 
     /**
      * Constructs an instance
-     * @param gain to apply to the demodulated AM samples (e.g. 500.0f)
-     * @param alpha decay value of the single pole IIR filter in range: 0.0 - 1.0.  The smaller the alpha value,
-     * the slower the squelch response.
      * @param squelchThreshold in decibels.  Signal power must exceed this threshold value for unsquelch.
      * @param squelchAutoTrack to enable the squelch noise floor auto tracking feature.
+     * @param bandwidth of the channel in hertz
      */
-    public SquelchingAMDemodulator(float gain, float alpha, float squelchThreshold, boolean squelchAutoTrack)
+    public SquelchingAMDemodulator(float squelchThreshold, boolean squelchAutoTrack, double bandwidth)
     {
-        mAmDemodulator = AmDemodulatorFactory.getAmDemodulator(gain);
-        mAdaptiveSquelch = new AdaptiveSquelch(alpha, squelchThreshold, squelchAutoTrack);
+        mAmDemodulator = AmDemodulatorFactory.getAmDemodulator(ENVELOPE_GAIN);
+        mAdaptiveSquelch = new AdaptiveSquelch(squelchThreshold, squelchAutoTrack, bandwidth);
+        setAudioDelay(DEFAULT_SAMPLE_RATE);
     }
 
     /**
-     * Set or update the sample rate for the squelch to adjust the power level notification rate.
+     * Set or update the sample rate for the squelch to adjust the power level notification rate and for the audio
+     * normalizer timing.
      * @param sampleRate in hertz
      */
     public void setSampleRate(int sampleRate)
     {
         mAdaptiveSquelch.setSampleRate(sampleRate);
+        mAudioNormalizer.setSampleRate(sampleRate);
+        mFadeStep = (float)Math.min(1.0, 1.0 / (sampleRate * FADE_SECONDS));
+        setAudioDelay(sampleRate);
+    }
+
+    /**
+     * Sizes the audio delay buffers.
+     * @param sampleRate in hertz
+     */
+    private void setAudioDelay(double sampleRate)
+    {
+        int length = (int)Math.ceil(sampleRate * AUDIO_DELAY_SECONDS);
+        mDelayedEnvelope = new float[length];
+        mDelayedAudioEnabled = new boolean[length];
+        mDelayPointer = 0;
     }
 
     /**
@@ -72,7 +102,7 @@ public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener
      * Demodulates the complex sample arrays.
      * @param i inphase sample array
      * @param q quadrature sample array
-     * @return demodulated AM samples with gain applied.
+     * @return demodulated audio samples, normalized to the carrier level, or zero valued samples while squelched.
      */
     public float[] demodulate(float[] i, float[] q)
     {
@@ -86,9 +116,26 @@ public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener
         {
             mAdaptiveSquelch.process(magnitude[x]);
 
-            if(!(mAdaptiveSquelch.isUnmuted()))
+            boolean audioEnabled = mAdaptiveSquelch.isAudioEnabled();
+            float envelope = mDelayedEnvelope[mDelayPointer];
+            boolean delayedAudioEnabled = mDelayedAudioEnabled[mDelayPointer];
+            mDelayedEnvelope[mDelayPointer] = demodulated[x];
+            mDelayedAudioEnabled[mDelayPointer] = audioEnabled;
+            mDelayPointer = (mDelayPointer + 1) % mDelayedEnvelope.length;
+
+            //Fade in once the delayed audio reaches the squelch open point and fade out as soon as the squelch detects
+            //loss of signal, ahead of the delayed audio.
+            mFadeGain = (audioEnabled && delayedAudioEnabled) ? Math.min(mFadeGain + mFadeStep, 1.0f) :
+                    Math.max(mFadeGain - mFadeStep, 0.0f);
+
+            if(mFadeGain > ZERO)
+            {
+                demodulated[x] = mAudioNormalizer.process(envelope) * mFadeGain;
+            }
+            else
             {
                 demodulated[x] = ZERO;
+                mAudioNormalizer.reset();
             }
 
             if(mAdaptiveSquelch.isSquelchChanged())

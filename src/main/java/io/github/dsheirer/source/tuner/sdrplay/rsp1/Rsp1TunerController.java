@@ -24,7 +24,7 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.RspTunerController;
-import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.RspException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class Rsp1TunerController extends RspTunerController<IControlRsp1>
             {
                 getControlRsp().setAgcMode(rtc.getAgcMode());
             }
-            catch(SDRPlayException se)
+            catch(RspException se)
             {
                 mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
             }

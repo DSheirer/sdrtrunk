@@ -22,6 +22,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
+import io.github.dsheirer.gui.control.AccessibleToggleSwitch;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
@@ -133,6 +134,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             int row = 0;
 
             Label formatLabel = new Label("Format");
+            formatLabel.setLabelFor(getFormatField());
             GridPane.setHalignment(formatLabel, HPos.RIGHT);
             GridPane.setConstraints(formatLabel, 0, row);
             mEditorPane.getChildren().add(formatLabel);
@@ -141,6 +143,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getFormatField());
 
             Label enabledLabel = new Label("Enabled");
+            enabledLabel.setLabelFor(getEnabledSwitch());
             GridPane.setHalignment(enabledLabel, HPos.RIGHT);
             GridPane.setConstraints(enabledLabel, 2, row);
             mEditorPane.getChildren().add(enabledLabel);
@@ -149,6 +152,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getEnabledSwitch());
 
             Label systemLabel = new Label("Name");
+            systemLabel.setLabelFor(getNameTextField());
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, ++row);
             mEditorPane.getChildren().add(systemLabel);
@@ -157,6 +161,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getNameTextField());
 
             Label apiKeyLabel = new Label("API Key");
+            apiKeyLabel.setLabelFor(getApiKeyTextField());
             GridPane.setHalignment(apiKeyLabel, HPos.RIGHT);
             GridPane.setConstraints(apiKeyLabel, 0, ++row);
             mEditorPane.getChildren().add(apiKeyLabel);
@@ -165,6 +170,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getApiKeyTextField());
 
             Label systemIdLabel = new Label("System ID");
+            systemIdLabel.setLabelFor(getSystemIdTextField());
             GridPane.setHalignment(systemIdLabel, HPos.RIGHT);
             GridPane.setConstraints(systemIdLabel, 0, ++row);
             mEditorPane.getChildren().add(systemIdLabel);
@@ -173,6 +179,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getSystemIdTextField());
 
             Label hostLabel = new Label("Broadcastify URL");
+            hostLabel.setLabelFor(getHostTextField());
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, ++row);
             mEditorPane.getChildren().add(hostLabel);
@@ -181,6 +188,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getHostTextField());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
+            maxAgeLabel.setLabelFor(getMaxAgeTextField());
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
             GridPane.setConstraints(maxAgeLabel, 0, ++row);
             mEditorPane.getChildren().add(maxAgeLabel);
@@ -189,6 +197,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label testEnabledLabel = new Label("Send Periodic Keep-Alive");
+            testEnabledLabel.setLabelFor(getTestEnabledToggleSwitch());
             GridPane.setHalignment(testEnabledLabel, HPos.RIGHT);
             GridPane.setConstraints(testEnabledLabel, 0, ++row);
             mEditorPane.getChildren().add(testEnabledLabel);
@@ -197,6 +206,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             mEditorPane.getChildren().add(getTestEnabledToggleSwitch());
 
             Label testIntervalLabel = new Label("Ping Interval (minutes)");
+            testIntervalLabel.setLabelFor(getTestIntervalTextField());
             GridPane.setHalignment(testIntervalLabel, HPos.RIGHT);
             GridPane.setConstraints(testIntervalLabel, 3, row);
             mEditorPane.getChildren().add(testIntervalLabel);
@@ -263,7 +273,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
     {
         if(mTestEnabledToggleSwitch == null)
         {
-            mTestEnabledToggleSwitch = new ToggleSwitch();
+            mTestEnabledToggleSwitch = new AccessibleToggleSwitch();
             mTestEnabledToggleSwitch.setDisable(true);
             mTestEnabledToggleSwitch.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));

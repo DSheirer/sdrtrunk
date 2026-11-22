@@ -39,10 +39,15 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
 {
     private static final Logger mLog = LoggerFactory.getLogger(VectorComplexOscillator.class);
     private static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
+    //Number of samples between SIMD lane realignments.
+    private static final int LANE_ALIGNMENT_INTERVAL = 4096;
 
     private float[] mPreviousInphases;
     private float[] mPreviousQuadratures;
     private float[] mGainInitials; //Set to 3.0f as the first constant in the gain calculation
+    //Note: this must not have an initializer because the parent constructor sets it via the update() method
+    private volatile boolean mLaneUpdateRequired;
+    private int mSamplesSinceLaneUpdate;
 
     /**
      * Constructs an instance
@@ -54,25 +59,53 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
     {
         super(frequency, sampleRate);
 
+        mPreviousInphases = new float[VECTOR_SPECIES.length()];
+        mPreviousQuadratures = new float[VECTOR_SPECIES.length()];
+        mPreviousInphases[0] = 1.0f;
+
         mGainInitials = new float[VECTOR_SPECIES.length()];
         Arrays.fill(mGainInitials, 3.0f);
     }
 
+    /**
+     * Flags the SIMD lanes for update on the next sample generation, since this method can be invoked from a thread
+     * other than the sample generation thread, and the sample generation thread stores the lane state to the previous
+     * sample arrays when it completes.
+     */
     @Override
     protected void update()
     {
         super.update();
+        mLaneUpdateRequired = true;
+    }
+
+    /**
+     * Updates the SIMD lanes when the frequency or sample rate has changed, and periodically to realign the lanes.  At
+     * frequencies where the rotation for a set of lanes is nearly a whole or half turn, rounding affects each lane
+     * differently and the lanes would otherwise drift apart until the next frequency change, producing spurs at
+     * multiples of the sample rate divided by the lane count.  Note: this must only be invoked on the sample generation
+     * thread.
+     * @param sampleCount that will be generated following this update check.
+     */
+    private void updateLanes(int sampleCount)
+    {
+        mSamplesSinceLaneUpdate += sampleCount;
+
+        //Only clear the flag after reading it as set, otherwise a periodic realignment could clear a concurrent update
+        if(mLaneUpdateRequired)
+        {
+            //Clear the flag before reading the angle so that a concurrent update can't be missed.
+            mLaneUpdateRequired = false;
+        }
+        else if(mSamplesSinceLaneUpdate < LANE_ALIGNMENT_INTERVAL)
+        {
+            return;
+        }
+
+        mSamplesSinceLaneUpdate = 0;
 
         float cosineAngle = (float)FastMath.cos(getAnglePerSample());
         float sineAngle = (float)FastMath.sin(getAnglePerSample());
-
-        if(mPreviousInphases == null || mPreviousQuadratures == null)
-        {
-            mPreviousInphases = new float[VECTOR_SPECIES.length()];
-            mPreviousQuadratures = new float[VECTOR_SPECIES.length()];
-
-            mPreviousInphases[0] = 1.0f;
-        }
 
         float gain;
 
@@ -101,6 +134,8 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
                     "] must be a power of 2 and a multiple of the SIMD lane width [" + VECTOR_SPECIES.length() + "]");
         }
 
+        updateLanes(sampleCount);
+
         float[] samples = new float[sampleCount * 2];
         FloatVector previousInphase = FloatVector.fromArray(VECTOR_SPECIES, mPreviousInphases, 0);
         FloatVector previousQuadrature = FloatVector.fromArray(VECTOR_SPECIES, mPreviousQuadratures, 0);
@@ -118,7 +153,7 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
         {
             if(++gainCounter % 10 == 0)
             {
-                gain = gainInitials.sub(previousInphase.pow(2.0f).add(previousQuadrature.pow(2.0f))).div(2.0f);
+                gain = gainInitials.sub(previousInphase.mul(previousInphase).add(previousQuadrature.mul(previousQuadrature))).div(2.0f);
                 inphase = previousInphase.mul(cosAngle).sub(previousQuadrature.mul(sinAngle)).mul(gain);
                 quadrature = previousInphase.mul(sinAngle).add(previousQuadrature.mul(cosAngle)).mul(gain);
             }
@@ -149,14 +184,28 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
      */
     @Override public ComplexSamples generateComplexSamples(int sampleCount, long timestamp)
     {
+        float[] iSamples = new float[sampleCount];
+        float[] qSamples = new float[sampleCount];
+        generateComplexSamples(iSamples, qSamples);
+        return new ComplexSamples(iSamples, qSamples, timestamp);
+    }
+
+    /**
+     * Generates complex samples into the arrays.
+     * @param iSamples to fill, with a length that is a multiple of the SIMD lane width.
+     * @param qSamples to fill, with the same length as the inphase array.
+     */
+    @Override public void generateComplexSamples(float[] iSamples, float[] qSamples)
+    {
+        int sampleCount = iSamples.length;
+
         if(sampleCount % VECTOR_SPECIES.length() != 0)
         {
             throw new IllegalArgumentException("Requested sample count [" + sampleCount +
                     "] must be a power of 2 and a multiple of the SIMD lane width [" + VECTOR_SPECIES.length() + "]");
         }
 
-        float[] iSamples = new float[sampleCount];
-        float[] qSamples = new float[sampleCount];
+        updateLanes(sampleCount);
 
         FloatVector previousInphase = FloatVector.fromArray(VECTOR_SPECIES, mPreviousInphases, 0);
         FloatVector previousQuadrature = FloatVector.fromArray(VECTOR_SPECIES, mPreviousQuadratures, 0);
@@ -170,7 +219,7 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
 
         for(int samplePointer = 0; samplePointer < sampleCount; samplePointer += VECTOR_SPECIES.length())
         {
-            gain = gainInitials.sub(previousInphase.pow(2.0f).add(previousQuadrature.pow(2.0f))).div(2.0f);
+            gain = gainInitials.sub(previousInphase.mul(previousInphase).add(previousQuadrature.mul(previousQuadrature))).div(2.0f);
             inphase = previousInphase.mul(cosAngle).sub(previousQuadrature.mul(sinAngle)).mul(gain);
             quadrature = previousInphase.mul(sinAngle).add(previousQuadrature.mul(cosAngle)).mul(gain);
 
@@ -183,7 +232,5 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
 
         previousInphase.intoArray(mPreviousInphases, 0);
         previousQuadrature.intoArray(mPreviousQuadratures, 0);
-
-        return new ComplexSamples(iSamples, qSamples, timestamp);
     }
 }

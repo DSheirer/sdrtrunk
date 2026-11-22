@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2025 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -181,26 +181,30 @@ public class DMRMessageProcessor implements Listener<IMessage>
         //Now that the message has been (potentially) enriched, dispatch it to the modules
         dispatch(message);
 
-        //Extract the Full Link Control message fragment from the Voice with embedded signalling message
+        //Extract the Full Link Control message fragment from the Voice with embedded signalling message.  The LCSS is
+        //used even when the EMB is flagged invalid: the soft decision best estimate is usually correct and the
+        //assembled message is validated by its own BPTC and checksum, while discarding these fragments loses valid
+        //FLC messages on weak signals.
         if(message instanceof VoiceEMBMessage voice)
         {
             if(message.getTimeslot() == 1)
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
-                    voice.getFLCFragment(), message.getTimestamp());
+                    voice.getFLCFragment(), voice.getFLCFragmentSoftBits(), message.getTimestamp());
                 receive(flco);
             }
             else
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot2.process(voice.getEMB().getLCSS(),
-                    voice.getFLCFragment(), message.getTimestamp());
+                    voice.getFLCFragment(), voice.getFLCFragmentSoftBits(), message.getTimestamp());
                 receive(flco);
             }
 
             if(voice.hasCACH())
             {
                 CACH cach = voice.getCACH();
-                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
+                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(),
+                    cach.getPayloadSoftBits(), message.getTimestamp());
                 receive(slco);
             }
         }
@@ -210,7 +214,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
             if(dmrBurst.hasCACH())
             {
                 CACH cach = dmrBurst.getCACH();
-                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
+                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(),
+                    cach.getPayloadSoftBits(), message.getTimestamp());
                 receive(slco);
             }
 

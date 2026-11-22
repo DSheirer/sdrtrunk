@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.channel.IBandChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.event.ActivitySummary;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
@@ -35,6 +36,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSeconda
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcastUncoordinated;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
@@ -198,6 +200,7 @@ public class P25P1NetworkConfigurationMonitor
         switch(ambtc.getHeader().getOpcode())
         {
             case OSP_ADJACENT_STATUS_BROADCAST:
+            case OSP_ADJACENT_STATUS_BROADCAST_UNCOORDINATED_BAND_PLAN:
                 if(ambtc instanceof AMBTCAdjacentStatusBroadcast)
                 {
                     AMBTCAdjacentStatusBroadcast aasb = (AMBTCAdjacentStatusBroadcast)ambtc;
@@ -348,243 +351,226 @@ public class P25P1NetworkConfigurationMonitor
         }
     }
 
-    public String getActivitySummary()
+    /**
+     * Adds the network configuration sections to the activity summary.
+     * @param summary to add to
+     */
+    public void addActivitySummary(ActivitySummary summary)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Activity Summary - Decoder:P25 Phase 1 ").append(mModulation.getLabel());
-
-        sb.append("\n\nNetwork\n");
+        summary.section("Network");
         if(mTSBKNetworkStatusBroadcast != null)
         {
-            sb.append("  WACN:").append(format(mTSBKNetworkStatusBroadcast.getWacn(), 5));
-            sb.append(" SYSTEM:").append(format(mTSBKNetworkStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mTSBKNetworkStatusBroadcast.getNAC(), 3));
-            sb.append(" LRA:").append(format(mTSBKNetworkStatusBroadcast.getLocationRegistrationArea(), 2));
+            summary.field("WACN", format(mTSBKNetworkStatusBroadcast.getWacn(), 5));
+            summary.field("System", format(mTSBKNetworkStatusBroadcast.getSystem(), 3));
+            summary.field("NAC", format(mTSBKNetworkStatusBroadcast.getNAC(), 3));
+            summary.field("LRA", format(mTSBKNetworkStatusBroadcast.getLocationRegistrationArea(), 2));
         }
         else if(mAMBTCNetworkStatusBroadcast != null)
         {
-            sb.append("  WACN:").append(format(mAMBTCNetworkStatusBroadcast.getWacn(), 5));
-            sb.append(" SYSTEM:").append(format(mAMBTCNetworkStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mAMBTCNetworkStatusBroadcast.getNAC(), 3));
+            summary.field("WACN", format(mAMBTCNetworkStatusBroadcast.getWacn(), 5));
+            summary.field("System", format(mAMBTCNetworkStatusBroadcast.getSystem(), 3));
+            summary.field("NAC", format(mAMBTCNetworkStatusBroadcast.getNAC(), 3));
         }
         else if(mLCNetworkStatusBroadcast != null)
         {
-            sb.append("  WACN:").append(format(mLCNetworkStatusBroadcast.getWACN(), 5));
-            sb.append(" SYSTEM:").append(format(mLCNetworkStatusBroadcast.getSystem(), 3));
+            summary.field("WACN", format(mLCNetworkStatusBroadcast.getWACN(), 5));
+            summary.field("System", format(mLCNetworkStatusBroadcast.getSystem(), 3));
         }
         else if(mLCNetworkStatusBroadcastExplicit != null)
         {
-            sb.append("  WACN:").append(format(mLCNetworkStatusBroadcastExplicit.getWACN(), 5));
-            sb.append(" SYSTEM:").append(format(mLCNetworkStatusBroadcastExplicit.getSystem(), 3));
+            summary.field("WACN", format(mLCNetworkStatusBroadcastExplicit.getWACN(), 5));
+            summary.field("System", format(mLCNetworkStatusBroadcastExplicit.getSystem(), 3));
         }
         else
         {
-            sb.append("  UNKNOWN");
+            summary.text(ActivitySummary.UNKNOWN);
         }
 
-        sb.append("\n\nCurrent Site\n");
+        summary.section("Current Site");
+        ActivitySummary.Table channels = null;
 
         if(mTSBKRFSSStatusBroadcast != null)
         {
-            sb.append("  SYSTEM:").append(format(mTSBKRFSSStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mTSBKRFSSStatusBroadcast.getNAC(), 3));
-            sb.append(" RFSS:").append(format(mTSBKRFSSStatusBroadcast.getRfss(), 2));
-            sb.append(" SITE:").append(format(mTSBKRFSSStatusBroadcast.getSite(), 2));
-            sb.append(" LRA:").append(format(mTSBKRFSSStatusBroadcast.getLocationRegistrationArea(), 2));
-            sb.append("  STATUS:").append(mTSBKRFSSStatusBroadcast.isActiveNetworkConnectionToRfssControllerSite() ?
-                "ACTIVE RFSS NETWORK CONNECTION\n" : "\n");
-            sb.append("  PRI CONTROL CHANNEL:").append(mTSBKRFSSStatusBroadcast.getChannel());
-            sb.append(" DOWNLINK:").append(mTSBKRFSSStatusBroadcast.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mTSBKRFSSStatusBroadcast.getChannel().getUplinkFrequency()).append("\n");
+            summary.field("System", format(mTSBKRFSSStatusBroadcast.getSystem(), 3));
+            summary.field("NAC", format(mTSBKRFSSStatusBroadcast.getNAC(), 3));
+            summary.field("RFSS", format(mTSBKRFSSStatusBroadcast.getRfss(), 2));
+            summary.field("Site", format(mTSBKRFSSStatusBroadcast.getSite(), 2));
+            summary.field("LRA", format(mTSBKRFSSStatusBroadcast.getLocationRegistrationArea(), 2));
+            if(mTSBKRFSSStatusBroadcast.isActiveNetworkConnectionToRfssControllerSite())
+            {
+                summary.field("Status", "Active RFSS Network Connection");
+            }
+            channels = channelTable(summary);
+            channelRow(channels, "Primary Control", mTSBKRFSSStatusBroadcast.getChannel());
         }
         else if(mLCRFSSStatusBroadcast != null)
         {
-            sb.append("  SYSTEM:").append(format(mLCRFSSStatusBroadcast.getSystem(), 3));
-            sb.append(" RFSS:").append(format(mLCRFSSStatusBroadcast.getRfss(), 2));
-            sb.append(" SITE:").append(format(mLCRFSSStatusBroadcast.getSite(), 2));
-            sb.append(" LRA:").append(format(mLCRFSSStatusBroadcast.getLocationRegistrationArea(), 2)).append("\n");
-            sb.append("  PRI CONTROL CHANNEL:").append(mLCRFSSStatusBroadcast.getChannel());
-            sb.append(" DOWNLINK:").append(mLCRFSSStatusBroadcast.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mLCRFSSStatusBroadcast.getChannel().getUplinkFrequency()).append("\n");
+            summary.field("System", format(mLCRFSSStatusBroadcast.getSystem(), 3));
+            summary.field("RFSS", format(mLCRFSSStatusBroadcast.getRfss(), 2));
+            summary.field("Site", format(mLCRFSSStatusBroadcast.getSite(), 2));
+            summary.field("LRA", format(mLCRFSSStatusBroadcast.getLocationRegistrationArea(), 2));
+            channels = channelTable(summary);
+            channelRow(channels, "Primary Control", mLCRFSSStatusBroadcast.getChannel());
         }
         else if(mLCRFSSStatusBroadcastExplicit != null)
         {
-            sb.append("  RFSS:").append(mLCRFSSStatusBroadcastExplicit.getRfss());
-            sb.append(" SITE:").append(format(mLCRFSSStatusBroadcastExplicit.getSite(), 2));
-            sb.append(" LRA:").append(format(mLCRFSSStatusBroadcastExplicit.getLocationRegistrationArea(), 2)).append("\n");
-            sb.append("  PRI CONTROL CHANNEL:").append(mLCRFSSStatusBroadcastExplicit.getChannel());
-            sb.append(" DOWNLINK:").append(mLCRFSSStatusBroadcastExplicit.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mLCRFSSStatusBroadcastExplicit.getChannel().getUplinkFrequency()).append("\n");
+            summary.field("RFSS", mLCRFSSStatusBroadcastExplicit.getRfss());
+            summary.field("Site", format(mLCRFSSStatusBroadcastExplicit.getSite(), 2));
+            summary.field("LRA", format(mLCRFSSStatusBroadcastExplicit.getLocationRegistrationArea(), 2));
+            channels = channelTable(summary);
+            channelRow(channels, "Primary Control", mLCRFSSStatusBroadcastExplicit.getChannel());
         }
         else if(mAMBTCRFSSStatusBroadcast != null)
         {
-            sb.append("  SYSTEM:").append(format(mAMBTCRFSSStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mAMBTCRFSSStatusBroadcast.getNAC(), 3));
-            sb.append(" RFSS:").append(format(mAMBTCRFSSStatusBroadcast.getRFSS(), 2));
-            sb.append(" SITE:").append(format(mAMBTCRFSSStatusBroadcast.getSite(), 2));
-            sb.append(" LRA:").append(format(mAMBTCRFSSStatusBroadcast.getLRA(), 2));
-            sb.append("  STATUS:").append(mAMBTCRFSSStatusBroadcast.isActiveNetworkConnectionToRfssControllerSite() ?
-                "ACTIVE RFSS NETWORK CONNECTION\n" : "\n");
-            sb.append("  PRI CONTROL CHANNEL:").append(mAMBTCRFSSStatusBroadcast.getChannel());
-            sb.append(" DOWNLINK:").append(mAMBTCRFSSStatusBroadcast.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mAMBTCRFSSStatusBroadcast.getChannel().getUplinkFrequency()).append("\n");
+            summary.field("System", format(mAMBTCRFSSStatusBroadcast.getSystem(), 3));
+            summary.field("NAC", format(mAMBTCRFSSStatusBroadcast.getNAC(), 3));
+            summary.field("RFSS", format(mAMBTCRFSSStatusBroadcast.getRFSS(), 2));
+            summary.field("Site", format(mAMBTCRFSSStatusBroadcast.getSite(), 2));
+            summary.field("LRA", format(mAMBTCRFSSStatusBroadcast.getLRA(), 2));
+            if(mAMBTCRFSSStatusBroadcast.isActiveNetworkConnectionToRfssControllerSite())
+            {
+                summary.field("Status", "Active RFSS Network Connection");
+            }
+            channels = channelTable(summary);
+            channelRow(channels, "Primary Control", mAMBTCRFSSStatusBroadcast.getChannel());
         }
         else
         {
-            sb.append("  UNKNOWN");
-        }
-
-        if(!mSecondaryControlChannels.isEmpty())
-        {
-            mSecondaryControlChannels
-                    .entrySet()
-                    .stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .filter(Objects::nonNull)
-                    .forEach(entry -> {
-                        sb.append("  SEC CONTROL CHANNEL:").append(entry.getValue());
-                        sb.append(" DOWNLINK:").append(entry.getValue().getDownlinkFrequency());
-                        sb.append(" UPLINK:").append(entry.getValue().getUplinkFrequency()).append("\n");
-                    });
-        }
-
-        if(mSNDCPDataChannel != null)
-        {
-            sb.append("  CURRENT FDMA DATA CHANNEL:").append(mSNDCPDataChannel.getChannel());
-            sb.append(" DOWNLINK:").append(mSNDCPDataChannel.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mSNDCPDataChannel.getChannel().getUplinkFrequency()).append("\n");
-        }
-
-        if(!mTDMADataChannelMap.isEmpty())
-        {
-            for(Map.Entry<APCO25Channel, MotorolaExplicitTDMADataChannelAnnouncement> entry: mTDMADataChannelMap.entrySet())
-            {
-                sb.append("  ACTIVE TDMA DATA CHANNEL:").append(entry.getKey());
-                sb.append(" DOWNLINK:").append(entry.getKey().getDownlinkFrequency());
-                sb.append(" UPLINK:").append(entry.getKey().getUplinkFrequency()).append("\n");
-            }
+            summary.text(ActivitySummary.UNKNOWN);
         }
 
         if(mMotorolaBaseStationId != null)
         {
-            sb.append("  STATION ID/LICENSE: ").append(mMotorolaBaseStationId.getCWID()).append("\n");
+            summary.field("Station ID", mMotorolaBaseStationId.getCWID());
         }
 
         if(mTSBKSystemServiceBroadcast != null)
         {
-            sb.append("  AVAILABLE SERVICES:").append(mTSBKSystemServiceBroadcast.getAvailableServices());
-            sb.append("  SUPPORTED SERVICES:").append(mTSBKSystemServiceBroadcast.getSupportedServices());
+            summary.field("Available Services", mTSBKSystemServiceBroadcast.getAvailableServices());
+            summary.field("Supported Services", mTSBKSystemServiceBroadcast.getSupportedServices());
         }
         else if(mLCSystemServiceBroadcast != null)
         {
-            sb.append("  AVAILABLE SERVICES:").append(mLCSystemServiceBroadcast.getAvailableServices());
-            sb.append("  SUPPORTED SERVICES:").append(mLCSystemServiceBroadcast.getSupportedServices());
+            summary.field("Available Services", mLCSystemServiceBroadcast.getAvailableServices());
+            summary.field("Supported Services", mLCSystemServiceBroadcast.getSupportedServices());
         }
 
-        sb.append("\nNeighbor Sites\n");
+        if(!mSecondaryControlChannels.isEmpty() || mSNDCPDataChannel != null || !mTDMADataChannelMap.isEmpty())
+        {
+            if(channels == null)
+            {
+                channels = channelTable(summary);
+            }
+
+            for(IBandChannelDescriptor channel: mSecondaryControlChannels.values())
+            {
+                channelRow(channels, "Secondary Control", channel);
+            }
+
+            if(mSNDCPDataChannel != null)
+            {
+                channelRow(channels, "FDMA Data (Current)", mSNDCPDataChannel.getChannel());
+            }
+
+            for(APCO25Channel channel: mTDMADataChannelMap.keySet())
+            {
+                channelRow(channels, "TDMA Data (Active)", channel);
+            }
+        }
+
+        summary.section("Neighbor Sites");
+        ActivitySummary.Table neighbors = summary.table("WACN", "System", "NAC", "RFSS", "Site", "LRA", "Channel",
+            "Downlink", "Uplink", "Status");
         Set<Integer> sites = new TreeSet<>();
         sites.addAll(mAMBTCNeighborSites.keySet());
         sites.addAll(mLCNeighborSites.keySet());
         sites.addAll(mLCNeighborSitesExplicit.keySet());
         sites.addAll(mTSBKNeighborSites.keySet());
 
-        if(sites.isEmpty())
+        for(Integer site: sites)
         {
-            sb.append("  UNKNOWN");
-        }
-        else
-        {
-            sites
-                    .stream()
-                    .sorted()
-                    .forEach(site -> {
-                        if(mAMBTCNeighborSites.containsKey(site))
-                        {
-                            AMBTCAdjacentStatusBroadcast ambtc = mAMBTCNeighborSites.get(site);
-                            sb.append("  SYSTEM:").append(format(ambtc.getSystem(), 3));
-                            sb.append(" NAC:").append(format(ambtc.getNAC(), 3));
-                            sb.append(" RFSS:").append(format(ambtc.getRfss(), 2));
-                            sb.append(" SITE:").append(format(ambtc.getSite(), 2));
-                            sb.append(" LRA:").append(format(ambtc.getLocationRegistrationArea(), 2));
-                            sb.append(" CHANNEL:").append(ambtc.getChannel());
-                            sb.append(" DOWNLINK:").append(ambtc.getChannel().getDownlinkFrequency());
-                            sb.append(" UPLINK:").append(ambtc.getChannel().getUplinkFrequency()).append("\n");
-                        }
-                        if(mLCNeighborSites.containsKey(site))
-                        {
-                            LCAdjacentSiteStatusBroadcast lc = mLCNeighborSites.get(site);
-                            sb.append("  SYSTEM:").append(format(lc.getSystem(), 3));
-                            sb.append(" RFSS:").append(format(lc.getRfss(), 2));
-                            sb.append(" SITE:").append(format(lc.getSite(), 2));
-                            sb.append(" LRA:").append(format(lc.getLocationRegistrationArea(), 2));
-                            sb.append(" CHANNEL:").append(lc.getChannel());
-                            sb.append(" DOWNLINK:").append(lc.getChannel().getDownlinkFrequency());
-                            sb.append(" UPLINK:").append(lc.getChannel().getUplinkFrequency()).append("\n");
-
-                        }
-                        if(mLCNeighborSitesExplicit.containsKey(site))
-                        {
-                            LCAdjacentSiteStatusBroadcastExplicit lce = mLCNeighborSitesExplicit.get(site);
-                            sb.append("  SYSTEM:---");
-                            sb.append(" RFSS:").append(format(lce.getRfss(), 2));
-                            sb.append(" SITE:").append(format(lce.getSite(), 2));
-                            sb.append(" LRA:").append(format(lce.getLocationRegistrationArea(), 2));
-                            sb.append(" CHANNEL:").append(lce.getChannel());
-                            sb.append(" DOWNLINK:").append(lce.getChannel().getDownlinkFrequency());
-                            sb.append(" UPLINK:").append(lce.getChannel().getUplinkFrequency()).append("\n");
-                        }
-                        if(mTSBKNeighborSites.containsKey(site))
-                        {
-                            AdjacentStatusBroadcast asb = mTSBKNeighborSites.get(site);
-                            sb.append("  SYSTEM:").append(format(asb.getSystem(), 3));
-                            sb.append(" NAC:").append(format(asb.getNAC(), 3));
-                            sb.append(" RFSS:").append(format(asb.getRfss(), 2));
-                            sb.append(" SITE:").append(format(asb.getSite(), 2));
-                            sb.append(" LRA:").append(format(asb.getLocationRegistrationArea(), 2));
-                            sb.append(" CHANNEL:").append(asb.getChannel());
-                            sb.append(" DOWNLINK:").append(asb.getChannel().getDownlinkFrequency());
-                            sb.append(" UPLINK:").append(asb.getChannel().getUplinkFrequency());
-                            sb.append(" STATUS:").append(asb.getSiteFlags()).append("\n");
-                        }
-                    });
+            if(mAMBTCNeighborSites.containsKey(site))
+            {
+                AMBTCAdjacentStatusBroadcast ambtc = mAMBTCNeighborSites.get(site);
+                String wacn = null;
+                Object status = null;
+                if(ambtc instanceof AMBTCAdjacentStatusBroadcastUncoordinated unc)
+                {
+                    wacn = String.valueOf(unc.getWacn());
+                    status = unc.getSystemServiceClass();
+                }
+                neighbors.row(wacn, format(ambtc.getSystem(), 3), format(ambtc.getNAC(), 3),
+                    format(ambtc.getRfss(), 2), format(ambtc.getSite(), 2),
+                    format(ambtc.getLocationRegistrationArea(), 2), ambtc.getChannel(),
+                    ActivitySummary.mhz(ambtc.getChannel().getDownlinkFrequency()),
+                    ActivitySummary.mhz(ambtc.getChannel().getUplinkFrequency()), status);
+            }
+            if(mLCNeighborSites.containsKey(site))
+            {
+                LCAdjacentSiteStatusBroadcast lc = mLCNeighborSites.get(site);
+                neighbors.row(null, format(lc.getSystem(), 3), null, format(lc.getRfss(), 2),
+                    format(lc.getSite(), 2), format(lc.getLocationRegistrationArea(), 2), lc.getChannel(),
+                    ActivitySummary.mhz(lc.getChannel().getDownlinkFrequency()),
+                    ActivitySummary.mhz(lc.getChannel().getUplinkFrequency()));
+            }
+            if(mLCNeighborSitesExplicit.containsKey(site))
+            {
+                LCAdjacentSiteStatusBroadcastExplicit lce = mLCNeighborSitesExplicit.get(site);
+                neighbors.row(null, null, null, format(lce.getRfss(), 2), format(lce.getSite(), 2),
+                    format(lce.getLocationRegistrationArea(), 2), lce.getChannel(),
+                    ActivitySummary.mhz(lce.getChannel().getDownlinkFrequency()),
+                    ActivitySummary.mhz(lce.getChannel().getUplinkFrequency()));
+            }
+            if(mTSBKNeighborSites.containsKey(site))
+            {
+                AdjacentStatusBroadcast asb = mTSBKNeighborSites.get(site);
+                neighbors.row(null, format(asb.getSystem(), 3), format(asb.getNAC(), 3), format(asb.getRfss(), 2),
+                    format(asb.getSite(), 2), format(asb.getLocationRegistrationArea(), 2), asb.getChannel(),
+                    ActivitySummary.mhz(asb.getChannel().getDownlinkFrequency()),
+                    ActivitySummary.mhz(asb.getChannel().getUplinkFrequency()), asb.getSiteFlags());
+            }
         }
 
-        sb.append("\nFrequency Bands\n");
-        if(mFrequencyBandMap.isEmpty())
-        {
-            sb.append("  UNKNOWN");
-        }
-        else
-        {
-            mFrequencyBandMap.entrySet()
-                    .stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> sb.append("  ").append(formatFrequencyBand(entry.getValue())).append("\n"));
-        }
-
-        return sb.toString();
+        addFrequencyBands(summary, mFrequencyBandMap);
     }
 
     /**
-     * Formats a frequency band
+     * Creates a channel table for the current site section.
      */
-    private String formatFrequencyBand(IFrequencyBand band)
+    private static ActivitySummary.Table channelTable(ActivitySummary summary)
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("BAND:").append(band.getIdentifier());
-        sb.append(" ").append(band.isTDMA() ? "TDMA" : "FDMA");
-        sb.append(" BASE:").append(band.getBaseFrequency());
-        sb.append(" BANDWIDTH:").append(band.getBandwidth());
-        sb.append(" SPACING:").append(band.getChannelSpacing());
-        sb.append(" TRANSMIT OFFSET:").append(band.getTransmitOffset());
-
-        if(band.isTDMA())
-        {
-            sb.append(" TIMESLOTS:").append(band.getTimeslotCount());
-        }
-
-        return sb.toString();
+        return summary.table("Channel Type", "Channel", "Downlink", "Uplink");
     }
+
+    /**
+     * Adds a channel row to the channel table.
+     */
+    private static void channelRow(ActivitySummary.Table table, String type, IBandChannelDescriptor channel)
+    {
+        if(channel != null)
+        {
+            table.row(type, channel, ActivitySummary.mhz(channel.getDownlinkFrequency()),
+                ActivitySummary.mhz(channel.getUplinkFrequency()));
+        }
+    }
+
+    /**
+     * Adds a frequency bands section to the activity summary.
+     * @param summary to add to
+     * @param bands map of band identifier to frequency band
+     */
+    public static void addFrequencyBands(ActivitySummary summary, Map<Integer,IFrequencyBand> bands)
+    {
+        summary.section("Frequency Bands");
+        ActivitySummary.Table table = summary.table("Band", "Access", "Base (MHz)", "Bandwidth (kHz)",
+            "Spacing (kHz)", "Tx Offset (MHz)", "Timeslots");
+
+        bands.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue)
+            .forEach(band -> table.row(band.getIdentifier(), band.isTDMA() ? "TDMA" : "FDMA",
+                ActivitySummary.mhz(band.getBaseFrequency()), ActivitySummary.khz(band.getBandwidth()),
+                ActivitySummary.khz(band.getChannelSpacing()), ActivitySummary.offsetMhz(band.getTransmitOffset()),
+                band.isTDMA() ? band.getTimeslotCount() : null));
+    }
+
 
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,229 +16,227 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-
 package io.github.dsheirer.source.tuner.recording;
 
+import io.github.dsheirer.gui.control.FrequencyEntry;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
-import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import io.github.dsheirer.source.wave.SDRSharpIQRecording;
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.miginfocom.swing.MigLayout;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.filechooser.FileFilter;
-
 /**
- * Dialog to select a recording and specify a center frequency for use in adding a Recording Tuner
+ * Dialog for adding a recording tuner that replays a baseband recording file.
  */
-public class AddRecordingTunerDialog extends JFrame
+public class AddRecordingTunerDialog extends Dialog<ButtonType>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AddRecordingTunerDialog.class);
-    private static final String SELECT_A_FILE = "Please select a recording file";
+    private static final String SELECT_A_FILE = "No recording selected";
     private static final String LAST_FILE_BROWSE_LOCATION_KEY = "AddRecordingTunerDialog.lastBrowseLocation";
-    private UserPreferences mUserPreferences;
-    private DiscoveredTunerModel mDiscoveredTunerModel;
-    private TunerConfigurationManager mTunerConfigurationManager;
-    private JButton mSelectFileButton;
-    private File mSelectedRecording;
-    private JLabel mRecordingFileLabel;
-    private JLabel mFrequencyLabel;
-    private JTextField mFrequencyTextField;
-    private JButton mAddButton;
-    private JButton mCancelButton;
+    private static final ButtonType ADD = new ButtonType("Add", ButtonBar.ButtonData.OK_DONE);
     private static final Pattern TUNER_RECORDING_PATTERN = Pattern.compile(".*_(\\d*)_baseband_\\d{8}_\\d{6}\\.wav");
+    private final UserPreferences mUserPreferences;
+    private final DiscoveredTunerModel mDiscoveredTunerModel;
+    private final TunerConfigurationManager mTunerConfigurationManager;
+    private final Label mRecordingFileLabel = new Label(SELECT_A_FILE);
+    private final TextField mFrequencyField = new TextField();
+    private final Label mValidationLabel = new Label();
+    private File mSelectedRecording;
+    private Node mAddButton;
 
-    public AddRecordingTunerDialog(UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
+    /**
+     * Constructs an instance
+     * @param owner window for the dialog
+     * @param userPreferences for the default recording directory
+     * @param discoveredTunerModel to add the recording tuner to
+     * @param tunerConfigurationManager to add the recording tuner configuration to
+     */
+    public AddRecordingTunerDialog(Window owner, UserPreferences userPreferences, DiscoveredTunerModel discoveredTunerModel,
                                    TunerConfigurationManager tunerConfigurationManager)
     {
         Validate.notNull(userPreferences, "UserPreferences cannot be null");
         Validate.notNull(discoveredTunerModel, "TunerModel cannot be null");
         Validate.notNull(tunerConfigurationManager, "TunerConfigurationManager cannot be null");
-
         mDiscoveredTunerModel = discoveredTunerModel;
         mUserPreferences = userPreferences;
         mTunerConfigurationManager = tunerConfigurationManager;
 
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setTitle("Select Recording File");
-        setSize(new Dimension(500, 250));
+        initOwner(owner);
+        setTitle("Add Recording Tuner");
+        setHeaderText("Replay a baseband recording (.wav or SDR# .iq) as a tuner");
 
-        JPanel content = new JPanel();
-        content.setLayout(new MigLayout("", "[align right][][]", "[][][grow][]"));
+        Button selectFileButton = new Button("Select ...");
+        selectFileButton.setOnAction(e -> selectFile());
+        mRecordingFileLabel.setWrapText(true);
+        mFrequencyField.setPromptText("e.g. 851.0125");
+        mValidationLabel.setWrapText(true);
+        mValidationLabel.setStyle("-fx-text-fill: #d9443a;");
 
-        mSelectFileButton = new JButton("Select ...");
-        mSelectFileButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            String lastBrowsedDirectory = SystemProperties.getInstance().get(LAST_FILE_BROWSE_LOCATION_KEY, "");
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(8);
+        grid.setPadding(new Insets(10));
+        grid.addRow(0, selectFileButton, mRecordingFileLabel);
+        grid.addRow(1, new Label("Frequency (MHz)"), mFrequencyField);
+        grid.add(mValidationLabel, 0, 2, 2, 1);
+        GridPane.setHgrow(mFrequencyField, Priority.ALWAYS);
+        grid.setPrefWidth(460);
 
-            File browseDirectory;
+        getDialogPane().setContent(grid);
+        getDialogPane().getButtonTypes().addAll(ADD, ButtonType.CANCEL);
+        mAddButton = getDialogPane().lookupButton(ADD);
+        mAddButton.setDisable(true);
+        mFrequencyField.textProperty().addListener((observable, oldValue, newValue) -> validate());
 
-            if(lastBrowsedDirectory != null && !lastBrowsedDirectory.isEmpty())
+        setResultConverter(buttonType -> {
+            if(buttonType == ADD)
             {
-                browseDirectory = new File(lastBrowsedDirectory);
+                addTuner();
             }
-            else
-            {
-                browseDirectory = mUserPreferences.getDirectoryPreference().getDefaultRecordingDirectory().toFile();
-            }
-
-            fileChooser.setCurrentDirectory(browseDirectory);
-            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setFileFilter(new FileFilter()
-            {
-                @Override
-                public boolean accept(File f)
-                {
-                    return f.getAbsolutePath().endsWith(".wav") || f.isDirectory();
-                }
-
-                @Override
-                public String getDescription()
-                {
-                    return "Recordings (*.wav)";
-                }
-            });
-
-            int returnVal = fileChooser.showOpenDialog(AddRecordingTunerDialog.this);
-
-            File lastDirectory = fileChooser.getCurrentDirectory();
-
-            if(lastDirectory != null)
-            {
-                SystemProperties.getInstance().set(LAST_FILE_BROWSE_LOCATION_KEY, lastDirectory.getAbsolutePath());
-            }
-
-            if(returnVal == JFileChooser.APPROVE_OPTION)
-            {
-                mSelectedRecording = fileChooser.getSelectedFile();
-
-                mAddButton.setEnabled(mSelectedRecording != null);
-
-                if(mSelectedRecording != null &&
-                   (mFrequencyTextField.getText() == null || mFrequencyTextField.getText().isEmpty()))
-                {
-                    Matcher m = TUNER_RECORDING_PATTERN.matcher(mSelectedRecording.getName());
-
-                    if(m.matches())
-                    {
-                        mFrequencyTextField.setText(m.group(1));
-                    }
-                }
-            }
-            else
-            {
-                mSelectedRecording = null;
-            }
-
-            mRecordingFileLabel.setText(mSelectedRecording != null ? mSelectedRecording.getName() : SELECT_A_FILE);
+            return buttonType;
         });
-        content.add(mSelectFileButton);
-
-        mRecordingFileLabel = new JLabel(SELECT_A_FILE);
-        content.add(mRecordingFileLabel, "span 2,wrap");
-
-        mFrequencyLabel = new JLabel("Frequency (Hz):");
-        content.add(mFrequencyLabel);
-
-        mFrequencyTextField = new JTextField("");
-        mFrequencyTextField.setToolTipText("Center frequency for the recording in Hertz (Hz)");
-        content.add(mFrequencyTextField, "span 2,grow,wrap");
-
-        content.add(new JLabel(""), "wrap");
-
-        content.add(new JLabel(""));
-
-        mAddButton = new JButton("Add");
-        mAddButton.setEnabled(false);
-        mAddButton.addActionListener(e -> {
-            if(mSelectedRecording == null)
-            {
-                JOptionPane.showMessageDialog(AddRecordingTunerDialog.this,
-                    "Please select a recording file",
-                    "Select a Recording File",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            long frequency = getFrequency();
-
-            if(frequency <= 0 || frequency > Integer.MAX_VALUE)
-            {
-                JOptionPane.showMessageDialog(AddRecordingTunerDialog.this,
-                    "Please provide a recording center frequency (1 Hz to 2.14 GHz)",
-                    "Center Frequency Required",
-                    JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            mLog.info("Adding recording tuner = frequency [" + frequency +
-                "] recording [" + mSelectedRecording.getAbsolutePath() + "]");
-
-
-            try
-            {
-                RecordingTunerConfiguration config = RecordingTunerConfiguration.create();
-                config.setFrequency(frequency);
-                config.setPath(mSelectedRecording.getAbsolutePath());
-                mTunerConfigurationManager.addTunerConfiguration(config);
-                DiscoveredRecordingTuner discoveredRecordingTuner = new DiscoveredRecordingTuner(mUserPreferences, config);
-                mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
-            }
-            catch(Exception ex)
-            {
-                mLog.error("Error adding recording tuner", ex);
-            }
-
-            AddRecordingTunerDialog.this.setVisible(false);
-        });
-        content.add(mAddButton, "grow,push");
-
-        mCancelButton = new JButton("Cancel");
-        mCancelButton.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                AddRecordingTunerDialog.this.setVisible(false);
-            }
-        });
-        content.add(mCancelButton, "grow,push");
-
-        setContentPane(content);
     }
 
-    private long getFrequency()
+    private void selectFile()
     {
-        String text = mFrequencyTextField.getText();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Recording File");
+        String lastBrowsedDirectory = SystemProperties.getInstance().get(LAST_FILE_BROWSE_LOCATION_KEY, "");
+        File browseDirectory = (lastBrowsedDirectory != null && !lastBrowsedDirectory.isEmpty()) ?
+                new File(lastBrowsedDirectory) : mUserPreferences.getDirectoryPreference().getDefaultRecordingDirectory().toFile();
 
-        if(text != null && !text.isEmpty())
+        if(browseDirectory.isDirectory())
         {
-            try
+            fileChooser.setInitialDirectory(browseDirectory);
+        }
+
+        FileChooser.ExtensionFilter basebandFilter = new FileChooser.ExtensionFilter("Baseband Recordings (*.wav, *.iq)",
+                "*.wav", "*." + SDRSharpIQRecording.FILE_EXTENSION);
+        fileChooser.getExtensionFilters().addAll(basebandFilter,
+                new FileChooser.ExtensionFilter("Wave Recordings (*.wav)", "*.wav"),
+                new FileChooser.ExtensionFilter("SDRSharp I/Q Recordings (*.iq)", "*." + SDRSharpIQRecording.FILE_EXTENSION));
+        fileChooser.setSelectedExtensionFilter(basebandFilter);
+
+        File selected = fileChooser.showOpenDialog(getDialogPane().getScene().getWindow());
+
+        if(selected == null)
+        {
+            return;
+        }
+
+        if(selected.getParentFile() != null)
+        {
+            SystemProperties.getInstance().set(LAST_FILE_BROWSE_LOCATION_KEY, selected.getParentFile().getAbsolutePath());
+        }
+
+        mSelectedRecording = selected;
+
+        if(SDRSharpIQRecording.hasIQExtension(selected))
+        {
+            SDRSharpIQRecording iqRecording = SDRSharpIQRecording.parse(selected);
+
+            if(iqRecording == null)
             {
-                return Long.parseLong(text);
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to determine the sample rate and center " +
+                        "frequency from the I/Q recording file name.\n\nExpected format: " +
+                        "yyyyMMdd-HHmmss_label_TUNER_123456789Hz_10MSps.iq");
+                alert.initOwner(getDialogPane().getScene().getWindow());
+                alert.setTitle("Unsupported I/Q Recording");
+                alert.setHeaderText(null);
+                alert.showAndWait();
+                mSelectedRecording = null;
             }
-            catch(Exception e)
+            else
             {
-                //Do nothing, we couldn't parse the frequency value
+                mLog.info("Selected " + iqRecording);
+
+                if(mFrequencyField.getText() == null || mFrequencyField.getText().isEmpty())
+                {
+                    mFrequencyField.setText(FrequencyEntry.format(iqRecording.getCenterFrequency()));
+                }
+            }
+        }
+        else if(mFrequencyField.getText() == null || mFrequencyField.getText().isEmpty())
+        {
+            Matcher m = TUNER_RECORDING_PATTERN.matcher(selected.getName());
+
+            if(m.matches() && !m.group(1).isEmpty())
+            {
+                try
+                {
+                    mFrequencyField.setText(FrequencyEntry.format(Long.parseLong(m.group(1))));
+                }
+                catch(NumberFormatException nfe)
+                {
+                    //Leave the frequency for the user to enter
+                }
             }
         }
 
-        return 0l;
+        mRecordingFileLabel.setText(mSelectedRecording != null ? mSelectedRecording.getName() : SELECT_A_FILE);
+        validate();
+    }
+
+    private void validate()
+    {
+        String error = null;
+
+        if(mSelectedRecording == null)
+        {
+            error = "Select a recording file";
+        }
+        else
+        {
+            Long frequency = FrequencyEntry.parse(mFrequencyField.getText());
+
+            if(frequency == null || frequency <= 0 || frequency > Integer.MAX_VALUE)
+            {
+                error = "Enter the recording's center frequency, up to 2147.483647 MHz";
+            }
+        }
+
+        mValidationLabel.setText(error == null ? "" : error);
+        mAddButton.setDisable(error != null);
+    }
+
+    private void addTuner()
+    {
+        long frequency = FrequencyEntry.parse(mFrequencyField.getText());
+        mLog.info("Adding recording tuner = frequency [" + frequency + "] recording [" +
+                mSelectedRecording.getAbsolutePath() + "]");
+
+        try
+        {
+            RecordingTunerConfiguration config = RecordingTunerConfiguration.create();
+            config.setFrequency(frequency);
+            config.setPath(mSelectedRecording.getAbsolutePath());
+            mTunerConfigurationManager.addTunerConfiguration(config);
+            DiscoveredRecordingTuner discoveredRecordingTuner = new DiscoveredRecordingTuner(mUserPreferences, config);
+            mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
+        }
+        catch(Exception ex)
+        {
+            mLog.error("Error adding recording tuner", ex);
+        }
     }
 }

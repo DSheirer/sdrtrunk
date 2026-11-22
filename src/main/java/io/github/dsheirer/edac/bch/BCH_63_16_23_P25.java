@@ -31,6 +31,9 @@ public class BCH_63_16_23_P25 extends BCH_63
     private static final int T = 11; // Error-correcting capability
     public static final IntField NAC_FIELD = IntField.length12(0);
     public static final IntField DUID_FIELD = IntField.length4(12);
+    //Generator polynomial g(x) for BCH(63,16,23), degree 47 (octal 6331 1413 6723 5453 per TIA-102.BAAA)
+    private static final long GENERATOR_POLYNOMIAL = 0xCD930BDD3B2BL;
+    private static final int PARITY_LENGTH = 47;
 
     /**
      * Constructs a BCH decoder instance for processing APCO25 BCH(63,16,23) protected NID codewords
@@ -38,6 +41,30 @@ public class BCH_63_16_23_P25 extends BCH_63
     public BCH_63_16_23_P25()
     {
         super(K, T);
+    }
+
+    /**
+     * Encodes the NAC and DUID as a systematic BCH(63,16,23) NID codeword.  The returned value holds the 63 codeword
+     * bits with the first transmitted bit (NAC MSB) in bit position 62.  Note: the 64th NID bit is not included.
+     *
+     * @param nac network access code (12 bits)
+     * @param duid data unit ID value (4 bits)
+     * @return 63-bit codeword.
+     */
+    public static long encode(int nac, int duid)
+    {
+        long information = ((long)(nac & 0xFFF) << 4) | (duid & 0xF);
+        long remainder = information << PARITY_LENGTH;
+
+        for(int bit = 62; bit >= PARITY_LENGTH; bit--)
+        {
+            if(((remainder >> bit) & 1) == 1)
+            {
+                remainder ^= GENERATOR_POLYNOMIAL << (bit - PARITY_LENGTH);
+            }
+        }
+
+        return (information << PARITY_LENGTH) | remainder;
     }
 
     @Override

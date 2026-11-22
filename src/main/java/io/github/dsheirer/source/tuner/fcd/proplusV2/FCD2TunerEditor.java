@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,44 +19,38 @@
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.SpinnerNumberModel;
+import io.github.dsheirer.source.tuner.ui.TunerSection;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Tooltip;
 
 /**
  * Funcube Dongle Pro Plus tuner editor
  */
 public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguration>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(FCD2TunerEditor.class);
-    private static final long serialVersionUID = 1L;
-    private JButton mTunerInfoButton;
-    private JCheckBox mLnaGainCheckBox;
-    private JCheckBox mMixerGainCheckBox;
+    private CheckBox mLnaGainCheckBox;
+    private CheckBox mMixerGainCheckBox;
+    private CheckBox mBiasTCheckBox;
 
     /**
      * Constructs an instance
      * @param userPreferences for wide-band recordings
-     * @param tunerManager to save configuration
-     * @param discoveredTuner to control
+     * @param tunerManager for saving tuner configuration
+     * @param discoveredTuner for the optionally usable tuner and controller
      */
     public FCD2TunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
         super(userPreferences, tunerManager, discoveredTuner);
-        init();
-        tunerStatusUpdated();
+        TunerSection gain = addSection("Gain");
+        gain.addControl(getLnaGainCheckBox());
+        gain.addControl(getMixerGainCheckBox());
+        TunerSection options = addSection("Options");
+        options.addControl(getBiasTCheckBox());
+        refresh();
     }
 
     private FCD2TunerController getController()
@@ -84,93 +78,29 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
     @Override
     protected void tunerStatusUpdated()
     {
-        setLoading(true);
-
-        if(hasTuner())
-        {
-            getTunerIdLabel().setText(getTuner().getPreferredName());
-        }
-        else
-        {
-            getTunerIdLabel().setText(getDiscoveredTuner().getId());
-        }
-
-        String status = getDiscoveredTuner().getTunerStatus().toString();
-        if(getDiscoveredTuner().hasErrorMessage())
-        {
-            status += " - " + getDiscoveredTuner().getErrorMessage();
-        }
-        getTunerStatusLabel().setText(status);
-        getButtonPanel().updateControls();
-        getFrequencyPanel().updateControls();
-        getTunerInfoButton().setEnabled(hasTuner());
-        getLnaGainCheckBox().setEnabled(hasTuner());
-        getMixerGainCheckBox().setEnabled(hasTuner());
+        getLnaGainCheckBox().setDisable(!hasTuner());
+        getMixerGainCheckBox().setDisable(!hasTuner());
+        getBiasTCheckBox().setDisable(!hasTuner());
 
         if(hasTuner() && hasConfiguration())
         {
             getLnaGainCheckBox().setSelected(getConfiguration().getGainLNA());
             getMixerGainCheckBox().setSelected(getConfiguration().getGainMixer());
+            getBiasTCheckBox().setSelected(getConfiguration().isBiasT());
         }
-
-        setLoading(false);
     }
 
-    private void init()
-    {
-        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill][fill]",
-                "[][][][][][][][][][grow]"));
-
-        add(new JLabel("Tuner:"));
-        add(getTunerIdLabel());
-        add(getTunerInfoButton());
-
-        add(new JLabel("Status:"));
-        add(getTunerStatusLabel(), "wrap");
-
-        add(getButtonPanel(), "span,align left");
-
-        add(new JSeparator(), "span,growx,push");
-        add(new JLabel("Frequency (MHz):"));
-        add(getFrequencyPanel(), "wrap");
-
-        add(new JSeparator(), "span,growx,push");
-        add(getLnaGainCheckBox());
-        add(getMixerGainCheckBox());
-    }
-
-    public JButton getTunerInfoButton()
-    {
-        if(mTunerInfoButton == null)
-        {
-            mTunerInfoButton = new JButton("Tuner Info");
-            mTunerInfoButton.setEnabled(false);
-            mTunerInfoButton.addActionListener(e -> JOptionPane.showMessageDialog(FCD2TunerEditor.this,
-                    getTunerInfo(), "Tuner Info", JOptionPane.INFORMATION_MESSAGE));
-        }
-
-        return mTunerInfoButton;
-    }
-
-    public JCheckBox getLnaGainCheckBox()
+    private CheckBox getLnaGainCheckBox()
     {
         if(mLnaGainCheckBox == null)
         {
-            mLnaGainCheckBox = new JCheckBox("LNA Gain");
-            mLnaGainCheckBox.setEnabled(false);
-            mLnaGainCheckBox.addActionListener(event ->
-            {
-                if(!isLoading())
+            mLnaGainCheckBox = new CheckBox("LNA gain");
+            mLnaGainCheckBox.setDisable(true);
+            mLnaGainCheckBox.setOnAction(event -> {
+                if(!isLoading() && hasTuner() && applyToTuner("LNA gain",
+                        () -> getController().setLNAGain(getLnaGainCheckBox().isSelected())))
                 {
-                    try
-                    {
-                        getController().setLNAGain(getLnaGainCheckBox().isSelected());
-                        save();
-                    }
-                    catch(SourceException e)
-                    {
-                        mLog.error("Couldn't set LNA gain for FCD2", e);
-                    }
+                    save();
                 }
             });
         }
@@ -178,25 +108,17 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         return mLnaGainCheckBox;
     }
 
-    public JCheckBox getMixerGainCheckBox()
+    private CheckBox getMixerGainCheckBox()
     {
         if(mMixerGainCheckBox == null)
         {
-            mMixerGainCheckBox = new JCheckBox("Mixer Gain");
-            mMixerGainCheckBox.setEnabled(false);
-            mMixerGainCheckBox.addActionListener(event ->
-            {
-                if(!isLoading())
+            mMixerGainCheckBox = new CheckBox("Mixer gain");
+            mMixerGainCheckBox.setDisable(true);
+            mMixerGainCheckBox.setOnAction(event -> {
+                if(!isLoading() && hasTuner() && applyToTuner("mixer gain",
+                        () -> getController().setMixerGain(getMixerGainCheckBox().isSelected())))
                 {
-                    try
-                    {
-                        getController().setMixerGain(getMixerGainCheckBox().isSelected());
-                        save();
-                    }
-                    catch(SourceException e)
-                    {
-                        mLog.error("Couldn't set mixer gain for FCD2", e);
-                    }
+                    save();
                 }
             });
         }
@@ -204,41 +126,35 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
         return mMixerGainCheckBox;
     }
 
-    @Override
-    public void setTunerLockState(boolean locked)
+    private CheckBox getBiasTCheckBox()
     {
-        getFrequencyPanel().updateControls();
-    }
-
-    private String getTunerInfo()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("<html><h3>Funcube Dongle Pro Plus Tuner</h3>");
-
-        if(hasTuner())
+        if(mBiasTCheckBox == null)
         {
-            sb.append("<b>USB ID: </b>");
-            sb.append(getController().getUSBID());
-            sb.append("<br>");
-
-            sb.append("<b>USB Address: </b>");
-            sb.append(getController().getUSBAddress());
-            sb.append("<br>");
-
-            sb.append("<b>USB Speed: </b>");
-            sb.append(getController().getUSBSpeed());
-            sb.append("<br>");
-
-            sb.append("<b>Cellular Band: </b>");
-            sb.append(getController().getConfiguration().getBandBlocking());
-            sb.append("<br>");
-
-            sb.append("<b>Firmware: </b>");
-            sb.append(getController().getConfiguration().getFirmware());
-            sb.append("<br>");
+            mBiasTCheckBox = new CheckBox("Bias-T");
+            mBiasTCheckBox.setDisable(true);
+            mBiasTCheckBox.setTooltip(new Tooltip("Enable Bias-T power output for active antennas"));
+            mBiasTCheckBox.setOnAction(event -> {
+                if(hasTuner() && !isLoading() && applyToTuner("Bias-T",
+                        () -> getController().setBiasT(getBiasTCheckBox().isSelected())))
+                {
+                    save();
+                }
+            });
         }
 
+        return mBiasTCheckBox;
+    }
+
+    @Override
+    protected String getTunerInfo()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><h3>Funcube Dongle Pro Plus Tuner</h3>");
+        sb.append("<b>USB ID: </b>").append(getController().getUSBID()).append("<br>");
+        sb.append("<b>USB Address: </b>").append(getController().getUSBAddress()).append("<br>");
+        sb.append("<b>USB Speed: </b>").append(getController().getUSBSpeed()).append("<br>");
+        sb.append("<b>Cellular Band: </b>").append(getController().getConfiguration().getBandBlocking()).append("<br>");
+        sb.append("<b>Firmware: </b>").append(getController().getConfiguration().getFirmware()).append("<br>");
         return sb.toString();
     }
 
@@ -247,14 +163,11 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
     {
         if(hasConfiguration() && !isLoading())
         {
-            getConfiguration().setFrequency(getFrequencyControl().getFrequency());
-            getConfiguration().setMinimumFrequency(getMinimumFrequencyTextField().getFrequency());
-            getConfiguration().setMaximumFrequency(getMaximumFrequencyTextField().getFrequency());
-            double value = ((SpinnerNumberModel) getFrequencyCorrectionSpinner().getModel()).getNumber().doubleValue();
-            getConfiguration().setFrequencyCorrection(value);
-            getConfiguration().setAutoPPMCorrectionEnabled(getAutoPPMCheckBox().isSelected());
-            getConfiguration().setGainLNA(getLnaGainCheckBox().isSelected());
-            getConfiguration().setGainMixer(getMixerGainCheckBox().isSelected());
+            FCD2TunerConfiguration config = getConfiguration();
+            saveCommonSettings(config);
+            config.setGainLNA(getLnaGainCheckBox().isSelected());
+            config.setGainMixer(getMixerGainCheckBox().isSelected());
+            config.setBiasT(getBiasTCheckBox().isSelected());
             saveConfiguration();
         }
     }

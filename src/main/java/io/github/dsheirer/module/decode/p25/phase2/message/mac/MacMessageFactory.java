@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -163,6 +163,30 @@ public class MacMessageFactory
     private final static Logger mLog = LoggerFactory.getLogger(MacMessageFactory.class);
 
     /**
+     * Indicates if the message passes the CRC check for the data unit (FACCH, SACCH or LCCH).
+     * @param dataUnitID that identifies the message type
+     * @param message to check
+     * @return true if the CRC check passes or the data unit has no CRC.
+     */
+    public static boolean passesCRC(DataUnitID dataUnitID, CorrectedBinaryMessage message)
+    {
+        if(dataUnitID.isFACCH())
+        {
+            return CRCP25.crc12_FACCH(message);
+        }
+        else if(dataUnitID.isLCCH())
+        {
+            return CRCP25.crc16_LCCH(message);
+        }
+        else if(dataUnitID.isSACCH())
+        {
+            return CRCP25.crc12_SACCH(message);
+        }
+
+        return true;
+    }
+
+    /**
      * Creates a set of MAC messages
      * @param timeslot for the messages
      * @param dataUnitID indicates the type of message
@@ -176,26 +200,13 @@ public class MacMessageFactory
     {
         List<MacMessage> messages = new ArrayList<>();
 
-        boolean passesCRC = true;
+        boolean passesCRC = passesCRC(dataUnitID, message);
 
         int nac = 0;
 
-        if(dataUnitID.isFACCH())
+        if(passesCRC && dataUnitID.isLCCH())
         {
-            passesCRC = CRCP25.crc12_FACCH(message);
-        }
-        else if(dataUnitID.isLCCH())
-        {
-            passesCRC = CRCP25.crc16_LCCH(message);
-
-            if(passesCRC)
-            {
-                nac = MacStructure.getLcchNac(message);
-            }
-        }
-        else if(dataUnitID.isSACCH())
-        {
-            passesCRC = CRCP25.crc12_SACCH(message);
+            nac = MacStructure.getLcchNac(message);
         }
 
         if(!passesCRC)

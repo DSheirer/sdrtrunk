@@ -20,7 +20,9 @@
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.dsp.c4fm.C4FMMessageFramer;
 import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.DibitDelayLine;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
@@ -38,14 +40,34 @@ import java.util.Arrays;
  * <p>
  * This framer is able to detect DMR Direct mode and track one active and one inactive timeslot across each voice
  * super frame in addition to framing base and mobile station data and voice bursts.
+ * <p>
+ * Supports two symbol stream inputs:
+ * <ul>
+ *     <li>Listener receive(Dibit) and syncDetected(DMRSyncPattern) where the sync detection is signalled when the
+ *     next dibit is the first dibit of the burst (ie the symbol processor maintains a burst delay line)</li>
+ *     <li>C4FM message framer process(Dibit) and syncDetected() where the sync detection is signalled when the most
+ *     recent dibit is the final dibit of the sync pattern.  This framer maintains a delay line to retain the burst
+ *     dibits from CACH through the sync pattern and the sync pattern must be provided via setSyncPattern() prior to
+ *     the sync detection notification.</li>
+ * </ul>
  */
-public class DMRMessageFramer implements Listener<Dibit>
+public class DMRMessageFramer extends C4FMMessageFramer implements Listener<Dibit>
 {
     private static final int DIBIT_CACH_START = 0;
     private static final int DIBIT_BURST_END = 144;
+    //Dibit delay line sizing: CACH(12) + MESSAGE_PREFIX(54) + SYNC(24)
+    private static final int DELAY_LINE_LENGTH = 90;
+    private final DibitDelayLine mDibitDelayLine = new DibitDelayLine(DELAY_LINE_LENGTH);
+    //Soft symbols (radians) delay line parallel to the dibit delay line, or NaN when the soft symbol wasn't provided
+    private final float[] mSoftSymbolDelayLine = new float[DELAY_LINE_LENGTH];
+    private int mSoftSymbolDelayLinePointer = 0;
+    private DMRSyncPattern mSyncPattern = DMRSyncPattern.UNKNOWN;
     private Listener<IMessage> mMessageListener;
     private final Dibit[] mBufferA = new Dibit[144];
     private final Dibit[] mBufferB = new Dibit[144];
+    //Soft symbols (radians) parallel to the dibit buffers, or NaN when the soft symbol wasn't provided
+    private final float[] mSoftBufferA = new float[144];
+    private final float[] mSoftBufferB = new float[144];
     private int mBufferAPointer = 0;
     private int mBufferBPointer = 0;
     private DMRSyncPattern mBufferAPattern = DMRSyncPattern.UNKNOWN;
@@ -67,7 +89,61 @@ public class DMRMessageFramer implements Listener<Dibit>
     {
         Arrays.fill(mBufferA, Dibit.D00_PLUS_1);
         Arrays.fill(mBufferB, Dibit.D00_PLUS_1);
+        Arrays.fill(mSoftSymbolDelayLine, Float.NaN);
+        Arrays.fill(mSoftBufferA, Float.NaN);
+        Arrays.fill(mSoftBufferB, Float.NaN);
         mMessageFactory = new DMRMessageFactory(crcMaskManager);
+    }
+
+    /**
+     * Sets the sync pattern for the next C4FM sync detection notification via syncDetected().
+     * @param pattern that was detected.
+     */
+    public void setSyncPattern(DMRSyncPattern pattern)
+    {
+        mSyncPattern = pattern;
+    }
+
+    /**
+     * C4FM symbol stream input method.  Dibits are delayed via the burst delay line before framing.
+     * @param symbol to process
+     * @return true if a valid message was dispatched.
+     */
+    @Override
+    public boolean process(Dibit symbol)
+    {
+        return process(symbol, Float.NaN);
+    }
+
+    /**
+     * C4FM symbol stream input method.  Dibits and soft symbols are delayed via the burst delay lines before framing.
+     * @param symbol decision
+     * @param softSymbol equalized soft symbol in radians
+     * @return true if a valid message was dispatched.
+     */
+    @Override
+    public boolean process(Dibit symbol, float softSymbol)
+    {
+        float ejectedSoftSymbol = mSoftSymbolDelayLine[mSoftSymbolDelayLinePointer];
+        mSoftSymbolDelayLine[mSoftSymbolDelayLinePointer++] = softSymbol;
+        mSoftSymbolDelayLinePointer %= DELAY_LINE_LENGTH;
+        return processDibit(mDibitDelayLine.insert(symbol), ejectedSoftSymbol);
+    }
+
+    /**
+     * C4FM sync detection notification where the most recently processed dibit is the final dibit of the sync pattern
+     * that was set via setSyncPattern().  Overwrites the sync dibits in the delay line with the detected sync pattern
+     * to eliminate any sync bit errors and signals that the next dibit ejected from the delay line is the first dibit
+     * of the burst.
+     */
+    @Override
+    public void syncDetected()
+    {
+        if(DMRSyncPattern.SYNC_PATTERNS.contains(mSyncPattern))
+        {
+            mDibitDelayLine.update(mSyncPattern.toDibits());
+            syncDetected(mSyncPattern);
+        }
     }
 
     /**
@@ -76,6 +152,17 @@ public class DMRMessageFramer implements Listener<Dibit>
      */
     @Override
     public void receive(Dibit dibit)
+    {
+        processDibit(dibit, Float.NaN);
+    }
+
+    /**
+     * Processes the dibit
+     * @param dibit to process
+     * @param softSymbol for the dibit in radians, or NaN.
+     * @return true if a valid message was dispatched.
+     */
+    private boolean processDibit(Dibit dibit, float softSymbol)
     {
         mDibitCounter++;
         mDibitSinceTimestampCounter++;
@@ -93,23 +180,27 @@ public class DMRMessageFramer implements Listener<Dibit>
         {
             if(mBufferAActive)
             {
+                mSoftBufferA[mBufferAPointer] = softSymbol;
                 mBufferA[mBufferAPointer++] = dibit;
 
                 if(mBufferAPointer >= mBufferA.length)
                 {
-                    dispatchBufferA();
+                    return dispatchBufferA();
                 }
             }
             else
             {
+                mSoftBufferB[mBufferBPointer] = softSymbol;
                 mBufferB[mBufferBPointer++] = dibit;
 
                 if(mBufferBPointer >= mBufferB.length)
                 {
-                    dispatchBufferB();
+                    return dispatchBufferB();
                 }
             }
         }
+
+        return false;
     }
 
     /**
@@ -121,7 +212,11 @@ public class DMRMessageFramer implements Listener<Dibit>
                                     (!mBufferAActive && mBufferBPattern.isVoicePattern()));
     }
 
-    private void dispatchBufferA()
+    /**
+     * Dispatches the burst assembled in buffer A.
+     * @return true if the dispatched burst message is valid.
+     */
+    private boolean dispatchBufferA()
     {
         mDibitCounter -= 144;
 
@@ -150,7 +245,8 @@ public class DMRMessageFramer implements Listener<Dibit>
         mDibitCounter = 0;
 
         CorrectedBinaryMessage message = getMessage(mBufferA);
-        CACH cach = CACH.getCACH(message);
+        float[] softBits = getSoftBits(mSoftBufferA);
+        CACH cach = CACH.getCACH(message, softBits);
 
         if(mBufferAPattern.hasCACH() && cach.isValid() && mBufferATimeslot != cach.getTimeslot())
         {
@@ -167,7 +263,9 @@ public class DMRMessageFramer implements Listener<Dibit>
             }
         }
 
-        dispatch(mMessageFactory.create(mBufferAPattern, message, cach, getTimestamp(), mBufferATimeslot));
+        IMessage burstMessage = mMessageFactory.create(mBufferAPattern, message, softBits, cach,
+                getTimestamp(), mBufferATimeslot);
+        dispatch(burstMessage);
 
         //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
         //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
@@ -187,9 +285,15 @@ public class DMRMessageFramer implements Listener<Dibit>
         {
             mAssemblingBurst = false;
         }
+
+        return burstMessage != null && burstMessage.isValid();
     }
 
-    private void dispatchBufferB()
+    /**
+     * Dispatches the burst assembled in buffer B.
+     * @return true if the dispatched burst message is valid.
+     */
+    private boolean dispatchBufferB()
     {
         mDibitCounter -= 144;
 
@@ -218,7 +322,8 @@ public class DMRMessageFramer implements Listener<Dibit>
         mDibitCounter = 0;
 
         CorrectedBinaryMessage burst = getMessage(mBufferB);
-        CACH cach = CACH.getCACH(burst);
+        float[] softBits = getSoftBits(mSoftBufferB);
+        CACH cach = CACH.getCACH(burst, softBits);
 
         if(mBufferBPattern.hasCACH() && cach.isValid() && mBufferBTimeslot != cach.getTimeslot())
         {
@@ -236,7 +341,9 @@ public class DMRMessageFramer implements Listener<Dibit>
             }
         }
 
-        dispatch(mMessageFactory.create(mBufferBPattern, burst, cach, getTimestamp(), mBufferBTimeslot));
+        IMessage burstMessage = mMessageFactory.create(mBufferBPattern, burst, softBits, cach,
+                getTimestamp(), mBufferBTimeslot);
+        dispatch(burstMessage);
 
         //Since voice frames only have sync on the first burst, we use pseudo-patterns to track the rest of the bursts
         //across the voice super-frame.  If the current pattern is a voice frame, set it to the next pseudo voice sync.
@@ -256,6 +363,8 @@ public class DMRMessageFramer implements Listener<Dibit>
         {
             mAssemblingBurst = false;
         }
+
+        return burstMessage != null && burstMessage.isValid();
     }
 
     /**
@@ -293,6 +402,28 @@ public class DMRMessageFramer implements Listener<Dibit>
     public void setListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
+    }
+
+    /**
+     * Converts the soft symbol buffer into soft bits (one per message bit) where a positive value favors a 1 bit.
+     * @param softSymbols buffer
+     * @return soft bits or null if any of the soft symbols were not provided.
+     */
+    private static float[] getSoftBits(float[] softSymbols)
+    {
+        float[] softBits = new float[softSymbols.length * 2];
+
+        for(int x = 0; x < softSymbols.length; x++)
+        {
+            if(Float.isNaN(softSymbols[x]))
+            {
+                return null;
+            }
+
+            setSoftBits(softSymbols[x], softBits, x * 2);
+        }
+
+        return softBits;
     }
 
     /**

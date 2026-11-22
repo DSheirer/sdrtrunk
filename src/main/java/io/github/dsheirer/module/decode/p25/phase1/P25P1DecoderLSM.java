@@ -20,12 +20,11 @@
 package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.dsp.c4fm.DQPSKDifferentialDemodulator;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
-import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -44,17 +43,21 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * APCO25 Phase 1 Linear Simulcast Modulation (LSM) decoder.  Decimates incoming sample buffers to as close as possible
- * to 25 kHz for ~5 samples per symbol.  Employs baseband and pulse shaping filters.  Incorporates an demodulator to
- * process complex baseband (I/Q) sample stream into soft symbols with soft sync detection and message framing. A
- * registered message listener receives the detected and framed messages.
+ * APCO25 Phase 1 Linear Simulcast Modulation (LSM) decoder.  Decimates incoming sample buffers to 4-8 samples per
+ * symbol.  Employs a flat baseband (channel) filter without a matched (root raised cosine) filter since the differential
+ * demodulator is a limiter-discriminator receiver where narrowing the bandwidth ahead of the discriminator distorts the
+ * phase trajectory and degrades performance (see BASEBAND_FILTER_PASS_BAND).  The differential demodulator
+ * (mDemodulator) removes the coarse carrier offset and differentially demodulates the filtered complex baseband (I/Q)
+ * sample stream into the phase change across each symbol period, in the same radians per sample domain as the C4FM
+ * decoder.  This allows the LSM decoder to share the C4FM symbol processor (mSymbolProcessor) that performs sync
+ * detection, timing correction, equalization and balance (PLL) residual mistune correction.  Message framer performs
+ * message framing and message creation, using the demodulator's soft symbol reliabilities to weight soft decision
+ * decoding.  A registered message listener receives the detected and framed messages.
  *
  * As a child of the FeedbackDecoder, this decoder provides periodic PLL measurements to the tuner for automatic PPM
  * correction.  It also provides a stream of demodulated soft symbols (in radians) for display to the user.
@@ -64,18 +67,23 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(P25P1DecoderLSM.class);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
-    private static final Map<Double,float[]> BASEBAND_FILTERS = new HashMap<>();
+    //Baseband filter settings.  Testing against LSM recordings: a 7250 Hz pass band passes adjacent channel
+    //interference and a matched (4800 baud root raised cosine) filter increases symbol errors.  Without injected noise,
+    //flat pass bands from 4800 to 5600 Hz perform best, while narrower pass bands perform better with injected noise.
+    //A 4400 Hz pass band balances both: relative to 5200 Hz, 0.3% fewer valid messages without injected noise and
+    //25-50% more valid messages at 3-0 dB carrier to noise.
+    private static final double BASEBAND_FILTER_PASS_BAND = 4400.0; //Hertz
+    private static final double BASEBAND_FILTER_STOP_BAND = 5600.0; //Hertz
     private static final int SYMBOL_RATE = 4800;
 
-    private final P25P1DemodulatorLSM mDemodulator;
+    private final P25P1SymbolProcessorLSM mSymbolProcessor;
+    private final DQPSKDifferentialDemodulator mDemodulator = new DQPSKDifferentialDemodulator();
     private final P25P1MessageFramer mMessageFramer = new P25P1MessageFramer();
     private final P25P1MessageProcessor mMessageProcessor = new P25P1MessageProcessor();
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
-    private IRealFilter mPulseShapingFilterI;
-    private IRealFilter mPulseShapingFilterQ;
 
     @Override
     public DecoderType getDecoderType()
@@ -83,10 +91,14 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         return DecoderType.P25_PHASE1;
     }
 
+    /**
+     * Constructs an instance
+     */
     public P25P1DecoderLSM()
     {
         mMessageProcessor.setMessageListener(getMessageListener());
-        mDemodulator = new P25P1DemodulatorLSM(mMessageFramer, this);
+        mMessageFramer.setPhaseWrappedSoftSymbols(true);
+        mSymbolProcessor = new P25P1SymbolProcessorLSM(this, mMessageFramer);
     }
 
     @Override
@@ -111,35 +123,27 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
 
         //Identify decimation that gets as close to 4.0 Samples Per Symbol as possible (4800 x 4.0 = 19.2 kHz)
         while((sampleRate / decimation) >= 38400)
-//        while((sampleRate / decimation) > 50000)
         {
             decimation *= 2;
         }
 
-        try
-        {
-            mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
-            mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
-        }
-        catch(Exception e)
-        {
-            LOGGER.error("Error getting decimation filter for sample rate [" + sampleRate + "] decimation [" + decimation + "]");
-        }
+        mDecimationFilterI = DecimationFilterFactory.getRealDecimationFilter(decimation);
+        mDecimationFilterQ = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
         float decimatedSampleRate = (float)sampleRate / decimation;
 
         //Set the decimated sample rate to use for PLL error reporting.
         setDecimatedSampleRate(decimatedSampleRate);
 
-        int symbolLength = 16;
-        float rolloff = 0.2f;
+        float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, BASEBAND_FILTER_PASS_BAND,
+                BASEBAND_FILTER_STOP_BAND);
+        mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
+        mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
+        float samplesPerSymbol = decimatedSampleRate / (float)SYMBOL_RATE;
 
-        float[] taps = FilterFactory.getRootRaisedCosine(decimatedSampleRate / 4800.0, symbolLength, rolloff);
-        mPulseShapingFilterI = new RealFIRFilter(taps);
-        mPulseShapingFilterQ = new RealFIRFilter(taps);
-        mBasebandFilterI = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mBasebandFilterQ = FilterFactory.getRealFilter(getBasebandFilter(decimatedSampleRate));
-        mDemodulator.setSamplesPerSymbol(decimatedSampleRate / (float)SYMBOL_RATE);
+        mDemodulator.setSamplesPerSymbol(samplesPerSymbol);
+        mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
+
         mMessageFramer.setListener(mMessageProcessor);
     }
 
@@ -162,49 +166,25 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         i = mBasebandFilterI.filter(i);
         q = mBasebandFilterQ.filter(q);
 
-        i = mPulseShapingFilterI.filter(i);
-        q = mPulseShapingFilterQ.filter(q);
+        //Differential demodulation: phase change across each symbol period (radians per sample)
+        float[] demodulated = mDemodulator.demodulate(i, q, mSymbolProcessor.isSynchronized());
 
-        //Demodulate samples into symbols with timing, sync detection, and message framing.
-        mDemodulator.process(i, q);
+        //Process demodulated samples into symbols and apply message sync detection and framing.  The soft symbol
+        //reliabilities weight the soft decision decoding.
+        mSymbolProcessor.process(demodulated, mDemodulator.getReliabilities());
     }
 
     /**
-     * Constructs a baseband filter for this decoder using the current sample rate
+     * Includes the coarse carrier offset that the differential demodulator removes ahead of the symbol processor,
+     * since the symbol processor's PLL error only represents the residual offset.  The symbol processor invokes this
+     * method when the message framer decodes a valid NID, which also verifies the demodulator's carrier offset range.
+     * @param pllError residual carrier offset (radians per sample) from the symbol processor
      */
-    private float[] getBasebandFilter(double sampleRate)
+    @Override
+    public void processPLLError(float pllError)
     {
-        if(BASEBAND_FILTERS.containsKey(sampleRate))
-        {
-            return BASEBAND_FILTERS.get(sampleRate);
-        }
-
-        FIRFilterSpecification specification = FIRFilterSpecification
-                .lowPassBuilder()
-                .sampleRate(sampleRate)
-                .passBandCutoff(7250)
-                .passBandAmplitude(1.0).passBandRipple(0.01) //.01
-                .stopBandAmplitude(0.0).stopBandStart(8000) //6500
-                .stopBandRipple(0.01).build();
-
-        float[] coefficients = null;
-
-        try
-        {
-            coefficients = FilterFactory.getTaps(specification);
-            BASEBAND_FILTERS.put(sampleRate, coefficients);
-        }
-        catch(Exception fde) //FilterDesignException
-        {
-            System.out.println("Error");
-        }
-
-        if(coefficients == null)
-        {
-            throw new IllegalStateException("Unable to design low pass filter for sample rate [" + sampleRate + "]");
-        }
-
-        return coefficients;
+        mDemodulator.offsetVerified();
+        super.processPLLError(pllError - mDemodulator.getFrequencyOffset());
     }
 
     /**
@@ -213,7 +193,7 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     @Override
     public void setBufferListener(Listener<ByteBuffer> listener)
     {
-        mDemodulator.setBufferListener(listener);
+        mSymbolProcessor.setBufferListener(listener);
     }
 
     /**
@@ -222,7 +202,7 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     @Override
     public void removeBufferListener(Listener<ByteBuffer> listener)
     {
-        mDemodulator.setBufferListener(null);
+        setBufferListener(null);
     }
 
     /**
@@ -231,7 +211,7 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     @Override
     public boolean hasBufferListeners()
     {
-        return mDemodulator.hasBufferListener();
+        return mSymbolProcessor.hasBufferListener();
     }
 
     @Override
@@ -252,6 +232,7 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
     {
         super.stop();
         mMessageFramer.stop();
+        mSymbolProcessor.dispose();
     }
 
     /**
@@ -262,8 +243,13 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         switch(sourceEvent.getEvent())
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
+                mSymbolProcessor.resetBalance();
+                mDemodulator.reset();
+                break;
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                mDemodulator.resetPLL();
+                //Tuner PPM changes are small (auto-PPM steps are <= 10 Hz) and the carrier offset estimator and symbol
+                //processor balance track the change.  Resetting would discard the carrier offset estimate and force an
+                //offset ambiguity search when the offset exceeds the +/- 600 Hz fourth power estimator range.
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
@@ -282,17 +268,17 @@ public class P25P1DecoderLSM extends FeedbackDecoder implements IByteBufferProvi
         LOGGER.info("Starting ...");
 
 //        String directory = "D:\\DQPSK Equalizer Research - P25\\"; //Windows
-        String directory = "/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
+        String directory = "/run/media/denny/T9/DQPSK Equalizer Research - P25/"; //Linux
 
 //        String file = directory + "P25-S2-LSM-20241225_040119_460500000_CNYICC_Onondaga_Onondaga_CC_0_baseband.wav";
 //        String file = directory + "P25-S4-LSM-TCH-Data-20250105_141051_453587500_CNYICC_Onondaga_T-Onondaga_CC_38_baseband.wav";
 //        String file = directory + "P25-S5-LSM-CCH-20250923_034304_460500000_CNYICC_Onondaga_Onondaga-CC_0_baseband.wav";
-        String file = directory + "P25-S6-LSM-CCH-20251025_071546_460500000_CNYICC_Onondaga_Onondaga-CC_0_baseband.wav";
-
-
-//        String file = directory + "P25-S3-C4FM-20241225_040459_152517500_NYSEG_Onondaga_Control_30_baseband.wav";
-
-
+//        String file = directory + "P25-S6-LSM-CCH-20251025_071546_460500000_CNYICC_Onondaga_Onondaga-CC_0_baseband.wav";
+//        String file = directory + "P25-S7-LSM-CCH-20261027_030041_460475000_Central-New-York-Interoperable-Communications-Consortium-(CNYICC)_Madison-Simulcast_Control_51_baseband.wav";
+//        String file = directory + "P25-S8-LSM-TCH-20261027_030138_460250000_Central-New-York-Interoperable-Communications-Consortium-(CNYICC)_Madison-Simulcast_T-Control_52_baseband.wav";
+//        String file = directory + "P25-S9-LSM-TCH-20261027_030248_460175000_Central-New-York-Interoperable-Communications-Consortium-(CNYICC)_Madison-Simulcast_T-Control_53_baseband.wav";
+//        String file = directory + "P25-S10-LSM-TCH-20261027_031432_460175000_Central-New-York-Interoperable-Communications-Consortium-(CNYICC)_Madison-Simulcast_T-Control_11_baseband.wav";
+        String file = directory + "P25-S11-LSM-TCH-20261027_031603_460250000_Central-New-York-Interoperable-Communications-Consortium-(CNYICC)_Madison-Simulcast_T-Control_12_baseband.wav";
         boolean autoReplay = false;
 
         P25P1DecoderLSM decoder = new P25P1DecoderLSM();

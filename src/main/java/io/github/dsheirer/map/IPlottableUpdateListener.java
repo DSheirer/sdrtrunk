@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,30 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.map;
 
+import java.util.List;
+
+/**
+ * Listener for changes to the plottable entities.  Called on the thread that made the change: the decode event thread
+ * for new locations, or the thread that deleted the entities.
+ */
 public interface IPlottableUpdateListener
 {
-    void entitiesUpdated();
-    void addPlottableEntity(PlottableEntityHistory entity);
-    void removePlottableEntity(PlottableEntityHistory entity);
+    /**
+     * A new entity was added
+     */
+    void entityAdded(PlottableEntityHistory entity);
+
+    /**
+     * An existing entity received a new decode event or location
+     */
+    void entityUpdated(PlottableEntityHistory entity);
+
+    /**
+     * Entities were deleted
+     */
+    void entitiesRemoved(List<PlottableEntityHistory> entities);
 }

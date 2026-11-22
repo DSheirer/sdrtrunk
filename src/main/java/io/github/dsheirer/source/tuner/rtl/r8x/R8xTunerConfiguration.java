@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,25 +18,34 @@
  */
 package io.github.dsheirer.source.tuner.rtl.r8x;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerConfiguration;
 
 /**
- * RTL-2832 with embedded R8xxx tuner configuration
+ * RTL-2832 with embedded R820T or R828D tuner configuration
  */
 public abstract class R8xTunerConfiguration extends RTL2832TunerConfiguration
 {
-    private R8xEmbeddedTuner.MasterGain mMasterMasterGain = R8xEmbeddedTuner.MasterGain.GAIN_327;
-    private R8xEmbeddedTuner.MixerGain mMixerGain = R8xEmbeddedTuner.MixerGain.GAIN_105;
-    private R8xEmbeddedTuner.LNAGain mLNAGain = R8xEmbeddedTuner.LNAGain.GAIN_222;
-    private R8xEmbeddedTuner.VGAGain mVGAGain = R8xEmbeddedTuner.VGAGain.GAIN_210;
+    public static final long MINIMUM_TUNABLE_FREQUENCY_HZ = 3_180_000;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY_HZ = 1_782_030_000;
+    public static final double USABLE_BANDWIDTH_PERCENT = 0.98;
+    public static final int DC_SPIKE_AVOID_BUFFER = 5000;
+    /**
+     * Default gain in tenths of a dB
+     */
+    public static final int DEFAULT_GAIN = 328;
+
+    //Legacy gain settings, used to convert configurations from the previous R8x driver's master, LNA and mixer gains
+    private boolean mLegacyManualGain = false;
+    private Integer mLegacyLNAGain;
+    private Integer mLegacyMixerGain;
 
     /**
-     * Default constructor for JAXB
+     * Default constructor for Jackson
      */
     public R8xTunerConfiguration()
     {
-        super(R8xEmbeddedTuner.MINIMUM_TUNABLE_FREQUENCY_HZ, R8xEmbeddedTuner.MAXIMUM_TUNABLE_FREQUENCY_HZ);
+        super(MINIMUM_TUNABLE_FREQUENCY_HZ, MAXIMUM_TUNABLE_FREQUENCY_HZ, DEFAULT_GAIN);
     }
 
     /**
@@ -46,50 +55,64 @@ public abstract class R8xTunerConfiguration extends RTL2832TunerConfiguration
      */
     public R8xTunerConfiguration(String uniqueID)
     {
-        super(uniqueID);
+        super(uniqueID, DEFAULT_GAIN);
     }
 
-    @JacksonXmlProperty(isAttribute = true, localName = "master_gain")
-    public R8xEmbeddedTuner.MasterGain getMasterGain()
+    /**
+     * Converts the legacy master gain setting: AUTOMATIC, MANUAL (using the LNA and mixer gains) or a gain value
+     * such as GAIN_327 in tenths of a dB.
+     */
+    @JsonSetter("masterGain")
+    public void setLegacyMasterGain(String masterGain)
     {
-        return mMasterMasterGain;
+        if("AUTOMATIC".equals(masterGain))
+        {
+            setAGC(true);
+        }
+        else if("MANUAL".equals(masterGain))
+        {
+            mLegacyManualGain = true;
+            updateLegacyManualGain();
+        }
+        else
+        {
+            Integer gain = parseLegacyGain(masterGain);
+
+            if(gain != null)
+            {
+                setGain(gain);
+            }
+        }
     }
 
-    public void setMasterGain(R8xEmbeddedTuner.MasterGain masterGain)
+    /**
+     * Converts the legacy LNA gain setting, such as GAIN_222 in tenths of a dB.
+     */
+    @JsonSetter("lnagain")
+    public void setLegacyLNAGain(String lnaGain)
     {
-        mMasterMasterGain = masterGain;
+        mLegacyLNAGain = parseLegacyGain(lnaGain);
+        updateLegacyManualGain();
     }
 
-    @JacksonXmlProperty(isAttribute = true, localName = "mixer_gain")
-    public R8xEmbeddedTuner.MixerGain getMixerGain()
+    /**
+     * Converts the legacy mixer gain setting, such as GAIN_105 in tenths of a dB.
+     */
+    @JsonSetter("mixerGain")
+    public void setLegacyMixerGain(String mixerGain)
     {
-        return mMixerGain;
+        mLegacyMixerGain = parseLegacyGain(mixerGain);
+        updateLegacyManualGain();
     }
 
-    public void setMixerGain(R8xEmbeddedTuner.MixerGain mixerGain)
+    /**
+     * Sets the gain to the sum of the legacy LNA and mixer gains when the legacy master gain is MANUAL.
+     */
+    private void updateLegacyManualGain()
     {
-        mMixerGain = mixerGain;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "lna_gain")
-    public R8xEmbeddedTuner.LNAGain getLNAGain()
-    {
-        return mLNAGain;
-    }
-
-    public void setLNAGain(R8xEmbeddedTuner.LNAGain lnaGain)
-    {
-        mLNAGain = lnaGain;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "vga_gain")
-    public R8xEmbeddedTuner.VGAGain getVGAGain()
-    {
-        return mVGAGain;
-    }
-
-    public void setVGAGain(R8xEmbeddedTuner.VGAGain vgaGain)
-    {
-        mVGAGain = vgaGain;
+        if(mLegacyManualGain && mLegacyLNAGain != null && mLegacyMixerGain != null)
+        {
+            setGain(mLegacyLNAGain + mLegacyMixerGain);
+        }
     }
 }

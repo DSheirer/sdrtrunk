@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ public class ISCHDecoder
     private static final long[] GENERATOR = {0x8816CE36D7l, 0x201DFD4F64l, 0x100F4B1758l, 0x0C00DED18El, 0x020807F7FFl,
         0x09048D9B72l, 0x009DA3A171l, 0x0058CBAA4El, 0x00343D8597l};
     private static final long CODE_WORD_OFFSET = 0x184229d461l;
+    private static final int MAX_CORRECTABLE_BIT_ERRORS = 7;
 
     /**
      * Constructs the ISCH-I parsing class
@@ -94,6 +95,46 @@ public class ISCHDecoder
     }
 
     /**
+     * Decodes the codeword to the nearest (minimum Hamming distance) valid codeword in the map.  The (40,9,16) code
+     * has a minimum distance of 16, so it corrects up to 7 bit errors.
+     * @param codeword received
+     * @param codewordMap of valid codewords to messages
+     * @return decoded message with the corrected bit count, or null if no valid codeword is within 7 bit errors.
+     */
+    private static CorrectedBinaryMessage decode(long codeword, Map<Long,BinaryMessage> codewordMap)
+    {
+        BinaryMessage exact = codewordMap.get(codeword);
+
+        if(exact != null)
+        {
+            return new CorrectedBinaryMessage(exact);
+        }
+
+        int smallestErrorCount = MAX_CORRECTABLE_BIT_ERRORS + 1;
+        BinaryMessage closest = null;
+
+        for(Map.Entry<Long,BinaryMessage> entry: codewordMap.entrySet())
+        {
+            int errorCount = Long.bitCount(codeword ^ entry.getKey());
+
+            if(errorCount < smallestErrorCount)
+            {
+                smallestErrorCount = errorCount;
+                closest = entry.getValue();
+            }
+        }
+
+        if(closest != null)
+        {
+            CorrectedBinaryMessage decoded = new CorrectedBinaryMessage(closest);
+            decoded.setCorrectedBitCount(smallestErrorCount);
+            return decoded;
+        }
+
+        return null;
+    }
+
+    /**
      * Decodes the 40-bit message codeword into an error-corrected 9-bit message.  The expected timeslot allows us to
      * only use the codewords that are correct for the expected timeslot.
      * @param message containing 40 bit codeword
@@ -105,64 +146,20 @@ public class ISCHDecoder
 
         if(expectedTimeslot == 1)
         {
-            if(CODEWORD_MAP_TS1.containsKey(codeword))
+            CorrectedBinaryMessage decoded = decode(codeword, CODEWORD_MAP_TS1);
+
+            if(decoded != null)
             {
-                return new CorrectedBinaryMessage(CODEWORD_MAP_TS1.get(codeword));
-            }
-            else
-            {
-                int smallestErrorCount = 8;
-                long closestCodeword = 0;
-
-                for(long validCodeword: CODEWORD_MAP_TS1.keySet())
-                {
-                    long mask = codeword & validCodeword;
-                    int errorCount = Long.bitCount(mask);
-
-                    if(errorCount < smallestErrorCount)
-                    {
-                        smallestErrorCount = errorCount;
-                        closestCodeword = validCodeword;
-                    }
-                }
-
-                if(closestCodeword != 0 && smallestErrorCount <= 7) //Max correctable bit errors of 7
-                {
-                    CorrectedBinaryMessage decoded = new CorrectedBinaryMessage(CODEWORD_MAP_TS1.get(closestCodeword));
-                    decoded.setCorrectedBitCount(smallestErrorCount);
-                    return  decoded;
-                }
+                return decoded;
             }
         }
         else if(expectedTimeslot == 2)
         {
-            if(CODEWORD_MAP_TS2.containsKey(codeword))
+            CorrectedBinaryMessage decoded = decode(codeword, CODEWORD_MAP_TS2);
+
+            if(decoded != null)
             {
-                return new CorrectedBinaryMessage(CODEWORD_MAP_TS2.get(codeword));
-            }
-            else
-            {
-                int smallestErrorCount = 16;
-                long closestCodeword = 0;
-
-                for(long validCodeword: CODEWORD_MAP_TS2.keySet())
-                {
-                    long mask = codeword & validCodeword;
-                    int errorCount = Long.bitCount(mask);
-
-                    if(errorCount < smallestErrorCount)
-                    {
-                        smallestErrorCount = errorCount;
-                        closestCodeword = validCodeword;
-                    }
-                }
-
-                if(closestCodeword != 0 && smallestErrorCount <= 7) //Max correctable bit errors of 7
-                {
-                    CorrectedBinaryMessage decoded = new CorrectedBinaryMessage(CODEWORD_MAP_TS2.get(closestCodeword));
-                    decoded.setCorrectedBitCount(smallestErrorCount);
-                    return  decoded;
-                }
+                return decoded;
             }
         }
         else

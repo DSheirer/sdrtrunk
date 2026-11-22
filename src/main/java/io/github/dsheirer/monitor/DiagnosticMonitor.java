@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2024 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,11 +39,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JOptionPane;
 
 /**
  * Utility class for monitoring system components and producing logging reports.
@@ -155,7 +156,12 @@ public class DiagnosticMonitor
                                          "The application may degrade over time and eventually run out of memory.\n" +
                                          "A diagnostic report was generated.  Please open an issue on the GitHub\n" +
                                          "website and attach this diagnostic report:\n\n" + reportPath.toString();
-                        JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR, message);
+                            alert.setTitle(title);
+                            alert.setHeaderText("Thread deadlock detected");
+                            alert.show();
+                        });
                     }
                 }
             }
@@ -247,6 +253,7 @@ public class DiagnosticMonitor
         Attributes atts = findManifestAttributes();
         if (atts != null) {
             sb.append("\nVersion  : " + atts.getValue("Implementation-Version"));
+            sb.append("\nGit Describe      : " + atts.getValue("Git-Describe"));
             sb.append("\nGradle Version    : " + atts.getValue("Created-By"));
             sb.append("\nBuild Timestamp   : " + atts.getValue("Build-Timestamp"));
             sb.append("\nBuild-JDK         : " + atts.getValue("Build-JDK"));

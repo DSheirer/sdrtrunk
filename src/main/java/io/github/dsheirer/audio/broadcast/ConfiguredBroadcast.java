@@ -152,6 +152,30 @@ public class ConfiguredBroadcast
     }
 
     /**
+     * Current status for display: the broadcaster's state when there is a broadcaster, otherwise the reason that
+     * there isn't one.
+     */
+    public BroadcastState getStatus()
+    {
+        AbstractAudioBroadcaster broadcaster = mAudioBroadcaster;
+
+        if(broadcaster != null)
+        {
+            return broadcaster.getBroadcastState();
+        }
+        else if(!mBroadcastConfiguration.isEnabled())
+        {
+            return BroadcastState.DISABLED;
+        }
+        else if(!mBroadcastConfiguration.isValid())
+        {
+            return BroadcastState.INVALID_SETTINGS;
+        }
+
+        return BroadcastState.ERROR;
+    }
+
+    /**
      * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
      */
     public static Callback<ConfiguredBroadcast, Observable[]> extractor()

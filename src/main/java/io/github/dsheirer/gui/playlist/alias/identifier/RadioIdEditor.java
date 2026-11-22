@@ -71,6 +71,7 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
         gridPane.getChildren().add(getProtocolLabel());
 
         Label valueLabel = new Label("Radio ID");
+        valueLabel.setLabelFor(getRadioIdField());
         GridPane.setHalignment(valueLabel, HPos.RIGHT);
         GridPane.setConstraints(valueLabel, 1, 0);
         gridPane.getChildren().add(valueLabel);
