@@ -23,6 +23,9 @@ import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
+import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
+import io.github.dsheirer.module.decode.nxdn.NXDNRanGate;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Audio;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.Disconnect;
 import io.github.dsheirer.module.decode.nxdn.layer3.call.TransmissionRelease;
@@ -47,6 +50,7 @@ public class NXDNAudioModule extends AmbeAudioModule
     private boolean mEncryptedCall = false;
     private boolean mEncryptedCallStateEstablished = false;
     private AudioCodec mAudioCodec;
+    private NXDNRanGate mRanGate = new NXDNRanGate(null);
 
     /**
      * Constructs an instance
@@ -56,6 +60,16 @@ public class NXDNAudioModule extends AmbeAudioModule
     public NXDNAudioModule(Settings settings, AliasList aliasList)
     {
         super(settings, aliasList, 0);
+    }
+
+    /**
+     * Sets the Radio Access Number (RAN) filter for the audio path, so that voice from a co-channel transmitter with a
+     * different RAN is not decoded into the call audio.
+     * @param ranFilter to apply, or null to pass all audio.
+     */
+    public void setRanFilter(AccessCodeFilter ranFilter)
+    {
+        mRanGate = new NXDNRanGate(ranFilter);
     }
 
     @Override
@@ -68,6 +82,7 @@ public class NXDNAudioModule extends AmbeAudioModule
     public void reset()
     {
         getIdentifierCollection().clear();
+        mRanGate.reset();
     }
 
     @Override
@@ -80,6 +95,12 @@ public class NXDNAudioModule extends AmbeAudioModule
      */
     public void receive(IMessage message)
     {
+        //RAN filter: drop messages from co-channel transmitters with a non-matching RAN
+        if(message instanceof NXDNMessage && !mRanGate.passes(message))
+        {
+            return;
+        }
+
         if(hasAudioCodec())
         {
             if(message instanceof Audio audio)

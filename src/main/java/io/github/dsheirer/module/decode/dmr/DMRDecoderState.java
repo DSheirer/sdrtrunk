@@ -134,6 +134,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
             this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
     private boolean mIgnoreCRCChecksums;
+    private DMRColorCodeGate mColorCodeGate = new DMRColorCodeGate(null);
     private DMRDecoderState mSisterDecoderState;
 
     /**
@@ -159,6 +160,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config)
         {
             mIgnoreCRCChecksums = config.getIgnoreCRCChecksums();
+            mColorCodeGate = new DMRColorCodeGate(config.getColorCodeFilter());
         }
     }
 
@@ -303,6 +305,12 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         if(message.getTimeslot() == getTimeslot())
         {
+            //Color code filter: drop bursts from co-channel transmitters with a non-matching color code
+            if(!mColorCodeGate.passes(message))
+            {
+                return;
+            }
+
             if(message instanceof VoiceMessage voice)
             {
                 if(isValid(voice))
@@ -1512,6 +1520,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             case REQUEST_RESET:
                 resetState();
+                mColorCodeGate.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 setCurrentFrequency(event.getFrequency());
