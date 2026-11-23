@@ -23,6 +23,7 @@ import javafx.collections.ListChangeListener;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -35,6 +36,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
@@ -77,6 +79,7 @@ public class ColumnConfigurationEditor
         if(!mStage.isShowing())
         {
             mListView.getSelectionModel().clearSelection();
+            mStage.show();
 
             if(anchor != null && anchor.getScene() != null)
             {
@@ -84,12 +87,23 @@ public class ColumnConfigurationEditor
 
                 if(bounds != null)
                 {
-                    mStage.setX(bounds.getMinX());
-                    mStage.setY(bounds.getMaxY());
+                    //The window size is only known once it is showing.  Open above the button when there isn't
+                    //room below it, and keep the window on the screen.
+                    Rectangle2D screen = Screen.getScreensForRectangle(bounds.getMinX(), bounds.getMinY(),
+                        bounds.getWidth(), bounds.getHeight()).stream().findFirst().orElse(Screen.getPrimary())
+                        .getVisualBounds();
+                    double y = bounds.getMaxY();
+
+                    if(y + mStage.getHeight() > screen.getMaxY())
+                    {
+                        y = Math.max(screen.getMinY(), bounds.getMinY() - mStage.getHeight());
+                    }
+
+                    mStage.setX(Math.max(screen.getMinX(), Math.min(bounds.getMinX(),
+                        screen.getMaxX() - mStage.getWidth())));
+                    mStage.setY(y);
                 }
             }
-
-            mStage.show();
         }
 
         mStage.toFront();
