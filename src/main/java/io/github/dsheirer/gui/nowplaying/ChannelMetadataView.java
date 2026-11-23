@@ -61,6 +61,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -255,7 +256,10 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     {
         TableRow<Row> tableRow = new TableRow<>();
         ContextMenu contextMenu = new ContextMenu();
-        contextMenu.setOnShowing(event -> {
+        //The menu items are built when the row is right-clicked, before the row shows the menu.  Building them in the
+        //menu's onShowing handler doesn't work: ContextMenu.show() returns without showing (and without firing
+        //onShowing) while the menu has no items, so the menu never opened.
+        tableRow.addEventFilter(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
             contextMenu.getItems().clear();
             Row row = tableRow.getItem();
             Channel channel = row != null ? mChannelMetadataModel.getChannelFromMetadata(row.getChannelMetadata()) : null;
