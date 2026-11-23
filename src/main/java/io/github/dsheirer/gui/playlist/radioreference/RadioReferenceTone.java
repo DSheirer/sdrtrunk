@@ -29,8 +29,8 @@ import java.util.regex.Pattern;
  * Tone or access code parsed from a Radio Reference frequency's tone field.
  *
  * Radio Reference writes the tone field in several forms: CTCSS as "118.8 PL" or "118.8", DCS as "023 DPL",
- * "D023N", "D023 N" or "D754I", P25 NAC as "NAC 293" or "$293", DMR color code as "CC1" or "CC 3 TG 300 SL 1"
- * and NXDN RAN as "RAN 1".
+ * "D023N", "D023 N" or "D754I", P25 NAC as "NAC 293" or "$293", DMR color code as "CC1", "1 CC" or
+ * "CC 3 TG 300 SL 1" and NXDN RAN as "RAN 1" or "13 RAN".
  * "CSQ" (carrier squelch) and blank fields have no tone.  Anything that isn't recognized, including fields that list
  * more than one tone, is treated as no tone rather than guessed.
  *
@@ -54,8 +54,10 @@ public record RadioReferenceTone(Type type, CTCSSCode ctcssCode, DCSCode dcsCode
     private static final Pattern DCS_PREFIXED = Pattern.compile("^(?:D|DPL\\s*|DCS\\s*)(\\d{3})\\s*(N|I)?$");
     private static final Pattern NAC = Pattern.compile("^(?:NAC\\s*(?:0X|\\$)?([0-9A-F]{1,3})|\\$([0-9A-F]{1,3})|([0-9A-F]{3})\\s*NAC)$");
     //DMR and NXDN entries can also list the talkgroup and slot after the code, e.g. "CC 3 TG 300 SL 1"
-    private static final Pattern COLOR_CODE = Pattern.compile("^(?:CC|COLOR\\s*CODE)\\s*(\\d{1,2})(?:\\s+(?:TG|SL|TS|SLOT)\\b.*)?$");
-    private static final Pattern RAN = Pattern.compile("^RAN\\s*(\\d{1,2})(?:\\s+(?:TG|SL|TS|SLOT)\\b.*)?$");
+    //Code can be prefixed ("CC 1", "CC-1", "RAN:13") or suffixed ("1 CC", "13 RAN")
+    private static final String ACCESS_CODE_TRAILER = "(?:\\s+(?:TG|SL|TS|SLOT)\\b.*)?$";
+    private static final Pattern COLOR_CODE = Pattern.compile("^(?:(?:CC|COLOR\\s*CODE)\\s*[-:#]?\\s*(\\d{1,2})|(\\d{1,2})\\s*(?:CC|COLOR\\s*CODE))" + ACCESS_CODE_TRAILER);
+    private static final Pattern RAN = Pattern.compile("^(?:RAN\\s*[-:#]?\\s*(\\d{1,2})|(\\d{1,2})\\s*RAN)" + ACCESS_CODE_TRAILER);
 
     /**
      * Parses a Radio Reference tone field.
@@ -117,7 +119,7 @@ public record RadioReferenceTone(Type type, CTCSSCode ctcssCode, DCSCode dcsCode
 
         if(matcher.matches())
         {
-            int colorCode = Integer.parseInt(matcher.group(1));
+            int colorCode = Integer.parseInt(matcher.group(matcher.group(1) != null ? 1 : 2));
             return colorCode <= 15 ? new RadioReferenceTone(Type.COLOR_CODE, null, null, colorCode) : null;
         }
 
@@ -125,7 +127,7 @@ public record RadioReferenceTone(Type type, CTCSSCode ctcssCode, DCSCode dcsCode
 
         if(matcher.matches())
         {
-            int ran = Integer.parseInt(matcher.group(1));
+            int ran = Integer.parseInt(matcher.group(matcher.group(1) != null ? 1 : 2));
             return ran <= 63 ? new RadioReferenceTone(Type.RAN, null, null, ran) : null;
         }
 

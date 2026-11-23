@@ -65,6 +65,13 @@ public class RadioReferenceToneTest
         assertEquals(5, RadioReferenceTone.parse("RAN 5 TG 100").accessCode());
         assertEquals(1, RadioReferenceTone.parse("RAN 1").accessCode());
         assertEquals(RadioReferenceTone.Type.RAN, RadioReferenceTone.parse("RAN1").type());
+        assertEquals(13, RadioReferenceTone.parse("13 RAN").accessCode());
+        assertEquals(RadioReferenceTone.Type.RAN, RadioReferenceTone.parse("11 RAN").type());
+        assertEquals(7, RadioReferenceTone.parse("RAN-7").accessCode());
+        assertEquals(2, RadioReferenceTone.parse("RAN: 2").accessCode());
+        assertEquals(4, RadioReferenceTone.parse("4 RAN TG 0").accessCode());
+        assertEquals(1, RadioReferenceTone.parse("1 CC").accessCode());
+        assertEquals(RadioReferenceTone.Type.COLOR_CODE, RadioReferenceTone.parse("CC-3").type());
     }
 
     @Test
