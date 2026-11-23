@@ -20,7 +20,15 @@ package io.github.dsheirer.dsp.filter.decimate;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.window.WindowType;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.vector.calibrate.CalibrationType;
+import io.github.dsheirer.vector.calibrate.Implementation;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -90,21 +98,6 @@ public class DecimationFilterFactoryTest
     }
 
     /**
-     * Test: each decimation rate reduces the sample count by that rate and rejects a length that isn't a multiple.
-     */
-    @Test
-    void highestRatesDecimateAndValidateLength()
-    {
-        for(int decimation : new int[]{1024, 2048, 4096})
-        {
-            assertEquals(1, DecimationFilterFactory.getRealDecimationFilter(decimation)
-                .decimateReal(new float[decimation]).length);
-            assertThrows(IllegalArgumentException.class, () -> DecimationFilterFactory
-                .getRealDecimationFilter(decimation).decimateReal(new float[decimation / 2]));
-        }
-    }
-
-    /**
      * Test: rates that are too small to decimate apply no decimation, instead of a zero rate or a rate that decimates
      * below the requested sample rate.
      */
@@ -150,11 +143,72 @@ public class DecimationFilterFactoryTest
     }
 
     /**
-     * Test: tones that alias into the channel are rejected and tones within the channel are passed, for the band edge
-     * of the final stage and for tones near the Nyquist frequency of the first stage.
+     * Half-band filter implementations to test the decimation filters with: scalar and each vector width that this CPU
+     * supports natively.
      */
-    @Test
-    void aliasRejection()
+    private static final List<Implementation> IMPLEMENTATIONS = Arrays.stream(new Implementation[]{
+        Implementation.SCALAR, Implementation.VECTOR_SIMD_64, Implementation.VECTOR_SIMD_128,
+        Implementation.VECTOR_SIMD_256, Implementation.VECTOR_SIMD_512}).filter(Implementation::isNativelySupported)
+        .toList();
+
+    private static final List<CalibrationType> HALF_BAND_TYPES = List.of(CalibrationType.FILTER_HALF_BAND_REAL_11_TAP,
+        CalibrationType.FILTER_HALF_BAND_REAL_15_TAP, CalibrationType.FILTER_HALF_BAND_REAL_23_TAP,
+        CalibrationType.FILTER_HALF_BAND_REAL_63_TAP, CalibrationType.FILTER_HALF_BAND_REAL_DEFAULT);
+
+    /**
+     * Creates a test for each implementation that runs the test with every half-band filter in the decimation filters
+     * using that implementation, independent of this computer's calibration.
+     */
+    private static Stream<DynamicTest> forEachImplementation(Runnable test)
+    {
+        return IMPLEMENTATIONS.stream().map(implementation -> DynamicTest.dynamicTest(implementation.name(), () ->
+        {
+            CalibrationManager manager = CalibrationManager.getInstance();
+
+            try
+            {
+                HALF_BAND_TYPES.forEach(type -> manager.setImplementationOverride(type, implementation));
+                test.run();
+            }
+            finally
+            {
+                HALF_BAND_TYPES.forEach(type -> manager.setImplementationOverride(type, null));
+            }
+        }));
+    }
+
+    /**
+     * Test: each decimation rate reduces the sample count by that rate and rejects a length that isn't a multiple, for
+     * each implementation.
+     */
+    @TestFactory
+    Stream<DynamicTest> highestRatesDecimateAndValidateLength()
+    {
+        return forEachImplementation(DecimationFilterFactoryTest::highestRatesDecimateAndValidateLengthTest);
+    }
+
+    private static void highestRatesDecimateAndValidateLengthTest()
+    {
+        for(int decimation : new int[]{1024, 2048, 4096})
+        {
+            assertEquals(1, DecimationFilterFactory.getRealDecimationFilter(decimation)
+                .decimateReal(new float[decimation]).length);
+            assertThrows(IllegalArgumentException.class, () -> DecimationFilterFactory
+                .getRealDecimationFilter(decimation).decimateReal(new float[decimation / 2]));
+        }
+    }
+
+    /**
+     * Test: tones that alias into the channel are rejected and tones within the channel are passed, for the band edge
+     * of the final stage and for tones near the Nyquist frequency of the first stage, for each implementation.
+     */
+    @TestFactory
+    Stream<DynamicTest> aliasRejection()
+    {
+        return forEachImplementation(DecimationFilterFactoryTest::aliasRejectionTest);
+    }
+
+    private static void aliasRejectionTest()
     {
         for(int decimation = 2; decimation <= DecimationFilterFactory.MAXIMUM_DECIMATION_RATE; decimation *= 2)
         {

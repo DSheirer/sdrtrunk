@@ -22,15 +22,12 @@ package io.github.dsheirer.module.decode.nxdn.layer1.sync;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating NXDN Soft Sync Detectors
  */
 public class NXDNSyncDetectorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(NXDNSyncDetectorFactory.class);
 
     /**
      * Creates the implementation using calibration data to select the optimal implementation from scalar and vector options.
@@ -39,21 +36,27 @@ public class NXDNSyncDetectorFactory
     public static NXDNSoftSyncDetector getStandardDetector()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.NXDN_SOFT_SYNC_DETECTOR);
+        return getStandardDetector(implementation);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the NXDN soft sync detector implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static NXDNSoftSyncDetector getStandardDetector(Implementation implementation)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_64:
-                return new NXDNSoftSyncDetectorVector64();
-            case VECTOR_SIMD_128:
-                return new NXDNSoftSyncDetectorVector128();
-            case VECTOR_SIMD_256:
-                return new NXDNSoftSyncDetectorVector256();
-            case VECTOR_SIMD_512:
-                return new NXDNSoftSyncDetectorVector512();
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new NXDNSoftSyncDetectorScalar();
-        }
+            case SCALAR, UNCALIBRATED -> new NXDNSoftSyncDetectorScalar();
+            case VECTOR_SIMD_64 -> new NXDNSoftSyncDetectorVector64();
+            case VECTOR_SIMD_128 -> new NXDNSoftSyncDetectorVector128();
+            case VECTOR_SIMD_256 -> new NXDNSoftSyncDetectorVector256();
+            case VECTOR_SIMD_512 -> new NXDNSoftSyncDetectorVector512();
+            default -> throw new IllegalArgumentException("No NXDN soft sync detector implementation for " +
+                implementation);
+        };
     }
 }

@@ -169,6 +169,8 @@ public enum Setting
 
     //Vector (SIMD) calibration
     VECTOR_CALIBRATION(Node.VECTOR_CALIBRATE, "%s"), //Argument: calibration type key
+    VECTOR_CALIBRATION_ENVIRONMENT(Node.VECTOR_CALIBRATION, "calibration.environment"),
+    VECTOR_CALIBRATION_RESULT(Node.VECTOR_CALIBRATE_RESULT, "%s"), //Argument: calibration type key
     VECTOR_ENABLED(Node.VECTOR_CALIBRATION, "vector.enabled"),
     VECTOR_HIDE_CALIBRATION_DIALOG(Node.VECTOR_CALIBRATION, "hide.calibration.dialog"),
 
@@ -432,6 +434,7 @@ public enum Setting
         private static final String GUI = ROOT + "gui";
         private static final String TABLE = ROOT + "gui/table";
         private static final String VECTOR_CALIBRATE = ROOT + "vector/calibrate";
+        private static final String VECTOR_CALIBRATE_RESULT = ROOT + "vector/calibrate/result";
         private static final String VIEWER = ROOT + "gui/viewer";
     }
 }

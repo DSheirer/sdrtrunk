@@ -22,15 +22,12 @@ package io.github.dsheirer.dsp.fm;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating FM demodulators
  */
 public class FmDemodulatorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(FmDemodulatorFactory.class);
 
     /**
      * Creates the optimal FM demodulator using calibration data to select the optimal
@@ -40,21 +37,27 @@ public class FmDemodulatorFactory
     public static IDemodulator getFmDemodulator()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.FM_DEMODULATOR);
+        return getFmDemodulator(implementation);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the FM demodulator implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static IDemodulator getFmDemodulator(Implementation implementation)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_64:
-                return new VectorFMDemodulator64();
-            case VECTOR_SIMD_128:
-                return new VectorFMDemodulator128();
-            case VECTOR_SIMD_256:
-                return new VectorFMDemodulator256();
-            case VECTOR_SIMD_512:
-                return new VectorFMDemodulator512();
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ScalarFMDemodulator();
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarFMDemodulator();
+            case VECTOR_SIMD_64 -> new VectorFMDemodulator64();
+            case VECTOR_SIMD_128 -> new VectorFMDemodulator128();
+            case VECTOR_SIMD_256 -> new VectorFMDemodulator256();
+            case VECTOR_SIMD_512 -> new VectorFMDemodulator512();
+            default -> throw new IllegalArgumentException("No FM demodulator implementation for " +
+                implementation);
+        };
     }
 }

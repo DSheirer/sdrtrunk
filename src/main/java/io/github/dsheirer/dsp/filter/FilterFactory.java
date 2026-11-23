@@ -1676,25 +1676,28 @@ public class FilterFactory
      */
     public static IRealFilter getRealFilter(float[] coefficients)
     {
-        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_FIR);
+        return getRealFilter(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_FIR), coefficients);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the real FIR filter implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static IRealFilter getRealFilter(Implementation implementation, float[] coefficients)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorRealFIRFilterDefaultBit(coefficients);
-            case VECTOR_SIMD_64:
-                return new VectorRealFIRFilter64Bit(coefficients);
-            case VECTOR_SIMD_128:
-                return new VectorRealFIRFilter128Bit(coefficients);
-            case VECTOR_SIMD_256:
-                return new VectorRealFIRFilter256Bit(coefficients);
-            case VECTOR_SIMD_512:
-                return new VectorRealFIRFilter512Bit(coefficients);
-            case UNCALIBRATED:
-            case SCALAR:
-            default:
-                return new RealFIRFilter(coefficients);
-        }
+            case SCALAR, UNCALIBRATED -> new RealFIRFilter(coefficients);
+            case VECTOR_SIMD_PREFERRED -> new VectorRealFIRFilterDefaultBit(coefficients);
+            case VECTOR_SIMD_64 -> new VectorRealFIRFilter64Bit(coefficients);
+            case VECTOR_SIMD_128 -> new VectorRealFIRFilter128Bit(coefficients);
+            case VECTOR_SIMD_256 -> new VectorRealFIRFilter256Bit(coefficients);
+            case VECTOR_SIMD_512 -> new VectorRealFIRFilter512Bit(coefficients);
+            default -> throw new IllegalArgumentException("No real FIR filter implementation for " + implementation);
+        };
     }
 
     /**
@@ -1706,91 +1709,91 @@ public class FilterFactory
      */
     public static IRealDecimationFilter getRealDecimationFilter(int length, WindowType windowType)
     {
-        float[] coefficients = getHalfBand(length, windowType);
+        CalibrationType type = getRealHalfBandCalibrationType(length);
+        return getRealDecimationFilter(type, CalibrationManager.getInstance().getImplementation(type),
+            getHalfBand(length, windowType));
+    }
 
-        switch(length)
+    /**
+     * Calibration type for a real half-band decimation filter of the length.  Lengths 11, 15, 23 and 63 have
+     * implementations specific to that length and other lengths use the default implementations.
+     * @param length of the filter
+     * @return calibration type
+     */
+    public static CalibrationType getRealHalfBandCalibrationType(int length)
+    {
+        return switch(length)
         {
-            case 11:
-                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_11_TAP))
-                {
-                    case VECTOR_SIMD_64:
-                        return new VectorRealHalfBandDecimationFilter11Tap64Bit(coefficients);
-                    case VECTOR_SIMD_128:
-                        return new VectorRealHalfBandDecimationFilter11Tap128Bit(coefficients);
-                    case VECTOR_SIMD_256:
-                        return new VectorRealHalfBandDecimationFilter11Tap256Bit(coefficients);
-                    case VECTOR_SIMD_512:
-                        return new VectorRealHalfBandDecimationFilter11Tap512Bit(coefficients);
-                    case SCALAR:
-                    case UNCALIBRATED:
-                    default:
-                        return new RealHalfBandDecimationFilter(coefficients);
-                }
-            case 15:
-                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_15_TAP))
-                {
-                    case VECTOR_SIMD_64:
-                        return new VectorRealHalfBandDecimationFilter15Tap64Bit(coefficients);
-                    case VECTOR_SIMD_128:
-                        return new VectorRealHalfBandDecimationFilter15Tap128Bit(coefficients);
-                    case VECTOR_SIMD_256:
-                        return new VectorRealHalfBandDecimationFilter15Tap256Bit(coefficients);
-                    case VECTOR_SIMD_512:
-                        return new VectorRealHalfBandDecimationFilter15Tap512Bit(coefficients);
-                    case SCALAR:
-                    case UNCALIBRATED:
-                    default:
-                        return new RealHalfBandDecimationFilter(coefficients);
-                }
-            case 23:
-                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_23_TAP))
-                {
-                    case VECTOR_SIMD_64:
-                        return new VectorRealHalfBandDecimationFilter23Tap64Bit(coefficients);
-                    case VECTOR_SIMD_128:
-                        return new VectorRealHalfBandDecimationFilter23Tap128Bit(coefficients);
-                    case VECTOR_SIMD_256:
-                        return new VectorRealHalfBandDecimationFilter23Tap256Bit(coefficients);
-                    case VECTOR_SIMD_512:
-                        return new VectorRealHalfBandDecimationFilter23Tap512Bit(coefficients);
-                    case SCALAR:
-                    case UNCALIBRATED:
-                    default:
-                        return new RealHalfBandDecimationFilter(coefficients);
-                }
-            case 63:
-                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_63_TAP))
-                {
-                    case VECTOR_SIMD_64:
-                        return new VectorRealHalfBandDecimationFilter63Tap64Bit(coefficients);
-                    case VECTOR_SIMD_128:
-                        return new VectorRealHalfBandDecimationFilter63Tap128Bit(coefficients);
-                    case VECTOR_SIMD_256:
-                        return new VectorRealHalfBandDecimationFilter63Tap256Bit(coefficients);
-                    case VECTOR_SIMD_512:
-                        return new VectorRealHalfBandDecimationFilter63Tap512Bit(coefficients);
-                    case SCALAR:
-                    case UNCALIBRATED:
-                    default:
-                        return new RealHalfBandDecimationFilter(coefficients);
-                }
-            default:
-                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_DEFAULT))
-                {
-                    case VECTOR_SIMD_64:
-                        return new VectorRealHalfBandDecimationFilter64Bit(coefficients);
-                    case VECTOR_SIMD_128:
-                        return new VectorRealHalfBandDecimationFilter128Bit(coefficients);
-                    case VECTOR_SIMD_256:
-                        return new VectorRealHalfBandDecimationFilter256Bit(coefficients);
-                    case VECTOR_SIMD_512:
-                        return new VectorRealHalfBandDecimationFilter512Bit(coefficients);
-                    case SCALAR:
-                    case UNCALIBRATED:
-                    default:
-                        return new RealHalfBandDecimationFilter(coefficients);
-                }
-        }
+            case 11 -> CalibrationType.FILTER_HALF_BAND_REAL_11_TAP;
+            case 15 -> CalibrationType.FILTER_HALF_BAND_REAL_15_TAP;
+            case 23 -> CalibrationType.FILTER_HALF_BAND_REAL_23_TAP;
+            case 63 -> CalibrationType.FILTER_HALF_BAND_REAL_63_TAP;
+            default -> CalibrationType.FILTER_HALF_BAND_REAL_DEFAULT;
+        };
+    }
+
+    /**
+     * Creates the real half-band decimation filter implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param type of half-band calibration, which selects the length-specific or the default implementations.  The
+     * length-specific implementations require coefficients of that length.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @param coefficients of the half-band filter
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static IRealDecimationFilter getRealDecimationFilter(CalibrationType type, Implementation implementation,
+                                                                float[] coefficients)
+    {
+        return switch(type)
+        {
+            case FILTER_HALF_BAND_REAL_11_TAP -> switch(implementation)
+            {
+                case SCALAR, UNCALIBRATED -> new RealHalfBandDecimationFilter(coefficients);
+                case VECTOR_SIMD_64 -> new VectorRealHalfBandDecimationFilter11Tap64Bit(coefficients);
+                case VECTOR_SIMD_128 -> new VectorRealHalfBandDecimationFilter11Tap128Bit(coefficients);
+                case VECTOR_SIMD_256 -> new VectorRealHalfBandDecimationFilter11Tap256Bit(coefficients);
+                case VECTOR_SIMD_512 -> new VectorRealHalfBandDecimationFilter11Tap512Bit(coefficients);
+                default -> throw new IllegalArgumentException("No " + type + " implementation for " + implementation);
+            };
+            case FILTER_HALF_BAND_REAL_15_TAP -> switch(implementation)
+            {
+                case SCALAR, UNCALIBRATED -> new RealHalfBandDecimationFilter(coefficients);
+                case VECTOR_SIMD_64 -> new VectorRealHalfBandDecimationFilter15Tap64Bit(coefficients);
+                case VECTOR_SIMD_128 -> new VectorRealHalfBandDecimationFilter15Tap128Bit(coefficients);
+                case VECTOR_SIMD_256 -> new VectorRealHalfBandDecimationFilter15Tap256Bit(coefficients);
+                case VECTOR_SIMD_512 -> new VectorRealHalfBandDecimationFilter15Tap512Bit(coefficients);
+                default -> throw new IllegalArgumentException("No " + type + " implementation for " + implementation);
+            };
+            case FILTER_HALF_BAND_REAL_23_TAP -> switch(implementation)
+            {
+                case SCALAR, UNCALIBRATED -> new RealHalfBandDecimationFilter(coefficients);
+                case VECTOR_SIMD_64 -> new VectorRealHalfBandDecimationFilter23Tap64Bit(coefficients);
+                case VECTOR_SIMD_128 -> new VectorRealHalfBandDecimationFilter23Tap128Bit(coefficients);
+                case VECTOR_SIMD_256 -> new VectorRealHalfBandDecimationFilter23Tap256Bit(coefficients);
+                case VECTOR_SIMD_512 -> new VectorRealHalfBandDecimationFilter23Tap512Bit(coefficients);
+                default -> throw new IllegalArgumentException("No " + type + " implementation for " + implementation);
+            };
+            case FILTER_HALF_BAND_REAL_63_TAP -> switch(implementation)
+            {
+                case SCALAR, UNCALIBRATED -> new RealHalfBandDecimationFilter(coefficients);
+                case VECTOR_SIMD_64 -> new VectorRealHalfBandDecimationFilter63Tap64Bit(coefficients);
+                case VECTOR_SIMD_128 -> new VectorRealHalfBandDecimationFilter63Tap128Bit(coefficients);
+                case VECTOR_SIMD_256 -> new VectorRealHalfBandDecimationFilter63Tap256Bit(coefficients);
+                case VECTOR_SIMD_512 -> new VectorRealHalfBandDecimationFilter63Tap512Bit(coefficients);
+                default -> throw new IllegalArgumentException("No " + type + " implementation for " + implementation);
+            };
+            case FILTER_HALF_BAND_REAL_DEFAULT -> switch(implementation)
+            {
+                case SCALAR, UNCALIBRATED -> new RealHalfBandDecimationFilter(coefficients);
+                case VECTOR_SIMD_64 -> new VectorRealHalfBandDecimationFilter64Bit(coefficients);
+                case VECTOR_SIMD_128 -> new VectorRealHalfBandDecimationFilter128Bit(coefficients);
+                case VECTOR_SIMD_256 -> new VectorRealHalfBandDecimationFilter256Bit(coefficients);
+                case VECTOR_SIMD_512 -> new VectorRealHalfBandDecimationFilter512Bit(coefficients);
+                default -> throw new IllegalArgumentException("No " + type + " implementation for " + implementation);
+            };
+            default -> throw new IllegalArgumentException("Not a real half-band decimation filter calibration: " + type);
+        };
     }
 
     /**

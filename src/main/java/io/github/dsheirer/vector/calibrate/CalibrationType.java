@@ -32,29 +32,20 @@ public enum CalibrationType
     OSCILLATOR_COMPLEX("Complex Oscillator", 2),
     GAIN_COMPLEX("Complex Gain", 1),
 
-    AM_DEMODULATOR("AM Demodulator", 1),
     CHANNEL_DFT("Polyphase Channel DFT", 1),
-    DC_REMOVAL_REAL("Real DC Removal Filter", 1),
     DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 2),
-    DIFFERENTIAL_DEMODULATOR("DQPSK Demodulator", 1),
     FILTER_FIR("FIR Filter", 1),
     FILTER_HALF_BAND_REAL_11_TAP("Real Half-Band Decimation Filter - 11 Tap", 1),
     FILTER_HALF_BAND_REAL_15_TAP("Real Half-Band Decimation Filter - 15 Tap", 1),
     FILTER_HALF_BAND_REAL_23_TAP("Real Half-Band Decimation Filter - 23 Tap", 1),
     FILTER_HALF_BAND_REAL_63_TAP("Real Half-Band Decimation Filter - 63 Tap", 1),
-    FILTER_HALF_BAND_REAL_DEFAULT("Real Half-Band Decimation Filter - Default", 1),
+    FILTER_HALF_BAND_REAL_DEFAULT("Real Half-Band Decimation Filter - Default", 2),
     FM_DEMODULATOR("FM Demodulator", 2),
-    GAIN_CONTROL_COMPLEX("Complex Gain Control", 1),
-    HILBERT_TRANSFORM("Hilbert Transform", 1),
-    INTERPOLATOR("Interpolator", 1),
-    MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 2),
     NXDN_SOFT_SYNC_DETECTOR("NXDN Soft Sync Detector", 3),
     OSCILLATOR_REAL("Real Oscillator", 1),
     P25P1_SOFT_SYNC_DETECTOR("P25 Phase 1 Soft Sync Detector", 2),
-    P25P2_SOFT_SYNC_DETECTOR("P25 Phase 2 Soft Sync Detector", 1),
-    SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),
-    WINDOW("Window", 1);
+    P25P2_SOFT_SYNC_DETECTOR("P25 Phase 2 Soft Sync Detector", 1);
 
     private String mDescription;
     private int mVersion;

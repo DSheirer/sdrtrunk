@@ -22,15 +22,12 @@ package io.github.dsheirer.module.decode.p25.phase1.sync;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating P25 Phase 1 Soft Sync Detectors
  */
 public class P25P1SoftSyncDetectorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(P25P1SoftSyncDetectorFactory.class);
 
     /**
      * Creates the implementation using calibration data to select the optimal
@@ -40,21 +37,27 @@ public class P25P1SoftSyncDetectorFactory
     public static P25P1SoftSyncDetector getDetector()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.P25P1_SOFT_SYNC_DETECTOR);
+        return getDetector(implementation);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the P25 Phase 1 soft sync detector implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static P25P1SoftSyncDetector getDetector(Implementation implementation)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_64:
-                return new P25P1SoftSyncDetectorVector64();
-            case VECTOR_SIMD_128:
-                return new P25P1SoftSyncDetectorVector128();
-            case VECTOR_SIMD_256:
-                return new P25P1SoftSyncDetectorVector256();
-            case VECTOR_SIMD_512:
-                return new P25P1SoftSyncDetectorVector512();
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new P25P1SoftSyncDetectorScalar();
-        }
+            case SCALAR, UNCALIBRATED -> new P25P1SoftSyncDetectorScalar();
+            case VECTOR_SIMD_64 -> new P25P1SoftSyncDetectorVector64();
+            case VECTOR_SIMD_128 -> new P25P1SoftSyncDetectorVector128();
+            case VECTOR_SIMD_256 -> new P25P1SoftSyncDetectorVector256();
+            case VECTOR_SIMD_512 -> new P25P1SoftSyncDetectorVector512();
+            default -> throw new IllegalArgumentException("No P25 Phase 1 soft sync detector implementation for " +
+                implementation);
+        };
     }
 }

@@ -36,15 +36,24 @@ public class ChannelDFTFactory
     public static ChannelDFT getChannelDFT(int channelCount)
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.CHANNEL_DFT);
+        return getChannelDFT(implementation, channelCount);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the channel DFT implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static ChannelDFT getChannelDFT(Implementation implementation, int channelCount)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorChannelDFT(channelCount);
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ScalarChannelDFT(channelCount);
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarChannelDFT(channelCount);
+            case VECTOR_SIMD_PREFERRED -> new VectorChannelDFT(channelCount);
+            default -> throw new IllegalArgumentException("No channel DFT implementation for " +
+                implementation);
+        };
     }
 }

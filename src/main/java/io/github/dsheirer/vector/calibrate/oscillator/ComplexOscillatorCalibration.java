@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,30 +20,20 @@
 package io.github.dsheirer.vector.calibrate.oscillator;
 
 import io.github.dsheirer.dsp.oscillator.IComplexOscillator;
-import io.github.dsheirer.dsp.oscillator.ScalarComplexOscillator;
-import io.github.dsheirer.dsp.oscillator.VectorComplexOscillator;
-import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.vector.calibrate.Calibration;
-import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import java.util.List;
 
 /**
- * Calibration plugin for complex oscillators
+ * Complex oscillator calibration
  */
 public class ComplexOscillatorCalibration extends Calibration
 {
-    private static final double FREQUENCY = 5.0d;
-    private static final double SAMPLE_RATE = 100.0d;
+    private static final double FREQUENCY = 5.0;
+    private static final double SAMPLE_RATE = 100.0;
     private static final int BUFFER_SIZE = 2048;
-    private static final int ITERATION_DURATION_MS = 1000;
-    private static final int WARMUP_ITERATIONS = 5;
-    private static final int TEST_ITERATIONS = 5;
-
-    private IComplexOscillator mScalarOscillator = new ScalarComplexOscillator(FREQUENCY, SAMPLE_RATE);
-    private IComplexOscillator mVectorOscillator = new VectorComplexOscillator(FREQUENCY, SAMPLE_RATE);
-
 
     /**
      * Constructs an instance
@@ -53,103 +43,73 @@ public class ComplexOscillatorCalibration extends Calibration
         super(CalibrationType.OSCILLATOR_COMPLEX);
     }
 
-    /**
-     * Performs calibration to determine optimal (Scalar vs Vector) operation type.
-     * @throws CalibrationException
-     */
-    @Override public void calibrate() throws CalibrationException
+    @Override protected List<Candidate> getCandidates()
     {
-        Mean scalarMean = new Mean();
-
-        for(int x = 0; x < WARMUP_ITERATIONS; x++)
-        {
-            long score = testScalar();
-            scalarMean.increment(score);
-        }
-
-        mLog.info("COMPLEX OSCILLATOR WARMUP - SCALAR:" + DECIMAL_FORMAT.format(scalarMean.getResult()));
-
-        Mean vectorMean = new Mean();
-
-        for(int x = 0; x < WARMUP_ITERATIONS; x++)
-        {
-            long score = testVector();
-            vectorMean.increment(score);
-        }
-
-        mLog.info("COMPLEX OSCILLATOR WARMUP - VECTOR:" + DECIMAL_FORMAT.format(vectorMean.getResult()));
-
-        scalarMean.clear();
-
-        for(int x = 0; x < TEST_ITERATIONS; x++)
-        {
-            long score = testScalar();
-            scalarMean.increment(score);
-        }
-
-        mLog.info("COMPLEX OSCILLATOR - SCALAR:" + DECIMAL_FORMAT.format(scalarMean.getResult()));
-
-        vectorMean.clear();
-
-        for(int x = 0; x < TEST_ITERATIONS; x++)
-        {
-            long score = testVector();
-            vectorMean.increment(score);
-        }
-
-        mLog.info("COMPLEX OSCILLATOR - VECTOR:" + DECIMAL_FORMAT.format(vectorMean.getResult()));
-
-        if(scalarMean.getResult() > vectorMean.getResult())
-        {
-            setImplementation(Implementation.SCALAR);
-        }
-        else
-        {
-            setImplementation(Implementation.VECTOR_SIMD_PREFERRED);
-        }
-
-        mLog.info("COMPLEX OSCILLATOR - SETTING OPTIMAL OPERATION TO:" + getImplementation());
+        return List.of(
+            candidate(Implementation.SCALAR, () -> {
+                IComplexOscillator operation = OscillatorFactory.getComplexOscillator(
+                    Implementation.SCALAR, FREQUENCY, SAMPLE_RATE);
+                return () -> operation.generateComplexSamples(BUFFER_SIZE, 0L);
+            }),
+            candidate(Implementation.VECTOR_SIMD_PREFERRED, () -> {
+                IComplexOscillator operation = OscillatorFactory.getComplexOscillator(
+                    Implementation.VECTOR_SIMD_PREFERRED, FREQUENCY, SAMPLE_RATE);
+                return () -> operation.generateComplexSamples(BUFFER_SIZE, 0L);
+            }));
     }
 
     /**
-     * Calculates the time duration needed to generate the sample buffers of the specified size and iteration count
-     * @return time duration in milliseconds
+     * Verifies the candidate against the scalar output after removing a constant phase rotation.  The vector
+     * oscillator starts each SIMD lane one sample further into the rotation than the scalar oscillator, which is a
+     * constant phase offset that doesn't affect mixing or tuning.
      */
-    private long testScalar()
+    @Override protected Verification verify(Implementation implementation, float[][] reference, float[][] output)
     {
-        float accumulator = 0.0f;
-        long count = 0;
+        float[] referenceI = reference[0];
+        float[] referenceQ = reference[1];
+        float[] outputI = output[0];
+        float[] outputQ = output[1];
 
-        long start = System.currentTimeMillis();
+        //Estimate the rotation from the reference to the output: sum of output * conjugate(reference)
+        double rotationI = 0.0;
+        double rotationQ = 0.0;
 
-        while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
+        for(int x = 0; x < referenceI.length; x++)
         {
-            ComplexSamples generated = mScalarOscillator.generateComplexSamples(BUFFER_SIZE, 0);
-            accumulator += generated.i()[0];
-            count++;
+            rotationI += outputI[x] * referenceI[x] + outputQ[x] * referenceQ[x];
+            rotationQ += outputQ[x] * referenceI[x] - outputI[x] * referenceQ[x];
         }
 
-        return count + (long)(accumulator * 0);
+        double magnitude = Math.hypot(rotationI, rotationQ);
+
+        if(magnitude == 0.0 || Double.isNaN(magnitude))
+        {
+            return new Verification(implementation, Double.POSITIVE_INFINITY, getTolerance(), "no correlation");
+        }
+
+        rotationI /= magnitude;
+        rotationQ /= magnitude;
+
+        float[][] rotated = new float[2][referenceI.length];
+
+        for(int x = 0; x < referenceI.length; x++)
+        {
+            rotated[0][x] = (float)(referenceI[x] * rotationI - referenceQ[x] * rotationQ);
+            rotated[1][x] = (float)(referenceI[x] * rotationQ + referenceQ[x] * rotationI);
+        }
+
+        Verification verification = super.verify(implementation, rotated, output);
+        return new Verification(implementation, verification.error(), verification.tolerance(),
+            "after rotating " + Math.round(Math.toDegrees(Math.atan2(rotationQ, rotationI))) + " degrees" +
+                (verification.detail() != null ? " " + verification.detail() : ""));
     }
 
     /**
-     * Calculates the time duration to process the sample buffer with the filter coefficients.
-     * @return time duration in milliseconds
+     * The vector oscillator accumulates rounding error differently than the scalar oscillator, so their outputs drift
+     * apart slightly over time.
      */
-    private long testVector()
+    @Override protected double getTolerance()
     {
-        float accumulator = 0.0f;
-        long count = 0;
-
-        long start = System.currentTimeMillis();
-
-        while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
-        {
-            ComplexSamples generated = mVectorOscillator.generateComplexSamples(BUFFER_SIZE, 0);
-            accumulator += generated.i()[0];
-            count++;
-        }
-
-        return count + (long)(accumulator * 0);
+        return 1e-3;
     }
 }

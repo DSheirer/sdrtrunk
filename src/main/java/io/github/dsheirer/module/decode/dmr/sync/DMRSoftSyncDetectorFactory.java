@@ -22,15 +22,12 @@ package io.github.dsheirer.module.decode.dmr.sync;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating DMR Soft Sync Detectors
  */
 public class DMRSoftSyncDetectorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(DMRSoftSyncDetectorFactory.class);
 
     /**
      * Creates the implementation using calibration data to select the optimal
@@ -40,21 +37,27 @@ public class DMRSoftSyncDetectorFactory
     public static DMRSoftSyncDetector getDetector()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.DMR_SOFT_SYNC_DETECTOR);
+        return getDetector(implementation);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the DMR soft sync detector implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static DMRSoftSyncDetector getDetector(Implementation implementation)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_64:
-                return new DMRSoftSyncDetectorVector64();
-            case VECTOR_SIMD_128:
-                return new DMRSoftSyncDetectorVector128();
-            case VECTOR_SIMD_256:
-                return new DMRSoftSyncDetectorVector256();
-            case VECTOR_SIMD_512:
-                return new DMRSoftSyncDetectorVector512();
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new DMRSoftSyncDetectorScalar();
-        }
+            case SCALAR, UNCALIBRATED -> new DMRSoftSyncDetectorScalar();
+            case VECTOR_SIMD_64 -> new DMRSoftSyncDetectorVector64();
+            case VECTOR_SIMD_128 -> new DMRSoftSyncDetectorVector128();
+            case VECTOR_SIMD_256 -> new DMRSoftSyncDetectorVector256();
+            case VECTOR_SIMD_512 -> new DMRSoftSyncDetectorVector512();
+            default -> throw new IllegalArgumentException("No DMR soft sync detector implementation for " +
+                implementation);
+        };
     }
 }

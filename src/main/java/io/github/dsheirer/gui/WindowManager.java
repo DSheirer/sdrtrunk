@@ -303,7 +303,8 @@ public class WindowManager
         if(mSettingsEditor == null)
         {
             mSettingsEditor = new SettingsEditor(mSettings,
-                mPlaylistManager != null ? mPlaylistManager.getRadioReference() : null);
+                mPlaylistManager != null ? mPlaylistManager.getRadioReference() : null,
+                mPlaylistManager != null ? mPlaylistManager.getChannelProcessingManager() : null);
         }
 
         return mSettingsEditor;
