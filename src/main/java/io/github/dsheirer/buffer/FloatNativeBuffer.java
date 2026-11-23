@@ -48,7 +48,6 @@ public class FloatNativeBuffer extends AbstractNativeBuffer
     /**
      * Constructs an instance
      * @param samples to wrap
-     * @param timestamp for the buffer
      */
     public FloatNativeBuffer(ComplexSamples samples)
     {

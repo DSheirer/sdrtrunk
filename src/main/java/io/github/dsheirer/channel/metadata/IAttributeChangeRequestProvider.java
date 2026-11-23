@@ -22,7 +22,7 @@ import io.github.dsheirer.sample.Listener;
 
 public interface IAttributeChangeRequestProvider
 {
-    public void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
+    void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
 
-    public void removeAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
+    void removeAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
 }

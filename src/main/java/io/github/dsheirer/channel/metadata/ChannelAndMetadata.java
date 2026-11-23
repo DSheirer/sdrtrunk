@@ -32,7 +32,7 @@ public class ChannelAndMetadata
     private List<ChannelMetadata> mChannelMetadata;
 
     /**
-     * Connstructs an instance
+     * Constructs an instance
      * @param channel
      * @param metadata
      */

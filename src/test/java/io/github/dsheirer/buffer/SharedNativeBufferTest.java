@@ -89,32 +89,30 @@ public class SharedNativeBufferTest
     {
         ByteNativeBuffer nativeBuffer = new ByteNativeBuffer(samples(), 1000L, 0.0f, 2400.0f);
         int fragmentCount = read(nativeBuffer).size();
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-
-        try
-        {
-            for(int trial = 0; trial < 200; trial++)
+        try (ExecutorService executor = Executors.newFixedThreadPool(4)) {
+            try
             {
-                SharedNativeBuffer shared = new SharedNativeBuffer(nativeBuffer);
-                List<Future<List<ComplexSamples>>> results = new ArrayList<>();
-
-                for(int consumer = 0; consumer < 4; consumer++)
+                for (int trial = 0; trial < 200; trial++)
                 {
-                    results.add(executor.submit(() -> read(shared)));
-                }
+                    SharedNativeBuffer shared = new SharedNativeBuffer(nativeBuffer);
+                    List<Future<List<ComplexSamples>>> results = new ArrayList<>();
 
-                List<ComplexSamples> first = results.getFirst().get();
-                assertEquals(fragmentCount, first.size());
+                    for (int consumer = 0; consumer < 4; consumer++)
+                    {
+                        results.add(executor.submit(() -> read(shared)));
+                    }
 
-                for(Future<List<ComplexSamples>> result : results)
-                {
-                    assertEquals(first, result.get());
+                    List<ComplexSamples> first = results.getFirst().get();
+                    assertEquals(fragmentCount, first.size());
+
+                    for (Future<List<ComplexSamples>> result : results)
+                    {
+                        assertEquals(first, result.get());
+                    }
                 }
+            } finally {
+                executor.shutdownNow();
             }
-        }
-        finally
-        {
-            executor.shutdownNow();
         }
     }
 }

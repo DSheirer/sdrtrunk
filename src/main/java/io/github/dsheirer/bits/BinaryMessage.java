@@ -57,7 +57,7 @@ public class BinaryMessage extends BitSet
 
     /**
      * Constructs a bitset that buffers bits added one at a time, up to the size
-     * of the this bitset.
+     * of the bitset.
      * <p>
      * Note: the super class bitset behind this class may have a size larger
      * that the size parameter specified.
@@ -621,7 +621,7 @@ public class BinaryMessage extends BitSet
 
     /**
      * Indicates if the message field contains a non-zero value indicated by any bits set in the int field indices.
-     * @param intField to inspect
+     * @param fragmentedField to inspect
      * @param offset to the first bit of the message.
      * @return true if any of the bits are set, indicating a non-zero value.
      */
@@ -1096,7 +1096,6 @@ public class BinaryMessage extends BitSet
                 if(get(x))
                 {
                     value++;
-                    ;
                 }
             }
         }
@@ -1109,7 +1108,6 @@ public class BinaryMessage extends BitSet
                 if(get(x))
                 {
                     value++;
-                    ;
                 }
             }
         }
