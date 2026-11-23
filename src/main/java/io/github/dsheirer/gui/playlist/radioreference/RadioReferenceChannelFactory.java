@@ -22,7 +22,9 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
@@ -46,6 +48,12 @@ import org.slf4j.LoggerFactory;
 public final class RadioReferenceChannelFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReferenceChannelFactory.class);
+
+    /**
+     * P25 NACs that accept any NAC ($F7E receive, $F7F repeater) and are never used as a filter.
+     */
+    private static final int NAC_RECEIVE_ANY = 0xF7E;
+    private static final int NAC_REPEAT_ANY = 0xF7F;
 
     private RadioReferenceChannelFactory()
     {
@@ -122,7 +130,8 @@ public final class RadioReferenceChannelFactory
 
     /**
      * Applies a radio reference tone to the decode configuration when the tone applies to the channel's protocol: a
-     * CTCSS or DCS tone enables tone squelch on an analog FM channel.  Tones that don't apply, or that aren't
+     * CTCSS or DCS tone enables tone squelch on an analog FM channel, and a NAC (P25), color code (DMR) or RAN (NXDN)
+     * enables the channel's access code filter to include only that code.  Tones that don't apply, or that aren't
      * recognized, are ignored.
      */
     static void applyTone(DecodeConfiguration decodeConfiguration, String tone, long frequency, String name)
@@ -140,7 +149,31 @@ public final class RadioReferenceChannelFactory
             return;
         }
 
-        if(decodeConfiguration instanceof DecodeConfigNBFM nbfm)
+        if(decodeConfiguration instanceof DecodeConfigP25Phase1 && parsed.type() == RadioReferenceTone.Type.NAC &&
+            (parsed.accessCode() == NAC_RECEIVE_ANY || parsed.accessCode() == NAC_REPEAT_ANY))
+        {
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - NAC [" + parsed +
+                "] accepts any NAC - no filter applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigP25Phase1 p25 && parsed.type() == RadioReferenceTone.Type.NAC)
+        {
+            p25.setNacFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.HEX));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - NAC filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigDMR dmr && parsed.type() == RadioReferenceTone.Type.COLOR_CODE)
+        {
+            dmr.setColorCodeFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.DECIMAL));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - color code filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn && parsed.type() == RadioReferenceTone.Type.RAN)
+        {
+            nxdn.setRanFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.DECIMAL));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - RAN filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigNBFM nbfm)
         {
             SquelchDecoderConfig squelch = switch(parsed.type())
             {
@@ -159,6 +192,18 @@ public final class RadioReferenceChannelFactory
                     "] applied");
             }
         }
+    }
+
+    /**
+     * Enabled access code filter that includes only the code.
+     */
+    private static AccessCodeFilter includeFilter(int code, AccessCodeFilter.Format format)
+    {
+        AccessCodeFilter filter = new AccessCodeFilter(format);
+        filter.setMode(AccessCodeFilter.Mode.INCLUDE);
+        filter.setValueSet(List.of(code));
+        filter.setEnabled(true);
+        return filter;
     }
 
     /**
