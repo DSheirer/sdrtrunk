@@ -73,7 +73,10 @@ public final class RadioReferenceChannelFactory
             channel.setSourceConfiguration(sourceConfigTuner);
             DecodeConfiguration decodeConfiguration = DecoderFactory.getDecodeConfiguration(modeDecoderType.getDecoderType());
 
-            if(decodeConfiguration instanceof DecodeConfigNBFM && modeDecoderType == ModeDecoderType.FM)
+            //Radio Reference lists many narrowband (post-2013) frequencies as wideband FM: only create a wideband
+            //channel when the frequency isn't required to be narrowband
+            if(decodeConfiguration instanceof DecodeConfigNBFM && modeDecoderType == ModeDecoderType.FM &&
+                !RadioReferenceNarrowband.isNarrowband(frequency))
             {
                 ((DecodeConfigNBFM)decodeConfiguration).setBandwidth(DecodeConfigNBFM.Bandwidth.BW_25_0);
             }
