@@ -22,6 +22,7 @@ package io.github.dsheirer.service.radioreference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceTone;
 import io.github.dsheirer.settings.SettingsType;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
@@ -1008,7 +1009,7 @@ public class RadioReferenceFrequencyIndex
                         candidates.add(new FrequencyCandidate(hz,
                             firstNonBlank(frequency.getDescription(), frequency.getAlphaTag(), subCategory.getName()),
                             blankToNull(frequency.getAlphaTag()), modeName(frequency.getMode(), modes),
-                            blankToNull(frequency.getTone()), null, frequency.getEncryption() > 0, source, latitude,
+                            blankToNull(RadioReferenceTone.getToneField(frequency)), null, frequency.getEncryption() > 0, source, latitude,
                             longitude, null, null));
                     }
                 }

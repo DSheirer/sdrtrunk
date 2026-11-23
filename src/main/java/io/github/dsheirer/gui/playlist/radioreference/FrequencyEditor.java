@@ -210,7 +210,7 @@ public class FrequencyEditor extends VBox
             mFrequency = item.getDownlinkHz();
             getAlphaTagTextField().setText(item.getAlphaTag());
             getFrequencyTextField().setText(FREQUENCY_FORMATTER.format(item.getDownlink()));
-            getToneTextField().setText(item.getTone());
+            getToneTextField().setText(RadioReferenceTone.getToneField(item));
             updateMode(item.getMode());
             getSystemTextField().setText(category != null ? category.getName() : null);
             getSiteTextField().setText(subCategory != null ? subCategory.getName() : null);

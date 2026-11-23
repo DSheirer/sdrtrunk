@@ -167,7 +167,8 @@ public final class RadioReferenceChannelFactory
             mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - color code filter [" + parsed +
                 "] applied");
         }
-        else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn && parsed.type() == RadioReferenceTone.Type.RAN)
+        else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn && (parsed.type() == RadioReferenceTone.Type.RAN ||
+            parsed.type() == RadioReferenceTone.Type.COLOR_CODE))
         {
             nxdn.setRanFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.DECIMAL));
             mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - RAN filter [" + parsed +

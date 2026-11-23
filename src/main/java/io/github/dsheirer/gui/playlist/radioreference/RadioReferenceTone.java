@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.module.decode.squelch.ctcss.CTCSSCode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSCode;
+import io.github.dsheirer.rrapi.type.Frequency;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,6 +59,50 @@ public record RadioReferenceTone(Type type, CTCSSCode ctcssCode, DCSCode dcsCode
     private static final String ACCESS_CODE_TRAILER = "(?:\\s+(?:TG|SL|TS|SLOT)\\b.*)?$";
     private static final Pattern COLOR_CODE = Pattern.compile("^(?:(?:CC|COLOR\\s*CODE)\\s*[-:#]?\\s*(\\d{1,2})|(\\d{1,2})\\s*(?:CC|COLOR\\s*CODE))" + ACCESS_CODE_TRAILER);
     private static final Pattern RAN = Pattern.compile("^(?:RAN\\s*[-:#]?\\s*(\\d{1,2})|(\\d{1,2})\\s*RAN)" + ACCESS_CODE_TRAILER);
+
+    /**
+     * Tone field text for a Radio Reference frequency.  Radio Reference returns DMR entries with an empty tone field
+     * and the color code, talkgroup and slot in separate fields, so those are combined as "CC 9 TG * SL *".
+     * @param frequency from Radio Reference
+     * @return tone text or null when the frequency has no tone or color code
+     */
+    public static String getToneField(Frequency frequency)
+    {
+        if(frequency == null)
+        {
+            return null;
+        }
+
+        String tone = frequency.getTone();
+
+        if(tone != null && !tone.isBlank())
+        {
+            return tone.trim();
+        }
+
+        String colorCode = frequency.getColorCode();
+
+        if(colorCode == null || colorCode.isBlank())
+        {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        colorCode = colorCode.trim();
+        sb.append(colorCode.matches("\\d+") ? "CC " + colorCode : colorCode);
+
+        if(frequency.getTalkgroup() != null && !frequency.getTalkgroup().isBlank())
+        {
+            sb.append(" TG ").append(frequency.getTalkgroup().trim());
+        }
+
+        if(frequency.getSlot() != null && !frequency.getSlot().isBlank())
+        {
+            sb.append(" SL ").append(frequency.getSlot().trim());
+        }
+
+        return sb.toString();
+    }
 
     /**
      * Parses a Radio Reference tone field.
