@@ -53,13 +53,14 @@ public class MessageEventLogger extends EventLogger implements IMessageListener,
     @Override
     public void receive(IMessage message)
     {
-        String sb = TimeStamp.getLongTimeStamp(message.getTimestamp(), " ") +
-                "," +
-                (message.isValid() ? "PASSED" : "FAILED") +
-                "," +
-                message;
+        StringBuilder sb = new StringBuilder();
+        sb.append(TimeStamp.getTimeStamp(message.getTimestamp(), " "));
+        sb.append(",");
+        sb.append((message.isValid() ? "PASSED" : "FAILED"));
+        sb.append(",");
+        sb.append(message.toString());
 
-        write(sb);
+        write(sb.toString());
     }
 
     @Override
