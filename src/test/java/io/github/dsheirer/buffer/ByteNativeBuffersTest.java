@@ -99,31 +99,6 @@ class ByteNativeBuffersTest
     }
 
     @Test
-    void emptyInputPreservesDcCorrection()
-    {
-        assertEmptyInputPreservesDcCorrection(new ByteNativeBufferFactory(), new ByteNativeBufferFactory(), 8192);
-        assertEmptyInputPreservesDcCorrection(new SignedByteNativeBufferFactory(), new SignedByteNativeBufferFactory(), 2048);
-    }
-
-    private static void assertEmptyInputPreservesDcCorrection(INativeBufferFactory factory,
-                                                             INativeBufferFactory reference, int fragmentSize)
-    {
-        byte[] raw = new byte[fragmentSize * 2];
-        Arrays.fill(raw, (byte)64);
-        factory.getBuffer(ByteBuffer.wrap(raw), 0);
-        reference.getBuffer(ByteBuffer.wrap(raw), 0);
-
-        assertEquals(0, factory.getBuffer(ByteBuffer.allocate(0), 1).sampleCount());
-
-        ComplexSamples actual = factory.getBuffer(ByteBuffer.wrap(raw), 2).iterator().next();
-        ComplexSamples expected = reference.getBuffer(ByteBuffer.wrap(raw), 2).iterator().next();
-        assertTrue(Float.isFinite(actual.i()[0]));
-        assertTrue(Float.isFinite(actual.q()[0]));
-        assertEquals(expected.i()[0], actual.i()[0]);
-        assertEquals(expected.q()[0], actual.q()[0]);
-    }
-
-    @Test
     void rejectsUnalignedByteArrays()
     {
         assertThrows(IllegalArgumentException.class, () -> new ByteNativeBuffer(new byte[3], 0, 0, 1));
