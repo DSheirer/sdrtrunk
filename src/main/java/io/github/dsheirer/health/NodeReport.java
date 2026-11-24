@@ -41,6 +41,8 @@ public class NodeReport
 {
     public static final int VERSION = 1;
     public static final String RECORDER = "sdrtrunk";
+    /** Protocols whose sites' data comes with their repeaters' transmissions, rather than a control channel's. */
+    private static final Set<String> REPEATER_DATA = Set.of("ltr", "ltrnet", "passport");
 
     private NodeReport()
     {
@@ -246,15 +248,21 @@ public class NodeReport
 
         JsonObject cc = new JsonObject();
 
-        //The control channel it's on, unless it's hunting (not locked).
-        if(a.frequency() > 0 && a.locked())
+        //The control channel it's on, unless it's hunting (not locked).  An LTR, LTR-Net or Passport site's data comes
+        //with its repeater's transmissions: a channel listening to one never hunts, and isn't locked between them.
+        if(a.frequency() > 0 && (a.locked() || REPEATER_DATA.contains(a.protocol())))
         {
             cc.addProperty("hz", a.frequency());
         }
 
         cc.addProperty("lockedS", r1((a.lockedMs() - (b != null ? b.lockedMs() : 0)) / 1000.0));
         cc.addProperty("good", a.good() - (b != null ? b.good() : 0));
-        cc.addProperty("bad", a.bad() - (b != null ? b.bad() : 0));
+
+        if(a.badCounted())
+        {
+            cc.addProperty("bad", a.bad() - (b != null ? b.bad() : 0));
+        }
+
         site.add("cc", cc);
 
         CallTally.Totals callsA = a.calls();

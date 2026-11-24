@@ -29,6 +29,12 @@ import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventListener;
+import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
+import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
+import io.github.dsheirer.module.decode.mpt1327.MPT1327Message;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.Direction;
 import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
@@ -36,24 +42,37 @@ import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.RFSSStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastImplicit;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RfssStatusBroadcast;
+import io.github.dsheirer.module.decode.passport.PassportMessage;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 
 /**
  * Measures how well a standard (not traffic) channel is heard, for node health reports: control messages decoded and
- * lost (P25 TSBKs, DMR CSBKs, NXDN control channel frames), seconds locked and the site's identity on a control channel; openings and seconds open on a conventional
- * channel.  The channel's traffic channel manager counts the calls (CallTally).  The totals are kept in the
+ * lost, seconds locked and the site's identity on a control channel; openings and seconds open on a conventional
+ * channel.  Control messages are P25 Phase 1 TSBKs, P25 Phase 2 MAC messages, DMR CSBKs, NXDN control channel frames,
+ * MPT1327 address codewords, and LTR, LTR-Net and Passport data words.  The channel's traffic channel manager counts
+ * the calls (CallTally), except on LTR, LTR-Net and Passport, which have none: a channel of theirs follows the calls
+ * on its own repeater, and the calls are counted here, from its decode events.  The totals are kept in the
  * HealthRegistry.
  *
  * It counts what the decoders already produce, so it costs a few counter updates per message.
  */
-public class HealthMonitor extends Module implements IMessageListener, ISquelchStateListener, ISourceEventListener
+public class HealthMonitor extends Module implements IMessageListener, ISquelchStateListener, ISourceEventListener,
+    IDecodeEventListener
 {
     private final ChannelHealth mHealth;
+    private final CallTally mCalls;
     private final Listener<IMessage> mMessageListener = this::receive;
     private final Listener<SquelchStateEvent> mSquelchListener = this::receive;
     private final Listener<SourceEvent> mSourceEventListener = this::receive;
+    private final Listener<IDecodeEvent> mDecodeEventListener = this::receive;
+    private IDecodeEvent mLastCall;
 
     /**
      * @param channel the monitor measures (a standard channel)
@@ -61,6 +80,39 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
     public HealthMonitor(Channel channel)
     {
         mHealth = HealthRegistry.getInstance().channel(channel);
+        DecoderType decoderType = channel.getDecodeConfiguration() != null ?
+            channel.getDecodeConfiguration().getDecoderType() : null;
+        String protocol = trunkedProtocol(decoderType);
+
+        if(protocol != null)
+        {
+            mHealth.setProtocol(protocol);
+        }
+
+        mCalls = decoderType == DecoderType.LTR || decoderType == DecoderType.LTR_NET ||
+            decoderType == DecoderType.PASSPORT ? HealthRegistry.getInstance().calls(channel) : null;
+    }
+
+    /**
+     * Protocol of a site whose channel has this decoder, as a node health report names it, when the decoder can be
+     * nothing but a trunked site's (a standard P25 Phase 2 channel is a TDMA control channel), or null.
+     */
+    public static String trunkedProtocol(DecoderType decoderType)
+    {
+        if(decoderType == null)
+        {
+            return null;
+        }
+
+        return switch(decoderType)
+        {
+            case MPT1327 -> "mpt1327";
+            case LTR -> "ltr";
+            case LTR_NET -> "ltrnet";
+            case PASSPORT -> "passport";
+            case P25_PHASE2 -> "p25";
+            default -> null;
+        };
     }
 
     /**
@@ -103,6 +155,25 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         return mSourceEventListener;
     }
 
+    @Override
+    public Listener<IDecodeEvent> getDecodeEventListener()
+    {
+        return mDecodeEventListener;
+    }
+
+    /**
+     * A call on an LTR, LTR-Net or Passport channel's repeater, which the channel follows itself: counted once, as
+     * recorded, when its decode event first comes (the decoder sends it again as the call goes on).
+     */
+    private void receive(IDecodeEvent event)
+    {
+        if(mCalls != null && event != mLastCall && event.getEventType() == DecodeEventType.CALL)
+        {
+            mLastCall = event;
+            mCalls.count(null, CallOutcome.RECORDED);
+        }
+    }
+
     private void receive(IMessage message)
     {
         if(message instanceof TSBKMessage tsbk)
@@ -125,6 +196,16 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
                     identity("rfss", rsb.getRfss());
                     identity("site", rsb.getSite());
                 }
+            }
+        }
+        else if(message instanceof MacMessage mac)
+        {
+            //A standard Phase 2 channel is a TDMA control channel.  A failed PDU is one bad message.
+            mHealth.control("p25", mac.isValid(), mac.getTimestamp());
+
+            if(mac.isValid())
+            {
+                identity(mac.getMacStructure());
             }
         }
         else if(message instanceof CSBKMessage csbk)
@@ -151,6 +232,61 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
                     mHealth.identity("ran", site.getRAN());
                 }
             }
+        }
+        else if(message instanceof MPT1327Message mpt)
+        {
+            //One message per address codeword framed, checked by its CRC.
+            mHealth.control("mpt1327", mpt.isValid(), mpt.getTimestamp());
+
+            //Its system identity code, from the system parameters broadcast (in the codeword the CRC checked).
+            if(mpt.isValid() && mpt.getMessageType() == MPT1327Message.MPTMessageType.BCAST && mpt.getSiteID() != null)
+            {
+                try
+                {
+                    mHealth.identity("sysId", Integer.parseInt(mpt.getSiteID()));
+                }
+                catch(NumberFormatException nfe)
+                {
+                    //Not a number: left out
+                }
+            }
+        }
+        else if(message instanceof LTRMessage ltr)
+        {
+            mHealth.decoded("ltr", ltr.getTimestamp());
+        }
+        else if(message instanceof LtrNetMessage ltrNet)
+        {
+            mHealth.decoded("ltrnet", ltrNet.getTimestamp());
+        }
+        else if(message instanceof PassportMessage passport)
+        {
+            mHealth.decoded("passport", passport.getTimestamp());
+        }
+    }
+
+    /**
+     * The site's identity from its own Phase 2 broadcasts (not an adjacent site's).
+     */
+    private void identity(MacStructure structure)
+    {
+        if(structure instanceof NetworkStatusBroadcastImplicit nsb)
+        {
+            identity("wacn", nsb.getWACN());
+            identity("sysId", nsb.getSystem());
+            identity("nac", nsb.getNAC());
+        }
+        else if(structure instanceof NetworkStatusBroadcastExplicit nsb)
+        {
+            identity("wacn", nsb.getWACN());
+            identity("sysId", nsb.getSystem());
+            identity("nac", nsb.getNAC());
+        }
+        else if(structure instanceof RfssStatusBroadcast rsb)
+        {
+            identity("sysId", rsb.getSystem());
+            identity("rfss", rsb.getRFSS());
+            identity("site", rsb.getSite());
         }
     }
 

@@ -45,6 +45,7 @@ public class ChannelHealth
     private final Map<String,Integer> mIdentity = new TreeMap<>();
     private long mGood;
     private long mBad;
+    private boolean mBadCounted;
     private long mLockedMs;
     private long mLastGood;
 
@@ -118,6 +119,19 @@ public class ChannelHealth
     }
 
     /**
+     * The channel is a trunked site's, whatever it decodes: its decoder can be nothing else (MPT1327, LTR, LTR-Net,
+     * Passport, a P25 Phase 2 control channel).  It's reported as a site from the start, deaf or not.
+     * @param protocol of the site, as a node health report names it
+     */
+    public synchronized void setProtocol(String protocol)
+    {
+        if(mProtocol == null)
+        {
+            mProtocol = protocol;
+        }
+    }
+
+    /**
      * A control message was framed.
      * @param protocol of the site, as a node health report names it (p25, dmr, ...)
      * @param valid true when it decoded, false when it failed its CRC or FEC
@@ -126,22 +140,40 @@ public class ChannelHealth
     public synchronized void control(String protocol, boolean valid, long timestamp)
     {
         mProtocol = protocol;
+        mBadCounted = true;
 
         if(valid)
         {
-            mGood++;
-
-            if(mLastGood > 0 && timestamp > mLastGood)
-            {
-                mLockedMs += Math.min(timestamp - mLastGood, LOCK_HOLD_MS);
-            }
-
-            mLastGood = Math.max(mLastGood, timestamp);
+            good(timestamp);
         }
         else
         {
             mBad++;
         }
+    }
+
+    /**
+     * A control message was decoded, from a decoder that passes on only those that decode (LTR, LTR-Net, Passport):
+     * the messages it couldn't decode aren't counted, and a report leaves them out rather than say there were none.
+     * @param protocol of the site, as a node health report names it
+     * @param timestamp of the message
+     */
+    public synchronized void decoded(String protocol, long timestamp)
+    {
+        mProtocol = protocol;
+        good(timestamp);
+    }
+
+    private void good(long timestamp)
+    {
+        mGood++;
+
+        if(mLastGood > 0 && timestamp > mLastGood)
+        {
+            mLockedMs += Math.min(timestamp - mLastGood, LOCK_HOLD_MS);
+        }
+
+        mLastGood = Math.max(mLastGood, timestamp);
     }
 
     /**
@@ -196,7 +228,8 @@ public class ChannelHealth
         long open = mOpenMs + (mOpenedAt > 0 ? Math.max(0, now - mOpenedAt) : 0);
 
         return new Totals(mInfo, mProtocol, mFrequency, Collections.unmodifiableMap(new TreeMap<>(mIdentity)), mGood,
-            mBad, locked, lockedNow, mCallsCounted ? mCalls.totals() : null, running, mOpens, mCloses, open);
+            mBad, mBadCounted, locked, lockedNow, mCallsCounted ? mCalls.totals() : null, running, mOpens, mCloses,
+            open);
     }
 
     /**
@@ -221,6 +254,7 @@ public class ChannelHealth
      * @param identity of the site, as broadcast
      * @param good control messages decoded
      * @param bad control messages framed but not decoded
+     * @param badCounted true when the decoder says which messages it couldn't decode (bad is measured)
      * @param lockedMs milliseconds with a good control message within the last 2 s
      * @param locked true when it was locked at this moment: a good control message within the last 2 s
      * @param calls announced, and their outcomes, or null when nothing counts them
@@ -230,8 +264,8 @@ public class ChannelHealth
      * @param openMs milliseconds open
      */
     public record Totals(ChannelInfo info, String protocol, long frequency, Map<String,Integer> identity, long good,
-                         long bad, long lockedMs, boolean locked, CallTally.Totals calls, long runningMs, long opens,
-                         long closes, long openMs)
+                         long bad, boolean badCounted, long lockedMs, boolean locked, CallTally.Totals calls,
+                         long runningMs, long opens, long closes, long openMs)
     {
         /**
          * True when the channel has decoded control messages: a trunked site.

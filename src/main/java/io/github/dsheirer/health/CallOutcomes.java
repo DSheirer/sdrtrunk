@@ -24,10 +24,11 @@ import java.util.Map;
 
 /**
  * What became of each call a control channel announced, for a traffic channel manager that keeps no tracker of its
- * own per call (DMR): the current call on each channel (frequency and timeslot) and its outcome so far, moved in
- * the control channel's CallTally as it changes, so every call is counted once, by what finally became of it.
+ * own per call (DMR, MPT1327): the current call on each channel (frequency and timeslot, or channel number) and its
+ * outcome so far, moved in the control channel's CallTally as it changes, so every call is counted once, by what
+ * finally became of it.
  *
- * Not thread safe: the traffic channel manager calls it under its lock.
+ * Thread safe: a manager can count a grant and the rejection of its traffic channel on different threads.
  */
 public class CallOutcomes
 {
@@ -63,7 +64,7 @@ public class CallOutcomes
      * @param to who the grant is to (talkgroup or radio), or null
      * @param timestamp of the grant
      */
-    public boolean isNewCall(String key, Object to, long timestamp)
+    public synchronized boolean isNewCall(String key, Object to, long timestamp)
     {
         Object[] last = mHeard.get(key);
         mHeard.put(key, new Object[]{to, timestamp});
@@ -76,7 +77,7 @@ public class CallOutcomes
      * @param newCall true for a call just announced (any earlier call on the channel has ended)
      * @param outcome of the call now
      */
-    public void tally(String key, boolean newCall, CallOutcome outcome)
+    public synchronized void tally(String key, boolean newCall, CallOutcome outcome)
     {
         if(key == null || outcome == null)
         {
@@ -98,7 +99,7 @@ public class CallOutcomes
      * No tuner could take the traffic channel started for the call on this channel: a call counted as recorded is
      * counted as noSource instead.
      */
-    public void rejected(String key)
+    public synchronized void rejected(String key)
     {
         if(mCalls.get(key) == CallOutcome.RECORDED)
         {
@@ -110,7 +111,7 @@ public class CallOutcomes
     /**
      * The outcome so far of the call on a channel, or null when there's none.
      */
-    public CallOutcome get(String key)
+    public synchronized CallOutcome get(String key)
     {
         return mCalls.get(key);
     }
@@ -118,7 +119,7 @@ public class CallOutcomes
     /**
      * The control channel moved: the calls on the channels are forgotten (each was counted already).
      */
-    public void clear()
+    public synchronized void clear()
     {
         mCalls.clear();
         mHeard.clear();

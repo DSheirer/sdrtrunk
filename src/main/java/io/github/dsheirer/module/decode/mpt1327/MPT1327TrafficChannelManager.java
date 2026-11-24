@@ -25,6 +25,9 @@ import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
+import io.github.dsheirer.health.CallOutcome;
+import io.github.dsheirer.health.CallOutcomes;
+import io.github.dsheirer.health.HealthRegistry;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
@@ -64,6 +67,8 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
     private ChannelMap mChannelMap;
+    private final Channel mParentChannel;
+    private CallOutcomes mCallOutcomes;
 
     /**
      * Constructs an MPT1327 traffic channel manage.
@@ -74,6 +79,22 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     {
         createTrafficChannels(parentChannel);
         mChannelMap = channelMap;
+        mParentChannel = parentChannel;
+        calls(); //This control channel's calls are counted (node health reports)
+    }
+
+    /**
+     * Calls this control channel announced and what became of each, for node health reports, by traffic channel
+     * number.  A call is what this manager makes a channel grant event for.
+     */
+    private CallOutcomes calls()
+    {
+        if(mCallOutcomes == null)
+        {
+            mCallOutcomes = new CallOutcomes(HealthRegistry.getInstance().calls(mParentChannel));
+        }
+
+        return mCallOutcomes;
     }
 
     /**
@@ -138,10 +159,12 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
                 .build();
 
             mChannelGrantEventMap.put(mpt1327Channel, channelGrantEvent);
+            String callKey = CallOutcomes.key(mpt1327Channel.getChannelNumber(), 0);
 
             if(mpt1327Channel.getDownlinkFrequency() == 0)
             {
                 channelGrantEvent.setDetails("Invalid Channel Map - No Frequency For Channel " + mpt1327Channel.getChannelNumber());
+                calls().tally(callKey, true, CallOutcome.NO_FREQUENCY);
             }
             else
             {
@@ -151,6 +174,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
                 {
                     channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
                     channelGrantEvent.setDetails("Detect:" + channelGrantEvent.getDetails());
+                    calls().tally(callKey, true, CallOutcome.NO_RECORDER);
                     return;
                 }
 
@@ -158,6 +182,10 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
                 sourceConfig.setFrequency(mpt1327Channel.getDownlinkFrequency());
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelMap.put(mpt1327Channel, trafficChannel);
+
+                //Counted before the request: one no tuner can take is rejected while it's posted, and the rejection
+                //moves the call to noSource.
+                calls().tally(callKey, true, CallOutcome.RECORDED);
                 getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, mpt1327Channel,
                     identifierCollection));
             }
@@ -365,6 +393,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
                         if(rejected != null)
                         {
+                            calls().rejected(CallOutcomes.key(rejected.getChannelNumber(), 0));
                             mAllocatedTrafficChannelMap.remove(rejected);
                             mAvailableTrafficChannelQueue.add(channel);
 
