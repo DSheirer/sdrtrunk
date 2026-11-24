@@ -54,6 +54,8 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     private ReentrantLock mBufferListenerLock = new ReentrantLock();
     private ReentrantLock mLock = new ReentrantLock();
     protected Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster();
+    private final TunerNoiseFloorEstimator mNoiseFloorEstimator = new TunerNoiseFloorEstimator(this::getFrequency,
+        this::getSampleRate, this::getUsableBandwidth);
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private int mMeasuredFrequencyError;
@@ -726,6 +728,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
         //Note: unprotected access to the broadcaster ... the broadcaster uses thread-save internal list
         mNativeBufferBroadcaster.broadcast(complexSamples);
+        mNoiseFloorEstimator.receive(complexSamples);
+    }
+
+    /**
+     * Noise floor estimator for this tuner, which measures on demand from the buffers that this controller delivers.
+     */
+    public TunerNoiseFloorEstimator getNoiseFloorEstimator()
+    {
+        return mNoiseFloorEstimator;
     }
 
     /**

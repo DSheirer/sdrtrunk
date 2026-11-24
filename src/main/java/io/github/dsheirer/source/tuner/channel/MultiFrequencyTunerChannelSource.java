@@ -85,6 +85,16 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     }
 
     /**
+     * Noise density near the current frequency's tuner channel source.
+     */
+    @Override
+    public double getNoiseDensity()
+    {
+        TunerChannelSource source = mTunerChannelSource;
+        return source != null ? source.getNoiseDensity() : Double.NaN;
+    }
+
+    /**
      * Applies the channel decoder requested frequency correction.
      * @param correction requested by the downstream processors.
      */

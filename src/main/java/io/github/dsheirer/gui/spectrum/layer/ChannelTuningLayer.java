@@ -30,6 +30,8 @@ import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -52,6 +54,7 @@ public class ChannelTuningLayer extends SpectralDisplayLayer
     private final IntegerProperty mChannelBandwidth = new SimpleIntegerProperty(0);
     private final LongProperty mCarrierOffset = new SimpleLongProperty(0);
     private final BooleanProperty mCarrierOffsetValid = new SimpleBooleanProperty(false);
+    private final StringProperty mSignalReadout = new SimpleStringProperty();
     private final Text mMeasure = new Text();
     private final double mTextHeight;
 
@@ -66,6 +69,15 @@ public class ChannelTuningLayer extends SpectralDisplayLayer
         mChannelBandwidth.addListener((ob, ov, nv) -> requestRender());
         mCarrierOffset.addListener((ob, ov, nv) -> requestRender());
         mCarrierOffsetValid.addListener((ob, ov, nv) -> requestRender());
+        mSignalReadout.addListener((ob, ov, nv) -> requestRender());
+    }
+
+    /**
+     * Channel signal level readout shown below the channel bandwidth label, or null for none.
+     */
+    public StringProperty signalReadoutProperty()
+    {
+        return mSignalReadout;
     }
 
     /**
@@ -162,6 +174,24 @@ public class ChannelTuningLayer extends SpectralDisplayLayer
             gc.setFill(color);
             gc.setTextAlign(TextAlignment.LEFT);
             gc.fillText(label, x, y);
+        }
+
+        //Signal readout centered on the channel, on the row below the carrier (PLL) label.  Drawn last so that the
+        //carrier line doesn't cross it.
+        String readout = mSignalReadout.get();
+
+        if(edges != null && readout != null && !readout.isEmpty())
+        {
+            mMeasure.setText(readout);
+            double width = mMeasure.getLayoutBounds().getWidth();
+            double x = Math.max(3, Math.min(area.width() - width - 3, (edges[0] + edges[1] - width) / 2.0));
+            double y = 2 * (mTextHeight + 6);
+            //Nearly opaque, since the readout is centered on the channel where the carrier line usually is
+            gc.setFill(theme.getBackground(0.95));
+            gc.fillRoundRect(x - 3, y - 1, width + 6, mTextHeight + 2, 4, 4);
+            gc.setFill(opaque(theme.getChannelProcessing()));
+            gc.setTextAlign(TextAlignment.LEFT);
+            gc.fillText(readout, x, y);
         }
     }
 

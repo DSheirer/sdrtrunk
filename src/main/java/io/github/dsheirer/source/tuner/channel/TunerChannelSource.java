@@ -25,6 +25,7 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceEventListenerToProcessorAdapter;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.TunerNoiseFloorEstimator;
 import io.github.dsheirer.source.tuner.frequency.ChannelFrequencyErrorManager;
 import io.github.dsheirer.source.tuner.frequency.TunerFrequencyErrorManager;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private final ChannelFrequencyErrorManager mChannelFrequencyErrorManager;
     private volatile long mStartTimestamp;
     private volatile String mTunerName;
+    private volatile TunerNoiseFloorEstimator mNoiseFloorEstimator;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -136,6 +138,28 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * sources where the producer incorporates a sample delay buffer.
      * @param timestamp in milliseconds since epoch, or 0 to start with current samples.
      */
+    /**
+     * Tuner noise power density near this channel, in full-scale units per Hertz, where a complex tone with a
+     * magnitude of 1.0 at the tuner input has a power of 1.0 (0 dBFS).  Requesting the noise density turns on the
+     * tuner's noise floor measurement, which turns itself back off a few seconds after the last request.
+     * @return noise density, or NaN if the tuner channel source doesn't measure it or it isn't measured yet.
+     */
+    public double getNoiseDensity()
+    {
+        TunerNoiseFloorEstimator estimator = mNoiseFloorEstimator;
+        TunerChannel channel = getTunerChannel();
+        return estimator != null && channel != null ?
+            estimator.getNoiseDensity(channel.getFrequency(), channel.getBandwidth()) : Double.NaN;
+    }
+
+    /**
+     * Sets the noise floor estimator of the tuner that sources this channel.
+     */
+    public void setNoiseFloorEstimator(TunerNoiseFloorEstimator noiseFloorEstimator)
+    {
+        mNoiseFloorEstimator = noiseFloorEstimator;
+    }
+
     public void setStartTimestamp(long timestamp)
     {
         mStartTimestamp = timestamp;
