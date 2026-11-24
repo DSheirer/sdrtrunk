@@ -401,16 +401,13 @@ public class NoiseSquelch implements INoiseSquelchController
                     squelchCloseIndex = findTransition(x);
 
                     //Broadcast the partial audio segment ending at the transition point.
-                    if(mSquelchOpenIndex < squelchCloseIndex)
+                    //Only broadcast the truncated audio samples when we're not in squelch override
+                    if(mSquelchOpenIndex < squelchCloseIndex && !mSquelchOverride)
                     {
-                        //Only broadcast the truncated audio samples when we're not in squelch override
-                        if(!mSquelchOverride)
-                        {
-                            broadcast(mSquelchOpenIndex, squelchCloseIndex);
-                        }
-
-                        broadcast(SquelchState.SQUELCH);
+                        broadcast(mSquelchOpenIndex, squelchCloseIndex);
                     }
+
+                    broadcast(SquelchState.SQUELCH);
 
                     mSquelchOpenIndex = 0;
                 }
@@ -489,17 +486,14 @@ public class NoiseSquelch implements INoiseSquelchController
             {
                 if(hysteresisCount == 0)
                 {
-                    hysteresisCount++;
                     transitionPointer = x;
                 }
-                else
-                {
-                    hysteresisCount++;
 
-                    if(hysteresisCount >= hysteresisThreshold)
-                    {
-                        return transitionPointer;
-                    }
+                hysteresisCount++;
+
+                if(hysteresisCount >= hysteresisThreshold)
+                {
+                    return transitionPointer;
                 }
             }
             else
