@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -222,6 +223,43 @@ public class NodeReportTest
         named.identity("site", site);
         named.control("p25", true, SINCE + 1000);
         return named;
+    }
+
+    private static JsonObject siteEntry(String name, Integer site)
+    {
+        JsonObject entry = new JsonObject();
+        entry.addProperty("name", name);
+        entry.addProperty("protocol", "p25");
+
+        if(site != null)
+        {
+            JsonObject id = new JsonObject();
+            id.addProperty("sysId", 939);
+            id.addProperty("site", site);
+            entry.add("id", id);
+        }
+
+        return entry;
+    }
+
+    @Test
+    void the_sites_of_a_report_count_a_site_heard_by_two_receivers_once()
+    {
+        JsonArray sites = new JsonArray();
+        sites.add(siteEntry("Alden", 5));
+        sites.add(siteEntry("Alden", 5)); //A second receiver
+        sites.add(siteEntry("Alden", null)); //A receiver whose control channel hasn't said who it is yet
+        assertEquals(List.of("Alden"), List.copyOf(NodeReport.distinctSites(sites).values()));
+
+        sites.add(siteEntry("Dodge", 6));
+        sites.add(siteEntry("Ellendale", null));
+        assertEquals(List.of("Alden", "Dodge", "Ellendale"), List.copyOf(NodeReport.distinctSites(sites).values()));
+
+        //Two sites the user gave one name are told apart.
+        JsonArray named = new JsonArray();
+        named.add(siteEntry("County", 1));
+        named.add(siteEntry("County", 2));
+        assertEquals(2, NodeReport.distinctSites(named).size());
     }
 
     @Test

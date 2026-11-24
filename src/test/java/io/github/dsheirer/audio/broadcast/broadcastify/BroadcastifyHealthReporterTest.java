@@ -42,6 +42,7 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
@@ -445,6 +446,25 @@ public class BroadcastifyHealthReporterTest
         reporter.check(later(history(), SINCE + 1_500_000));
         assertFalse(reporter.getSchedule().isStopped());
         assertEquals(2, mReceived.size());
+        BroadcastifyHealthReporter.release(reporter, downtown);
+        BroadcastifyHealthReporter.release(reporter, county);
+    }
+
+    @Test
+    void a_system_id_uploading_several_sites_is_warned_about_once_for_each_set_of_sites()
+    {
+        HttpClient client = HttpClient.newHttpClient();
+        AliasModel aliases = aliases();
+        BroadcastifyCallConfiguration downtown = configuration("Downtown Calls", 5506, "key");
+        BroadcastifyHealthReporter reporter = acquire(downtown, aliases, client);
+        reporter.check(history());
+        assertEquals(Set.of(), reporter.getWarnedSites(), "one site: nothing to warn about");
+
+        BroadcastifyCallConfiguration county = configuration("County Calls", 5506, "key");
+        BroadcastifyHealthReporter.acquire(county, aliases, client, false);
+        reporter.check(later(history(), SINCE + 1_600_000));
+        assertEquals(2, mReceived.size(), "warned, and the report sent as ever");
+        assertEquals(2, reporter.getWarnedSites().size());
         BroadcastifyHealthReporter.release(reporter, downtown);
         BroadcastifyHealthReporter.release(reporter, county);
     }

@@ -78,6 +78,7 @@ public class BroadcastifyHealthReporter
     private boolean mToldUnreachable;
     private boolean mToldKeys;
     private String mLastMessage;
+    private Set<String> mWarnedSites = Set.of();
 
     /**
      * For tests: a node of one configuration, with a given schedule.
@@ -360,6 +361,7 @@ public class BroadcastifyHealthReporter
 
             if(report != null)
             {
+                warnSites(report);
                 send(report, window.now());
             }
         }
@@ -367,6 +369,40 @@ public class BroadcastifyHealthReporter
         {
             LOGGER.error("Error sending a Broadcastify Calls health report", t);
         }
+    }
+
+    /**
+     * Broadcastify registers each system ID to one site, and labels every call uploaded as it with that site: warns
+     * (once for each set of sites) when the node's report has more than one.  Uploads go on as before.
+     */
+    private void warnSites(JsonObject report)
+    {
+        Map<String,String> sites = report.has("sites") ? NodeReport.distinctSites(report.getAsJsonArray("sites")) :
+            Map.of();
+
+        if(sites.size() < 2)
+        {
+            mWarnedSites = Set.of();
+            return;
+        }
+
+        if(!sites.keySet().equals(mWarnedSites))
+        {
+            mWarnedSites = Set.copyOf(sites.keySet());
+            LOGGER.warn("Broadcastify system " + mSystemId + " is uploading " + sites.size() + " sites: " +
+                String.join(", ", sites.values()) + ". Broadcastify Calls needs a system ID for each site you " +
+                "upload, or calls from the other sites are labeled as the wrong site. Give each site its own " +
+                "Broadcastify system ID. If you need more system IDs, apply at " +
+                "https://www.broadcastify.com/apply/calls (you can use your existing API key).");
+        }
+    }
+
+    /**
+     * The sites the last warning named, by NodeReport.sameSite, or none.
+     */
+    Set<String> getWarnedSites()
+    {
+        return mWarnedSites;
     }
 
     private void send(JsonObject report, HealthSnapshot now)

@@ -24,8 +24,11 @@ import com.google.gson.JsonObject;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -163,10 +166,60 @@ public class NodeReport
     }
 
     /**
+     * The different sites among a report's site entries (a site heard by several receivers is one), in the order
+     * they're first listed: each one's sameSite key and name.  An entry whose control channel hasn't said who it is
+     * yet is the site of another entry with its name and protocol, when there is one.
+     */
+    public static Map<String,String> distinctSites(JsonArray sites)
+    {
+        Map<String,String> distinct = new LinkedHashMap<>();
+        Set<String> named = new HashSet<>();
+
+        for(int i = 0; i < sites.size(); i++)
+        {
+            JsonObject site = sites.get(i).getAsJsonObject();
+            JsonObject id = site.getAsJsonObject("id");
+
+            if(id != null && !id.isEmpty())
+            {
+                named.add(site.get("protocol").getAsString() + "/" + site.get("name").getAsString());
+            }
+        }
+
+        for(int i = 0; i < sites.size(); i++)
+        {
+            JsonObject site = sites.get(i).getAsJsonObject();
+            JsonObject id = site.getAsJsonObject("id");
+            String name = site.get("name").getAsString();
+
+            if((id == null || id.isEmpty()) && named.contains(site.get("protocol").getAsString() + "/" + name))
+            {
+                continue;
+            }
+
+            distinct.putIfAbsent(sameSite(site), name);
+        }
+
+        //Two sites with one name are told apart by what they say they are.
+        Map<String,Long> names = new HashMap<>();
+        distinct.values().forEach(name -> names.merge(name, 1L, Long::sum));
+
+        for(Map.Entry<String,String> entry: distinct.entrySet())
+        {
+            if(names.get(entry.getValue()) > 1)
+            {
+                entry.setValue(entry.getValue() + " " + entry.getKey().substring(entry.getKey().indexOf('/') + 1));
+            }
+        }
+
+        return distinct;
+    }
+
+    /**
      * What makes two entries the same site: its protocol and the identity its control channel gives, or without one,
      * the name the user gave it.
      */
-    private static String sameSite(JsonObject site)
+    public static String sameSite(JsonObject site)
     {
         JsonObject id = site.getAsJsonObject("id");
         return site.get("protocol").getAsString() + "/" +
