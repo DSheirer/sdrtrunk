@@ -165,7 +165,7 @@ public class BroadcastifyHealthReporterTest
     {
         long ms = t - SINCE;
         return new ChannelHealth.Totals(totals.info(), totals.protocol(), totals.frequency(), totals.identity(),
-            ms / 10_000, 0, ms, totals.calls(), ms, 0, 0, 0);
+            ms / 10_000, 0, ms, true, totals.calls(), ms, 0, 0, 0);
     }
 
     /**

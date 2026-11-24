@@ -191,11 +191,12 @@ public class ChannelHealth
             locked += Math.min(now - mLastGood, LOCK_HOLD_MS);
         }
 
+        boolean lockedNow = mLastGood > 0 && now - mLastGood <= LOCK_HOLD_MS;
         long running = mRunningMs + (mRunning ? Math.max(0, now - mRunningSince) : 0);
         long open = mOpenMs + (mOpenedAt > 0 ? Math.max(0, now - mOpenedAt) : 0);
 
         return new Totals(mInfo, mProtocol, mFrequency, Collections.unmodifiableMap(new TreeMap<>(mIdentity)), mGood,
-            mBad, locked, mCallsCounted ? mCalls.totals() : null, running, mOpens, mCloses, open);
+            mBad, locked, lockedNow, mCallsCounted ? mCalls.totals() : null, running, mOpens, mCloses, open);
     }
 
     /**
@@ -221,6 +222,7 @@ public class ChannelHealth
      * @param good control messages decoded
      * @param bad control messages framed but not decoded
      * @param lockedMs milliseconds with a good control message within the last 2 s
+     * @param locked true when it was locked at this moment: a good control message within the last 2 s
      * @param calls announced, and their outcomes, or null when nothing counts them
      * @param runningMs milliseconds the channel was processing
      * @param opens squelch openings
@@ -228,8 +230,8 @@ public class ChannelHealth
      * @param openMs milliseconds open
      */
     public record Totals(ChannelInfo info, String protocol, long frequency, Map<String,Integer> identity, long good,
-                         long bad, long lockedMs, CallTally.Totals calls, long runningMs, long opens, long closes,
-                         long openMs)
+                         long bad, long lockedMs, boolean locked, CallTally.Totals calls, long runningMs, long opens,
+                         long closes, long openMs)
     {
         /**
          * True when the channel has decoded control messages: a trunked site.

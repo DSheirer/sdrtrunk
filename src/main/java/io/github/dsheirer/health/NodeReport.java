@@ -246,7 +246,8 @@ public class NodeReport
 
         JsonObject cc = new JsonObject();
 
-        if(a.frequency() > 0)
+        //The control channel it's on, unless it's hunting (not locked).
+        if(a.frequency() > 0 && a.locked())
         {
             cc.addProperty("hz", a.frequency());
         }

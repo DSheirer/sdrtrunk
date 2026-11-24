@@ -149,6 +149,33 @@ public class NodeReportTest
     }
 
     @Test
+    void a_site_hunting_for_its_control_channel_says_no_frequency()
+    {
+        ChannelHealth p25 = new ChannelHealth(ChannelHealthTest.info(105, "p25"));
+        p25.started(SINCE);
+        p25.setFrequency(851_012_500);
+        p25.setCallsCounted();
+
+        for(int i = 0; i < 100; i++)
+        {
+            p25.control("p25", true, SINCE + i * 100L);
+        }
+
+        //Locked: the control channel it's on.
+        HealthSnapshot locked = snapshot(SINCE + 10_000, p25);
+        JsonObject cc = NodeReport.build(new NodeReporter.Window(null, locked, false, 0), node(), "1.0.0",
+            info -> true).getAsJsonArray("sites").get(0).getAsJsonObject().getAsJsonObject("cc");
+        assertEquals(851_012_500, cc.get("hz").getAsLong());
+
+        //Nothing decoded for the last 2 s: hunting.
+        HealthSnapshot hunting = snapshot(SINCE + 300_000, p25);
+        cc = NodeReport.build(new NodeReporter.Window(null, hunting, false, 0), node(), "1.0.0", info -> true)
+            .getAsJsonArray("sites").get(0).getAsJsonObject().getAsJsonObject("cc");
+        assertFalse(cc.has("hz"));
+        assertEquals(9.9 + ChannelHealth.LOCK_HOLD_MS / 1000.0, cc.get("lockedS").getAsDouble(), 0.01);
+    }
+
+    @Test
     void a_channel_whose_calls_nothing_counts_is_never_a_site_with_none()
     {
         ChannelHealth dmr = new ChannelHealth(ChannelHealthTest.info(104, "dmr"));

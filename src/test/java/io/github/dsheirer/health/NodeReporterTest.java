@@ -39,7 +39,7 @@ public class NodeReporterTest
     static HealthSnapshot snapshot(long timeMs, long good)
     {
         ChannelHealth.Totals site = new ChannelHealth.Totals(ChannelHealthTest.info(1, "p25"), "p25", 851_000_000,
-            java.util.Map.of(), good, 0, timeMs - SINCE, CallTally.Totals.EMPTY, timeMs - SINCE, 0, 0, 0);
+            java.util.Map.of(), good, 0, timeMs - SINCE, true, CallTally.Totals.EMPTY, timeMs - SINCE, 0, 0, 0);
         return new HealthSnapshot(timeMs, SINCE, List.of(site), List.of());
     }
 
