@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 /**
  * Makes a node health report (version 1): what one node's sites, conventional channels and tuners did over a window,
  * as counts and seconds.  The format is the one Trunk Recorder Pro, SDRTrunk and SDRTrunk VCE share
- * (https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/api/node-health.md).  A field the recorder
+ * (https://github.com/blantonl/bcfy-calls-node-health/blob/main/node-health.md).  A field the recorder
  * doesn't measure is left out, never sent as 0.
  */
 public class NodeReport
@@ -78,9 +78,9 @@ public class NodeReport
                 continue; //Not running in the window
             }
 
-            //A site is a channel that decodes control messages and whose calls are counted.  One whose calls nothing
-            //counts (a DMR or NXDN channel that isn't trunked) is reported as the conventional channel it is, never as a
-            //site with no calls.
+            //A site is a channel that decodes control messages and whose calls are counted.  One whose calls
+            //nothing counts (a DMR or NXDN channel that isn't trunked) is reported as the conventional channel it
+            //is, never as a site with no calls.
             if(a.isSite() && a.calls() != null)
             {
                 sites.add(site(a, b));

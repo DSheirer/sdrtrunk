@@ -342,13 +342,6 @@ public abstract class ChannelEventTracker<T extends DecodeEvent>
     }
 
     /**
-     * Counts this call in a control channel's call totals (node health reports), as it stands now: the first time
-     * as a call started, and each time after as a change of outcome, so the call is counted once, by what finally
-     * became of it.
-     * @param tally of the control channel, or null to do nothing
-     * @param outcome of the call now
-     */
-    /**
      * What became of this call so far, for node health reports, or null when it isn't counted.
      */
     public CallOutcome getCallOutcome()
@@ -356,6 +349,13 @@ public abstract class ChannelEventTracker<T extends DecodeEvent>
         return mCallOutcome;
     }
 
+    /**
+     * Counts this call in a control channel's call totals (node health reports), as it stands now: the first time
+     * as a call started, and each time after as a change of outcome, so the call is counted once, by what finally
+     * became of it.
+     * @param tally of the control channel, or null to do nothing
+     * @param outcome of the call now
+     */
     public void tally(CallTally tally, CallOutcome outcome)
     {
         if(tally != null && outcome != null && outcome != mCallOutcome)

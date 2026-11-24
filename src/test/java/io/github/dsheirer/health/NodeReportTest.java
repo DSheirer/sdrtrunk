@@ -241,8 +241,8 @@ public class NodeReportTest
     private static ChannelHealth receiver(int channelId, String name, int site)
     {
         ChannelHealth health = new ChannelHealth(ChannelHealthTest.info(channelId, "p25"));
-        ChannelHealth named = new ChannelHealth(new ChannelHealth.ChannelInfo(channelId, name, health.getInfo().system(),
-            "Downtown", health.getInfo().aliasListName(), "p25"));
+        ChannelHealth named = new ChannelHealth(new ChannelHealth.ChannelInfo(channelId, name,
+            health.getInfo().system(), "Downtown", health.getInfo().aliasListName(), "p25"));
         named.started(SINCE);
         named.setCallsCounted();
         named.identity("wacn", 781824);

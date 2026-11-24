@@ -54,7 +54,8 @@ public class NodeReporterTest
             assertFalse(reporter.isDue(snapshot(SINCE, 0)));
             long first = reporter.getNextAt();
             assertTrue(first >= SINCE + NodeReporter.FIRST_AFTER_MS, "first at least 60 s after the start");
-            assertTrue(first <= SINCE + NodeReporter.FIRST_AFTER_MS + NodeReporter.INTERVAL_MS + NodeReporter.JITTER_MS);
+            assertTrue(first <= SINCE + NodeReporter.FIRST_AFTER_MS + NodeReporter.INTERVAL_MS +
+                NodeReporter.JITTER_MS);
             firsts.add(first);
 
             HealthHistory history = new HealthHistory();

@@ -40,13 +40,13 @@ import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotificat
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.health.HealthMonitor;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.IMessageProvider;
-import io.github.dsheirer.health.HealthMonitor;
 import io.github.dsheirer.message.MessageHistory;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.event.DecodeEventHistory;
@@ -152,7 +152,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
         addModule(mDecodeEventHistory);
         addModule(mMessageHistory);
 
-        //How well the channel is heard, for node health reports.  Traffic channels are counted by their control channel.
+        //How well the channel is heard, for node health reports (a traffic channel counts toward its control channel).
         if(channel.isStandardChannel())
         {
             addModule(new HealthMonitor(channel));
