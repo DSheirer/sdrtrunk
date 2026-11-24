@@ -138,8 +138,39 @@ public class BroadcastifyHealthReporterTest
         return history;
     }
 
+    /**
+     * The history carried on, a snapshot every 10 s, to a time.
+     */
+    private static HealthHistory later(HealthHistory history, long untilMs)
+    {
+        HealthSnapshot last = history.latest();
+        ChannelHealth.Totals site = last.channel(9001);
+        ChannelHealth.Totals other = last.channel(9002);
+
+        for(long t = last.timeMs() + 10_000; t <= untilMs + 10_000; t += 10_000)
+        {
+            history.add(new HealthSnapshot(t, SINCE, List.of(grown(site, t), grown(other, t)), List.of()));
+        }
+
+        return history;
+    }
+
+    /**
+     * A site's totals, running and locked until a time.
+     */
+    private static ChannelHealth.Totals grown(ChannelHealth.Totals totals, long t)
+    {
+        long ms = t - SINCE;
+        return new ChannelHealth.Totals(totals.info(), totals.protocol(), totals.frequency(), totals.identity(),
+            ms / 10_000, 0, ms, totals.calls(), ms, 0, 0, 0);
+    }
+
+    /**
+     * A reporter that started with the recording (its schedule saw the first snapshot).
+     */
     private BroadcastifyHealthReporter reporter(NodeReporter schedule)
     {
+        schedule.isDue(new HealthSnapshot(SINCE, SINCE, List.of(), List.of()));
         return new BroadcastifyHealthReporter(configuration(), aliases(), HttpClient.newHttpClient(), schedule);
     }
 
@@ -193,26 +224,83 @@ public class BroadcastifyHealthReporterTest
     }
 
     @Test
-    void a_server_that_doesnt_take_reports_is_left_alone()
+    void a_server_that_doesnt_take_reports_is_tried_again_less_often()
+    {
+        for(int status: new int[]{404, 405, 410})
+        {
+            mStatus.set(status);
+            mAnswer.set("<html>Not Found</html>");
+            NodeReporter schedule = new NodeReporter(3);
+            BroadcastifyHealthReporter reporter = reporter(schedule);
+            long due = schedule.getNextAt();
+            reporter.check(history());
+            assertTrue(reporter.isToldNotTaken(), "HTTP " + status);
+            assertFalse(schedule.isStopped(), "not stopped: HTTP " + status);
+            long wait = schedule.getNextAt() - due;
+            assertTrue(wait >= 2 * (NodeReporter.INTERVAL_MS - NodeReporter.JITTER_MS),
+                "backs off as from a busy server: HTTP " + status + " waits " + wait);
+        }
+    }
+
+    @Test
+    void a_server_that_takes_reports_again_is_reported_to_as_before()
     {
         mStatus.set(404);
         mAnswer.set("<html>Not Found</html>");
-        BroadcastifyHealthReporter reporter = reporter(new NodeReporter(3));
-        reporter.check(history());
-        assertTrue(reporter.isNotTaken());
+        NodeReporter schedule = new NodeReporter(3);
+        BroadcastifyHealthReporter reporter = reporter(schedule);
+        HealthHistory history = history();
+        reporter.check(history);
+        reporter.check(history);
+        assertEquals(1, mReceived.size(), "not again until the back off is over");
 
+        //Later, it takes them.
         mStatus.set(200);
-        reporter.check(history());
-        assertEquals(1, mReceived.size(), "not tried again");
+        mAnswer.set("{\"ok\":true}");
+        HealthHistory later = later(history, schedule.getNextAt());
+        reporter.check(later);
+        assertEquals(2, mReceived.size());
+        assertFalse(reporter.isToldNotTaken(), "said again if it stops taking them");
+        assertTrue(mReceived.get(1).getAsJsonObject("window").has("gap"), "the window it couldn't send is too long");
     }
 
     @Test
     void a_page_that_isnt_a_report_answer_counts_as_not_taking_reports()
     {
         mAnswer.set("<html>ok</html>");
-        BroadcastifyHealthReporter reporter = reporter(new NodeReporter(4));
+        NodeReporter schedule = new NodeReporter(4);
+        BroadcastifyHealthReporter reporter = reporter(schedule);
+        long due = schedule.getNextAt();
         reporter.check(history());
-        assertTrue(reporter.isNotTaken());
+        assertTrue(reporter.isToldNotTaken());
+        assertTrue(schedule.getNextAt() - due >= 2 * (NodeReporter.INTERVAL_MS - NodeReporter.JITTER_MS));
+    }
+
+    @Test
+    void a_report_turned_down_as_wrong_is_counted_as_sent()
+    {
+        mStatus.set(400);
+        mAnswer.set("{\"error\":\"window.end must be after window.start\"}");
+        NodeReporter schedule = new NodeReporter(8);
+        BroadcastifyHealthReporter reporter = reporter(schedule);
+        HealthHistory history = history();
+        reporter.check(history);
+        assertEquals(1, schedule.window(later(history, history.latest().timeMs() + 60_000)).seq(), "counted as sent");
+    }
+
+    @Test
+    void another_answer_leaves_the_window_to_the_next_report()
+    {
+        mStatus.set(422);
+        mAnswer.set("{\"error\":\"?\"}");
+        NodeReporter schedule = new NodeReporter(8);
+        BroadcastifyHealthReporter reporter = reporter(schedule);
+        HealthHistory history = history();
+        reporter.check(history);
+        NodeReporter.Window next = schedule.window(history);
+        assertEquals(0, next.seq(), "not delivered");
+        assertEquals(mReceived.getFirst().getAsJsonObject("window").get("start").getAsBigDecimal(),
+            java.math.BigDecimal.valueOf(next.startMs(), 3), "the next report carries the window");
     }
 
     @Test
@@ -236,7 +324,7 @@ public class BroadcastifyHealthReporterTest
         BroadcastifyHealthReporter reporter = reporter(schedule);
         reporter.check(history);
         assertFalse(schedule.isStopped());
-        assertFalse(reporter.isNotTaken());
+        assertFalse(reporter.isToldNotTaken());
         assertEquals(history.latest().timeMs() + 3_600_000, schedule.getNextAt());
     }
 }

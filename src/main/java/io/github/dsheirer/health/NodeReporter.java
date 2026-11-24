@@ -28,8 +28,10 @@ import java.util.Random;
  *   send moved by up to 15 seconds either way, the first at least 60 seconds after the start;
  * - no retry: a report that fails is carried by the next (its window starts where the last delivered one ended), up
  *   to 900 seconds, after which the window starts later and says so (gap);
- * - busy (429 or 503): wait Retry-After, or double the interval up to an hour;
- * - credentials refused (401 or 403): no more reports.
+ * - busy (429 or 503): wait Retry-After, or double the interval up to an hour (also for a service that doesn't take
+ *   reports: 404, 405, 410, or an answer that isn't one);
+ * - credentials refused (401 or 403): no more reports, until the node's settings change;
+ * - a report turned down as wrong (400): counted as sent, so the next doesn't repeat it.
  *
  * Windows start and end at snapshot times exactly, so consecutive windows follow on without loss or overlap.
  * Not thread safe: one reporting thread per node.
@@ -54,7 +56,7 @@ public class NodeReporter
         BUSY,
         /** 401 or 403: the node's credentials were refused, no more reports. */
         REFUSED,
-        /** Another 4xx: the report was wrong.  Counted as sent, so the next doesn't repeat it. */
+        /** 400: the report was wrong.  Counted as sent, so the next doesn't repeat it. */
         REJECTED
     }
 

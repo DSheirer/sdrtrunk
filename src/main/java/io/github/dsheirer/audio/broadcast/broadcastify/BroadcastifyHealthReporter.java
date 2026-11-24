@@ -63,7 +63,7 @@ public class BroadcastifyHealthReporter
     private final String mUrl;
     private final NodeReporter mReporter;
     private ScheduledFuture<?> mFuture;
-    private boolean mNotTaken;
+    private boolean mToldNotTaken;
     private boolean mToldUnreachable;
     private String mLastMessage;
 
@@ -92,11 +92,11 @@ public class BroadcastifyHealthReporter
     }
 
     /**
-     * True once the server has said it doesn't take reports (until streaming starts again).
+     * True while the server says it doesn't take reports: said once, and reports back off until it takes one.
      */
-    boolean isNotTaken()
+    boolean isToldNotTaken()
     {
-        return mNotTaken;
+        return mToldNotTaken;
     }
 
     /**
@@ -166,7 +166,7 @@ public class BroadcastifyHealthReporter
     {
         try
         {
-            if(mNotTaken || mReporter.isStopped() || mUrl == null)
+            if(mReporter.isStopped() || mUrl == null)
             {
                 return;
             }
@@ -249,11 +249,12 @@ public class BroadcastifyHealthReporter
 
             if(answer == null)
             {
-                notTaken("it answered [" + said + "]");
+                notTaken(now, "it answered [" + said + "]");
                 return;
             }
 
             mToldUnreachable = false;
+            mToldNotTaken = false;
             Double nextS = number(answer, "nextS");
             mReporter.delivered(nextS);
             String message = answer.has("message") && answer.get("message").isJsonPrimitive() ?
@@ -265,14 +266,14 @@ public class BroadcastifyHealthReporter
                 mLastMessage = message;
             }
         }
-        else if(status == 404 || status == 405)
+        else if(status == 404 || status == 405 || status == 410)
         {
-            notTaken("HTTP " + status);
+            notTaken(now, "HTTP " + status);
         }
         else if(status == 401 || status == 403)
         {
             LOGGER.warn("Broadcastify Calls refused the health report of system [" + systemId + "] (HTTP " + status +
-                ": " + said + ") - not sending its reports until it starts again");
+                ": " + said + ") - not sending its reports until its settings change");
             mReporter.failed(now, NodeReporter.Failure.REFUSED, null);
         }
         else if(status == 429 || status == 503)
@@ -289,15 +290,14 @@ public class BroadcastifyHealthReporter
             }).orElse(null);
             mReporter.failed(now, NodeReporter.Failure.BUSY, retryAfter);
         }
-        else if(status >= 400 && status < 500)
+        else if(status == 400)
         {
-            LOGGER.warn("Broadcastify Calls turned down the health report of system [" + systemId + "]: HTTP " + status +
-                " " + said);
+            LOGGER.warn("Broadcastify Calls turned down the health report of system [" + systemId + "]: " + said);
             mReporter.failed(now, NodeReporter.Failure.REJECTED, null);
         }
         else
         {
-            unreachable(now, systemId, "HTTP " + status);
+            unreachable(now, systemId, "HTTP " + status + (said.isEmpty() ? "" : " " + said));
         }
     }
 
@@ -312,11 +312,20 @@ public class BroadcastifyHealthReporter
         mReporter.failed(now, NodeReporter.Failure.UNREACHABLE, null);
     }
 
-    private void notTaken(String why)
+    /**
+     * The server doesn't take reports, or something else answered: says so once, and backs off as from a busy server
+     * that gave no Retry-After (doubling the interval, up to an hour) until one is taken.
+     */
+    private void notTaken(HealthSnapshot now, String why)
     {
-        mNotTaken = true;
-        LOGGER.info(mUrl + " doesn't take node health reports (" + why + ") - not sending them until streaming starts " +
-            "again");
+        if(!mToldNotTaken)
+        {
+            mToldNotTaken = true;
+            LOGGER.info(mUrl + " doesn't take node health reports (" + why + ") - trying again less often, at " +
+                "most hourly");
+        }
+
+        mReporter.failed(now, NodeReporter.Failure.BUSY, null);
     }
 
     private static JsonObject jsonObject(String body)
