@@ -24,8 +24,10 @@ import io.github.dsheirer.rrapi.type.Coverage;
 import io.github.dsheirer.service.radioreference.DistanceFormat;
 import io.github.dsheirer.service.radioreference.SiteRecord;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
@@ -82,7 +84,8 @@ public final class SiteCard
      */
     public static Content content(List<SiteRecord> sites, RadioReferenceSettings.Location location)
     {
-        DecimalFormat frequencyFormat = new DecimalFormat("0.00000");
+        DecimalFormat frequencyFormat = new DecimalFormat("0.00000",
+            DecimalFormatSymbols.getInstance(Locale.ROOT));
         List<Entry> entries = new ArrayList<>();
         int shown = Math.min(sites.size(), MAX_SITES);
 
