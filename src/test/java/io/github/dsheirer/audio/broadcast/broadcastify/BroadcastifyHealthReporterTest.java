@@ -21,7 +21,9 @@ package io.github.dsheirer.audio.broadcast.broadcastify;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
@@ -326,5 +328,124 @@ public class BroadcastifyHealthReporterTest
         assertFalse(schedule.isStopped());
         assertFalse(reporter.isToldNotTaken());
         assertEquals(history.latest().timeMs() + 3_600_000, schedule.getNextAt());
+    }
+
+    private BroadcastifyCallConfiguration configuration(String name, int systemId, String apiKey)
+    {
+        BroadcastifyCallConfiguration configuration = configuration();
+        configuration.setName(name);
+        configuration.setSystemID(systemId);
+        configuration.setApiKey(apiKey);
+        return configuration;
+    }
+
+    /**
+     * A shared reporter that started with the recording.
+     */
+    private BroadcastifyHealthReporter acquire(BroadcastifyCallConfiguration configuration, AliasModel aliases,
+                                               HttpClient client)
+    {
+        BroadcastifyHealthReporter reporter = BroadcastifyHealthReporter.acquire(configuration, aliases, client, false);
+        reporter.getSchedule().isDue(new HealthSnapshot(SINCE, SINCE, List.of(), List.of()));
+        return reporter;
+    }
+
+    @Test
+    void configurations_naming_one_system_id_send_one_report_with_all_their_sites()
+    {
+        HttpClient client = HttpClient.newHttpClient();
+        AliasModel aliases = aliases();
+        BroadcastifyCallConfiguration downtown = configuration("Downtown Calls", 5501, "first-key");
+        BroadcastifyCallConfiguration county = configuration("County Calls", 5501, "second-key");
+        BroadcastifyHealthReporter reporter = acquire(downtown, aliases, client);
+
+        try
+        {
+            assertSame(reporter, BroadcastifyHealthReporter.acquire(county, aliases, client, false),
+                "one reporter for the system ID");
+            reporter.check(history());
+
+            assertEquals(1, mReceived.size(), "one report");
+            JsonObject report = mReceived.getFirst();
+            assertEquals(5501, report.getAsJsonObject("node").get("systemId").getAsInt());
+            assertEquals("first-key", report.getAsJsonObject("node").get("apiKey").getAsString(),
+                "the first configuration's API key");
+            assertEquals(2, report.getAsJsonArray("sites").size(), "the sites of both configurations");
+        }
+        finally
+        {
+            BroadcastifyHealthReporter.release(reporter, downtown);
+            BroadcastifyHealthReporter.release(reporter, county);
+        }
+    }
+
+    @Test
+    void a_shared_reporter_lasts_while_any_of_its_configurations_runs()
+    {
+        HttpClient client = HttpClient.newHttpClient();
+        AliasModel aliases = aliases();
+        BroadcastifyCallConfiguration downtown = configuration("Downtown Calls", 5502, "key");
+        BroadcastifyCallConfiguration county = configuration("County Calls", 5502, "key");
+        BroadcastifyHealthReporter reporter = acquire(downtown, aliases, client);
+        BroadcastifyHealthReporter.acquire(county, aliases, client, false);
+        reporter.check(history());
+        assertEquals(1, mReceived.size());
+
+        //Downtown's broadcaster restarts while County's runs: the same node, numbered on.
+        BroadcastifyHealthReporter.release(reporter, downtown);
+        assertEquals(List.of(county), reporter.getConfigurations());
+        assertSame(reporter, BroadcastifyHealthReporter.acquire(downtown, aliases, client, false));
+        assertEquals(1, reporter.getSchedule().window(later(history(), SINCE + 1_500_000)).seq());
+
+        //Both stop: the next is a new reporter.
+        BroadcastifyHealthReporter.release(reporter, downtown);
+        BroadcastifyHealthReporter.release(reporter, county);
+        BroadcastifyHealthReporter next = BroadcastifyHealthReporter.acquire(county, aliases, client, false);
+        assertNotSame(reporter, next);
+        BroadcastifyHealthReporter.release(next, county);
+    }
+
+    @Test
+    void other_system_ids_and_servers_are_other_nodes()
+    {
+        HttpClient client = HttpClient.newHttpClient();
+        AliasModel aliases = aliases();
+        BroadcastifyCallConfiguration a = configuration("Downtown Calls", 5503, "key");
+        BroadcastifyCallConfiguration b = configuration("County Calls", 5504, "key");
+        BroadcastifyCallConfiguration c = configuration("Downtown Calls", 5503, "key");
+        c.setHost("http://127.0.0.1:1/call-upload");
+        BroadcastifyHealthReporter ra = BroadcastifyHealthReporter.acquire(a, aliases, client, false);
+        BroadcastifyHealthReporter rb = BroadcastifyHealthReporter.acquire(b, aliases, client, false);
+        BroadcastifyHealthReporter rc = BroadcastifyHealthReporter.acquire(c, aliases, client, false);
+        assertNotSame(ra, rb);
+        assertNotSame(ra, rc);
+        BroadcastifyHealthReporter.release(ra, a);
+        BroadcastifyHealthReporter.release(rb, b);
+        BroadcastifyHealthReporter.release(rc, c);
+    }
+
+    @Test
+    void refused_credentials_are_tried_again_when_a_configuration_of_the_node_starts_again()
+    {
+        HttpClient client = HttpClient.newHttpClient();
+        AliasModel aliases = aliases();
+        BroadcastifyCallConfiguration downtown = configuration("Downtown Calls", 5505, "wrong");
+        BroadcastifyCallConfiguration county = configuration("County Calls", 5505, "wrong");
+        BroadcastifyHealthReporter reporter = acquire(downtown, aliases, client);
+        BroadcastifyHealthReporter.acquire(county, aliases, client, false);
+        mStatus.set(403);
+        reporter.check(history());
+        assertTrue(reporter.getSchedule().isStopped());
+
+        //The user fixes Downtown's key: its broadcaster starts again, County's runs on.
+        BroadcastifyHealthReporter.release(reporter, downtown);
+        downtown.setApiKey("right");
+        BroadcastifyHealthReporter.acquire(downtown, aliases, client, false);
+        mStatus.set(200);
+        reporter.check(later(history(), SINCE + 1_500_000));
+        assertFalse(reporter.getSchedule().isStopped());
+        assertEquals(2, mReceived.size());
+        BroadcastifyHealthReporter.release(reporter, downtown);
+        BroadcastifyHealthReporter.release(reporter, county);
     }
 }

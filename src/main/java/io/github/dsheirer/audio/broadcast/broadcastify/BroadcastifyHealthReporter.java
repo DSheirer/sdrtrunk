@@ -37,8 +37,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -49,46 +54,169 @@ import org.slf4j.LoggerFactory;
  * node's own, how well this recorder hears the sites and channels whose calls go to the node.  Broadcastify uses
  * them to choose between nodes that upload the same system, and to tell a node's owner about outages and problems.
  *
- * The node's sites and channels are those whose alias list has an alias streaming to this broadcast configuration.
- * The report covers each whole (all its calls, not only those streamed here).
+ * One per system ID and server, shared by every Broadcastify Calls configuration that names that system ID: the
+ * node's report is one, with every site and channel that has an alias streaming to any of those configurations.  The
+ * report covers each whole (all its calls, not only those streamed here).  The reporter lasts while any of the
+ * configurations' broadcasters runs, so one restarting while another runs keeps the node's schedule and numbering.
  */
 public class BroadcastifyHealthReporter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BroadcastifyHealthReporter.class);
     private static final long CHECK_INTERVAL_MS = 10_000;
+    private static final Map<String,BroadcastifyHealthReporter> REPORTERS = new HashMap<>();
 
-    private final BroadcastifyCallConfiguration mConfiguration;
+    private final String mKey;
+    private final int mSystemId;
+    private final String mUrl;
     private final AliasModel mAliasModel;
     private final HttpClient mHttpClient;
-    private final String mUrl;
     private final NodeReporter mReporter;
+    private final List<BroadcastifyCallConfiguration> mConfigurations = new CopyOnWriteArrayList<>();
     private ScheduledFuture<?> mFuture;
+    private volatile boolean mResume;
     private boolean mToldNotTaken;
     private boolean mToldUnreachable;
+    private boolean mToldKeys;
     private String mLastMessage;
 
     /**
-     * @param configuration of the node
-     * @param aliasModel to find the node's channels
-     * @param httpClient to send with
-     */
-    public BroadcastifyHealthReporter(BroadcastifyCallConfiguration configuration, AliasModel aliasModel,
-                                      HttpClient httpClient)
-    {
-        this(configuration, aliasModel, httpClient, new NodeReporter(String.valueOf(configuration.getSystemID())));
-    }
-
-    /**
-     * For tests: a given schedule.
+     * For tests: a node of one configuration, with a given schedule.
      */
     BroadcastifyHealthReporter(BroadcastifyCallConfiguration configuration, AliasModel aliasModel,
                                HttpClient httpClient, NodeReporter reporter)
     {
-        mConfiguration = configuration;
+        this(configuration.getSystemID(), BroadcastifyCallConfiguration.getHealthUrl(configuration.getHost()),
+            aliasModel, httpClient, reporter);
+        mConfigurations.add(configuration);
+    }
+
+    private BroadcastifyHealthReporter(int systemId, String url, AliasModel aliasModel, HttpClient httpClient,
+                                       NodeReporter reporter)
+    {
+        mSystemId = systemId;
+        mUrl = url;
+        mKey = key(url, systemId);
         mAliasModel = aliasModel;
         mHttpClient = httpClient;
-        mUrl = BroadcastifyCallConfiguration.getHealthUrl(configuration.getHost());
         mReporter = reporter;
+    }
+
+    private static String key(String url, int systemId)
+    {
+        return url + "#" + systemId;
+    }
+
+    /**
+     * The reporter of a configuration's node, started: the one its system ID already has on its server, or a new one.
+     * Release it when the configuration's broadcaster stops.
+     * @param configuration of a broadcaster starting
+     * @param aliasModel to find the node's channels
+     * @return the reporter, or null when the configuration's upload server has nowhere to send reports
+     */
+    public static BroadcastifyHealthReporter acquire(BroadcastifyCallConfiguration configuration, AliasModel aliasModel)
+    {
+        return acquire(configuration, aliasModel, null, true);
+    }
+
+    /**
+     * As acquire, with an HTTP client (null for its own), and whether to start checking for reports due.
+     */
+    static synchronized BroadcastifyHealthReporter acquire(BroadcastifyCallConfiguration configuration,
+                                                           AliasModel aliasModel, HttpClient httpClient,
+                                                           boolean start)
+    {
+        String url = BroadcastifyCallConfiguration.getHealthUrl(configuration.getHost());
+
+        if(url == null)
+        {
+            LOGGER.info("Broadcastify Calls system [" + configuration.getSystemID() + "] - not sending health " +
+                "reports: the upload server [" + configuration.getHost() + "] doesn't end in call-upload");
+            return null;
+        }
+
+        int systemId = configuration.getSystemID();
+        BroadcastifyHealthReporter reporter = REPORTERS.get(key(url, systemId));
+
+        if(reporter == null)
+        {
+            reporter = new BroadcastifyHealthReporter(systemId, url, aliasModel, httpClient != null ? httpClient :
+                HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL)
+                    .connectTimeout(Duration.ofSeconds(20)).build(), new NodeReporter(String.valueOf(systemId)));
+            REPORTERS.put(reporter.mKey, reporter);
+        }
+
+        reporter.add(configuration);
+
+        if(start)
+        {
+            reporter.start();
+        }
+
+        return reporter;
+    }
+
+    /**
+     * A configuration's broadcaster stopped: the reporter stops when no other configuration of its node runs.
+     */
+    public static synchronized void release(BroadcastifyHealthReporter reporter,
+                                            BroadcastifyCallConfiguration configuration)
+    {
+        reporter.mConfigurations.removeIf(c -> c == configuration);
+
+        if(reporter.mConfigurations.isEmpty())
+        {
+            reporter.stop();
+            REPORTERS.remove(reporter.mKey, reporter);
+        }
+    }
+
+    /**
+     * Another configuration of the node.  Its settings are new (a broadcaster starts when they change): reports
+     * stopped by refused credentials start again.
+     */
+    private void add(BroadcastifyCallConfiguration configuration)
+    {
+        if(!mConfigurations.isEmpty())
+        {
+            BroadcastifyCallConfiguration first = mConfigurations.getFirst();
+
+            if(first != configuration && !Objects.equals(first.getName(), configuration.getName()))
+            {
+                LOGGER.info("Broadcastify Calls streams [" + first.getName() + "] and [" + configuration.getName() +
+                    "] both upload as system [" + mSystemId + "]: one health report covers both");
+            }
+
+            if(!mToldKeys && !Objects.equals(first.getApiKey(), configuration.getApiKey()))
+            {
+                mToldKeys = true;
+                LOGGER.warn("Broadcastify Calls streams [" + first.getName() + "] and [" + configuration.getName() +
+                    "] upload as system [" + mSystemId + "] with different API keys - health reports use the " +
+                    "first's");
+            }
+        }
+
+        if(mConfigurations.stream().noneMatch(c -> c == configuration))
+        {
+            mConfigurations.add(configuration);
+        }
+
+        mResume = true;
+    }
+
+    /**
+     * The configurations reporting to the node, the first's API key used.
+     */
+    List<BroadcastifyCallConfiguration> getConfigurations()
+    {
+        return List.copyOf(mConfigurations);
+    }
+
+    /**
+     * The node's schedule.
+     */
+    NodeReporter getSchedule()
+    {
+        return mReporter;
     }
 
     /**
@@ -102,17 +230,10 @@ public class BroadcastifyHealthReporter
     /**
      * Starts checking, every 10 seconds, whether the node's next report is due.
      */
-    public synchronized void start()
+    private synchronized void start()
     {
-        if(mFuture != null)
+        if(mFuture != null || mUrl == null)
         {
-            return;
-        }
-
-        if(mUrl == null)
-        {
-            LOGGER.info("Broadcastify Calls system [" + mConfiguration.getSystemID() + "] - not sending health " +
-                "reports: the upload server [" + mConfiguration.getHost() + "] doesn't end in call-upload");
             return;
         }
 
@@ -121,7 +242,7 @@ public class BroadcastifyHealthReporter
             TimeUnit.MILLISECONDS);
     }
 
-    public synchronized void stop()
+    private synchronized void stop()
     {
         if(mFuture != null)
         {
@@ -131,23 +252,49 @@ public class BroadcastifyHealthReporter
     }
 
     /**
-     * True when a channel's calls can stream to this node: its alias list has an alias with this broadcast channel.
+     * True when a channel's calls can stream to this node: its alias list has an alias with the broadcast channel of
+     * one of the node's configurations.
      */
     boolean feeds(ChannelHealth.ChannelInfo info)
     {
-        String aliasList = info.aliasListName();
-        String broadcastChannel = mConfiguration.getName();
+        return feeds(info, streams());
+    }
 
-        if(aliasList == null || aliasList.isEmpty() || broadcastChannel == null || broadcastChannel.isEmpty())
+    private Set<String> streams()
+    {
+        Set<String> streams = new HashSet<>();
+
+        for(BroadcastifyCallConfiguration configuration: mConfigurations)
+        {
+            if(configuration.getName() != null && !configuration.getName().isEmpty())
+            {
+                streams.add(configuration.getName());
+            }
+        }
+
+        return streams;
+    }
+
+    private boolean feeds(ChannelHealth.ChannelInfo info, Set<String> streams)
+    {
+        String aliasList = info.aliasListName();
+
+        if(aliasList == null || aliasList.isEmpty() || streams.isEmpty())
         {
             return false;
         }
 
         for(Alias alias: mAliasModel.getAliases())
         {
-            if(aliasList.equals(alias.getAliasListName()) && alias.hasBroadcastChannel(broadcastChannel))
+            if(aliasList.equals(alias.getAliasListName()))
             {
-                return true;
+                for(String stream: streams)
+                {
+                    if(alias.hasBroadcastChannel(stream))
+                    {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -166,7 +313,15 @@ public class BroadcastifyHealthReporter
     {
         try
         {
-            if(mReporter.isStopped() || mUrl == null)
+            if(mResume)
+            {
+                mResume = false;
+                mReporter.resume();
+            }
+
+            List<BroadcastifyCallConfiguration> configurations = getConfigurations();
+
+            if(configurations.isEmpty() || mReporter.isStopped() || mUrl == null)
             {
                 return;
             }
@@ -186,19 +341,20 @@ public class BroadcastifyHealthReporter
             }
 
             //Which channels feed the node: worked out once per report, since the alias lists can change.
+            Set<String> streams = streams();
             Set<Integer> feeding = new HashSet<>();
 
             for(ChannelHealth.Totals totals: window.now().channels())
             {
-                if(feeds(totals.info()))
+                if(feeds(totals.info(), streams))
                 {
                     feeding.add(totals.info().channelId());
                 }
             }
 
             JsonObject node = new JsonObject();
-            node.addProperty("systemId", mConfiguration.getSystemID());
-            node.addProperty("apiKey", mConfiguration.getApiKey());
+            node.addProperty("systemId", mSystemId);
+            node.addProperty("apiKey", configurations.getFirst().getApiKey());
             JsonObject report = NodeReport.build(window, node, SystemProperties.getInstance().getApplicationVersion(),
                 info -> feeding.contains(info.channelId()));
 
@@ -215,7 +371,7 @@ public class BroadcastifyHealthReporter
 
     private void send(JsonObject report, HealthSnapshot now)
     {
-        int systemId = mConfiguration.getSystemID();
+        int systemId = mSystemId;
         HttpResponse<String> response;
 
         try

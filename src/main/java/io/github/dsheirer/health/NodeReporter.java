@@ -123,6 +123,14 @@ public class NodeReporter
     }
 
     /**
+     * The node's settings changed: reports stopped by refused credentials start again.
+     */
+    public void resume()
+    {
+        mStopped = false;
+    }
+
+    /**
      * When the next report is due, Unix milliseconds, or null before the first totals.
      */
     public Long getNextAt()

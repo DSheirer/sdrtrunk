@@ -130,8 +130,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
 
         if(mHealthReporter == null && getBroadcastConfiguration().isHealthReports())
         {
-            mHealthReporter = new BroadcastifyHealthReporter(getBroadcastConfiguration(), mAliasModel, mHttpClient);
-            mHealthReporter.start();
+            mHealthReporter = BroadcastifyHealthReporter.acquire(getBroadcastConfiguration(), mAliasModel);
         }
     }
 
@@ -143,7 +142,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     {
         if(mHealthReporter != null)
         {
-            mHealthReporter.stop();
+            BroadcastifyHealthReporter.release(mHealthReporter, getBroadcastConfiguration());
             mHealthReporter = null;
         }
 
