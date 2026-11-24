@@ -290,10 +290,12 @@ public class NodeReportTest
         history.add(s[0]);
         history.add(s[1]);
         NodeReporter reporter = new NodeReporter(1);
+        reporter.isDue(new HealthSnapshot(SINCE, SINCE, List.of(), List.of())); //Started with the recording
         assertTrue(reporter.isDue(s[1]));
         NodeReporter.Window window = reporter.window(history);
         assertNull(window.base(), "first: from the start");
         reporter.delivered(null);
+        history.add(new HealthSnapshot(s[1].timeMs() + 10_000, SINCE, s[1].channels(), s[1].radios()));
         assertEquals(1, reporter.window(history).seq());
     }
 

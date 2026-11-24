@@ -33,7 +33,12 @@ import java.util.Random;
  * - credentials refused (401 or 403): no more reports, until the node's settings change;
  * - a report turned down as wrong (400): counted as sent, so the next doesn't repeat it.
  *
- * Windows start and end at snapshot times exactly, so consecutive windows follow on without loss or overlap.
+ * Windows start and end at snapshot times exactly, so consecutive windows follow on without loss or overlap.  A
+ * reporter that starts while recording is going on (its node's reporting started again, say) can't tell what an
+ * earlier one reported: its first window starts at its own first snapshot and says some time before it wasn't
+ * reported (gap), and its first report goes at least 60 seconds after that snapshot.  One that starts with the
+ * recording (within its first 60 seconds, before any report can have gone) covers it from its start.
+ *
  * Not thread safe: one reporting thread per node.
  */
 public class NodeReporter
@@ -84,6 +89,9 @@ public class NodeReporter
     private long[] mBuilt;
     private long mSeq;
     private boolean mStopped;
+    private Long mSince;
+    private long mStartedAt;
+    private boolean mFromStart = true;
 
     /**
      * @param key something of the node's own (its ID), to spread nodes that start together
@@ -178,24 +186,30 @@ public class NodeReporter
             return false;
         }
 
-        //The totals started over: so do the reports.
-        if(mDeliveredTo != null && mDeliveredTo[1] != now.sinceMs())
+        if(mSince == null || mSince != now.sinceMs())
         {
+            //The first snapshot this reporter sees, or totals that started over (so do the reports).  Windows cover
+            //the totals from their start only when nothing of them can have been reported yet.
+            mFromStart = mSince != null || now.timeMs() - now.sinceMs() < FIRST_AFTER_MS;
+            mSince = now.sinceMs();
+            mStartedAt = now.timeMs();
             mDeliveredTo = null;
+            mBuilt = null;
             mSeq = 0;
         }
 
         if(mSlot == null)
         {
+            long start = mFromStart ? now.sinceMs() : mStartedAt;
             long phase = (long)(mRandom.nextDouble() * mInterval);
-            long slot = now.sinceMs() + phase;
+            long slot = start + phase;
 
-            while(slot < now.sinceMs() + FIRST_AFTER_MS)
+            while(slot < start + FIRST_AFTER_MS)
             {
                 slot += mInterval;
             }
 
-            aim(slot, now.sinceMs() + FIRST_AFTER_MS);
+            aim(slot, start + FIRST_AFTER_MS);
         }
 
         return now.timeMs() >= mNextAt;
@@ -203,7 +217,8 @@ public class NodeReporter
 
     /**
      * The window of the report due: from the end of the last one delivered (or, after more than 15 minutes
-     * undelivered, the latest start a window may have, with gap) to the latest snapshot.  Null without snapshots.
+     * undelivered, the latest start a window may have, with gap) to the latest snapshot.  Null without snapshots, or
+     * when the window would have no time in it (it would end where it starts): wait for the next snapshot.
      */
     public Window window(HealthHistory history)
     {
@@ -224,6 +239,12 @@ public class NodeReporter
             gap = from < oldest;
             base = history.atOrAfter(gap ? oldest : from);
         }
+        else if(!mFromStart)
+        {
+            //Started while recording went on: from its own first snapshot, never over what an earlier one sent.
+            gap = true;
+            base = history.atOrAfter(Math.max(mStartedAt, oldest));
+        }
         else if(now.timeMs() - now.sinceMs() > MAX_WINDOW_MS)
         {
             gap = true;
@@ -233,6 +254,13 @@ public class NodeReporter
         {
             gap = false;
             base = null;
+        }
+
+        long start = base != null ? base.timeMs() : now.sinceMs();
+
+        if((base == null && (from != null || gap)) || start >= now.timeMs())
+        {
+            return null;
         }
 
         mBuilt = new long[]{now.timeMs(), now.sinceMs()};

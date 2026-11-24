@@ -215,6 +215,8 @@ public class NodeReporterTest
     {
         NodeReporter reporter = new NodeReporter(9);
         HealthHistory history = new HealthHistory();
+        reporter.isDue(snapshot(SINCE, 0));
+        history.add(snapshot(SINCE + 500_000, 0));
         HealthSnapshot now = snapshot(SINCE + 1_000_000, 0);
         history.add(now);
         reporter.isDue(now);
@@ -222,9 +224,11 @@ public class NodeReporterTest
         reporter.delivered(1200.0);
         assertEquals(now.timeMs() + 1_200_000, reporter.getNextAt(), NodeReporter.JITTER_MS + 1);
 
+        history.add(snapshot(now.timeMs() + 10_000, 0));
         reporter.window(history);
         reporter.delivered(5.0);
-        assertEquals(now.timeMs() + NodeReporter.MIN_INTERVAL_MS, reporter.getNextAt(), NodeReporter.JITTER_MS + 1);
+        assertEquals(now.timeMs() + 10_000 + NodeReporter.MIN_INTERVAL_MS, reporter.getNextAt(),
+            NodeReporter.JITTER_MS + 1);
     }
 
     @Test
@@ -232,11 +236,14 @@ public class NodeReporterTest
     {
         NodeReporter reporter = new NodeReporter(11);
         HealthHistory history = new HealthHistory();
+        reporter.isDue(snapshot(SINCE, 0));
+        history.add(snapshot(SINCE + 500_000, 0));
         HealthSnapshot now = snapshot(SINCE + 1_000_000, 0);
         history.add(now);
         reporter.isDue(now);
         reporter.window(history);
         reporter.delivered(null);
+        history.add(snapshot(SINCE + 1_010_000, 0));
         assertEquals(1, reporter.window(history).seq());
 
         //A snapshot from totals that started again later.
@@ -247,5 +254,79 @@ public class NodeReporterTest
         NodeReporter.Window window = reporter.window(after);
         assertEquals(0, window.seq());
         assertNull(window.base(), "from the start of the new totals");
+    }
+
+    @Test
+    void a_window_with_no_time_in_it_is_never_made()
+    {
+        NodeReporter reporter = new NodeReporter(13);
+        HealthHistory history = new HealthHistory();
+        HealthSnapshot first = snapshot(SINCE, 0);
+        history.add(first);
+        reporter.isDue(first);
+        assertNull(reporter.window(history), "the totals have only just started");
+
+        HealthSnapshot now = snapshot(SINCE + 100_000, 5);
+        history.add(now);
+        NodeReporter.Window window = reporter.window(history);
+        assertTrue(window.now().timeMs() > window.startMs());
+        reporter.delivered(null);
+        assertNull(reporter.window(history), "nothing since the last delivered");
+
+        history.add(snapshot(SINCE + 110_000, 6));
+        assertEquals(SINCE + 100_000, reporter.window(history).startMs());
+    }
+
+    @Test
+    void a_reporter_started_while_recording_goes_on_reports_from_its_own_start()
+    {
+        HealthHistory history = new HealthHistory();
+
+        for(long t = SINCE; t <= SINCE + 1_000_000; t += 10_000)
+        {
+            history.add(snapshot(t, (t - SINCE) / 1000));
+        }
+
+        //Another reporter of the node may have sent all of this: a new one can't tell.
+        NodeReporter reporter = new NodeReporter(17);
+        HealthSnapshot started = history.latest();
+        assertFalse(reporter.isDue(started), "not at once");
+        assertTrue(reporter.getNextAt() >= started.timeMs() + NodeReporter.FIRST_AFTER_MS,
+            "at least 60 s after its own start");
+
+        long t = started.timeMs();
+
+        while(!reporter.isDue(history.latest()))
+        {
+            t += 10_000;
+            history.add(snapshot(t, (t - SINCE) / 1000));
+        }
+
+        NodeReporter.Window window = reporter.window(history);
+        assertEquals(started.timeMs(), window.startMs(), "from its own first snapshot");
+        assertTrue(window.gap(), "recording started before it");
+        assertEquals(0, window.seq());
+        assertTrue(window.now().timeMs() - window.startMs() >= NodeReporter.FIRST_AFTER_MS - NodeReporter.JITTER_MS);
+    }
+
+    @Test
+    void a_reporter_started_with_the_recording_covers_it_from_the_start()
+    {
+        NodeReporter reporter = new NodeReporter(19);
+        HealthHistory history = new HealthHistory();
+        HealthSnapshot first = snapshot(SINCE + 5_000, 0); //A few seconds after recording started
+        history.add(first);
+        reporter.isDue(first);
+        long t = first.timeMs();
+
+        while(!reporter.isDue(history.latest()))
+        {
+            t += 10_000;
+            history.add(snapshot(t, (t - SINCE) / 1000));
+        }
+
+        NodeReporter.Window window = reporter.window(history);
+        assertEquals(SINCE, window.startMs());
+        assertFalse(window.gap());
     }
 }
