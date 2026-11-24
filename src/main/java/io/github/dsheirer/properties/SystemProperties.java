@@ -246,6 +246,27 @@ public class SystemProperties
     }
 
     /**
+     * The application's version from the jar manifest (1.0.0, or 1.0.1-nightly, ...), or "unknown" when not run from
+     * a built jar.
+     */
+    public String getApplicationVersion()
+    {
+        Manifest manifest = getManifest(SDRTrunk.class);
+
+        if(manifest != null)
+        {
+            String version = manifest.getMainAttributes().getValue(MANIFEST_VERSION);
+
+            if(version != null && !version.isBlank())
+            {
+                return version;
+            }
+        }
+
+        return "unknown";
+    }
+
+    /**
      * Returns the value of the property, or null if the property doesn't exist
      */
     private String get(String key)
