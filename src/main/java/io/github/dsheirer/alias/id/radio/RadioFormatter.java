@@ -20,6 +20,7 @@
 package io.github.dsheirer.alias.id.radio;
 
 import io.github.dsheirer.settings.identifier.IntegerFormat;
+import io.github.dsheirer.settings.identifier.MDC1200RadioFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.DMRTalkgroupFormatter;
@@ -44,6 +45,7 @@ public class RadioFormatter
     {
         mFormatterMap.put(Protocol.APCO25, new APCO25TalkgroupFormatter());
         mFormatterMap.put(Protocol.DMR, new DMRTalkgroupFormatter());
+        mFormatterMap.put(Protocol.MDC1200, new MDC1200RadioFormatter());
         mFormatterMap.put(Protocol.NXDN, new NXDNTalkgroupFormatter());
         mFormatterMap.put(Protocol.UNKNOWN, new UnknownTalkgroupFormatter());
     }

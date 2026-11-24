@@ -20,13 +20,13 @@
 package io.github.dsheirer.alias.id.talkgroup;
 
 import io.github.dsheirer.settings.identifier.IntegerFormat;
+import io.github.dsheirer.settings.identifier.MDC1200RadioFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AnalogTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.LTRTalkgroupFormatter;
-import io.github.dsheirer.settings.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.PassportTalkgroupFormatter;
@@ -58,7 +58,7 @@ public class TalkgroupFormatter
         LTRTalkgroupFormatter ltr = new LTRTalkgroupFormatter();
         mFormatterMap.put(Protocol.LTR, ltr);
         mFormatterMap.put(Protocol.LTR_NET, ltr);
-        mFormatterMap.put(Protocol.MDC1200, new MDC1200TalkgroupFormatter());
+        mFormatterMap.put(Protocol.MDC1200, new MDC1200RadioFormatter());
         mFormatterMap.put(Protocol.MPT1327, new MPT1327TalkgroupFormatter());
         mFormatterMap.put(Protocol.NXDN, new NXDNTalkgroupFormatter());
         mFormatterMap.put(Protocol.PASSPORT, new PassportTalkgroupFormatter());
