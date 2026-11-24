@@ -18,23 +18,28 @@
  */
 package io.github.dsheirer.gui.nowplaying;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.event.Event;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.Background;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests copying the selected history rows to the clipboard.
+ * Tests the history table view.
  */
 public class HistoryTableViewTest
 {
@@ -90,6 +95,86 @@ public class HistoryTableViewTest
         });
 
         assertEquals("c\tC\na\tA", copied.get(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void updatesExistingItemInPlace() throws Exception
+    {
+        CompletableFuture<List<String>> changes = new CompletableFuture<>();
+
+        Platform.runLater(() -> {
+            try
+            {
+                TestView view = new TestView();
+                view.add("a");
+                view.add("b");
+
+                TableView<?> table = (TableView<?>)view.lookup(".table-view");
+                List<String> events = new ArrayList<>();
+                table.getItems().addListener((ListChangeListener<Object>)change -> {
+                    while(change.next())
+                    {
+                        events.add(change.wasUpdated() ? "updated" : change.wasReplaced() ? "replaced" :
+                            change.wasRemoved() ? "removed" : change.wasAdded() ? "added" : "other");
+                    }
+                });
+
+                view.add("a");
+                changes.complete(events);
+            }
+            catch(Throwable t)
+            {
+                changes.completeExceptionally(t);
+            }
+        });
+
+        assertEquals(List.of("updated"), changes.get(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void darkThemeDoesNotChangeTableRowOnHover() throws Exception
+    {
+        CompletableFuture<Background[]> backgrounds = new CompletableFuture<>();
+
+        Platform.runLater(() -> {
+            try
+            {
+                TestView view = new TestView();
+                @SuppressWarnings("unchecked")
+                TableView<HistoryTableView.Row<String>> table =
+                    (TableView<HistoryTableView.Row<String>>)view.lookup(".table-view");
+                table.setRowFactory(t -> new HoverRow());
+                view.add("a");
+
+                Scene scene = new Scene(view, 400, 300);
+                scene.getStylesheets().add(getClass().getResource("/sdrtrunk_dark.css").toExternalForm());
+                view.applyCss();
+                view.layout();
+
+                HoverRow row = view.lookupAll(".table-row-cell").stream()
+                    .filter(node -> node instanceof HoverRow hoverRow && !hoverRow.isEmpty())
+                    .map(node -> (HoverRow)node).findFirst().orElseThrow();
+                Background normal = row.getBackground();
+                row.hover();
+                row.applyCss();
+                backgrounds.complete(new Background[]{normal, row.getBackground()});
+            }
+            catch(Throwable t)
+            {
+                backgrounds.completeExceptionally(t);
+            }
+        });
+
+        Background[] result = backgrounds.get(10, TimeUnit.SECONDS);
+        assertEquals(result[0], result[1]);
+    }
+
+    private static class HoverRow extends TableRow<HistoryTableView.Row<String>>
+    {
+        void hover()
+        {
+            setHover(true);
+        }
     }
 
     private static class TestView extends HistoryTableView<String,String>

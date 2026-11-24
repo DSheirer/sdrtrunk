@@ -224,7 +224,7 @@
     -fx-text-fill: #ffffff;
 }
 
-.table-row-cell:filled:hover, .tree-table-row-cell:filled:hover, .list-cell:filled:hover, .tree-cell:filled:hover
+.tree-table-row-cell:filled:hover, .list-cell:filled:hover, .tree-cell:filled:hover
 {
     -fx-background-color: #3a3d3f;
 }

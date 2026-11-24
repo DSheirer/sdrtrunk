@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import javafx.beans.Observable;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -53,7 +54,10 @@ import javafx.scene.layout.VBox;
 public abstract class HistoryTableView<T,F> extends VBox
 {
     private static final KeyCombination COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
-    private final ObservableList<Row<T>> mRows = FXCollections.observableArrayList();
+    //Row revision changes are in-place list updates so that the filter and sort re-check the updated item without
+    //replacing the row in the table
+    private final ObservableList<Row<T>> mRows =
+        FXCollections.observableArrayList(row -> new Observable[]{row.revisionProperty()});
     private final FilteredList<Row<T>> mFilteredRows = new FilteredList<>(mRows);
     private final Map<T,Row<T>> mRowMap = new HashMap<>();
     private final TableView<Row<T>> mTableView = new TableView<>();
@@ -129,14 +133,6 @@ public abstract class HistoryTableView<T,F> extends VBox
 
         if(row != null)
         {
-            //Replace the row with itself so that the filter re-checks the updated item
-            int index = mRows.indexOf(row);
-
-            if(index >= 0)
-            {
-                mRows.set(index, row);
-            }
-
             row.refresh();
         }
         else
