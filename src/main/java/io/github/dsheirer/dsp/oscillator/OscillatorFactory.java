@@ -22,8 +22,6 @@ package io.github.dsheirer.dsp.oscillator;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory class for creating real and complex oscillators.
@@ -32,7 +30,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OscillatorFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(OscillatorFactory.class);
 
     /**
      * Constructs an optimal implementation of a real sample oscillator using calibration data when available.
@@ -42,17 +39,26 @@ public class OscillatorFactory
      */
     public static IRealOscillator getRealOscillator(double frequency, double sampleRate)
     {
-        Implementation operation = CalibrationManager.getInstance().getImplementation(CalibrationType.OSCILLATOR_REAL);
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.OSCILLATOR_REAL);
+        return getRealOscillator(implementation, frequency, sampleRate);
+    }
 
-        switch(operation)
+    /**
+     * Creates the real oscillator implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static IRealOscillator getRealOscillator(Implementation implementation, double frequency, double sampleRate)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorRealOscillator(frequency, sampleRate);
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ScalarRealOscillator(frequency, sampleRate);
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarRealOscillator(frequency, sampleRate);
+            case VECTOR_SIMD_PREFERRED -> new VectorRealOscillator(frequency, sampleRate);
+            default -> throw new IllegalArgumentException("No real oscillator implementation for " +
+                implementation);
+        };
     }
 
     /**
@@ -63,16 +69,26 @@ public class OscillatorFactory
      */
     public static IComplexOscillator getComplexOscillator(double frequency, double sampleRate)
     {
-        Implementation operation = CalibrationManager.getInstance().getImplementation(CalibrationType.OSCILLATOR_COMPLEX);
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.OSCILLATOR_COMPLEX);
+        return getComplexOscillator(implementation, frequency, sampleRate);
+    }
 
-        switch(operation)
+    /**
+     * Creates the complex oscillator implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static IComplexOscillator getComplexOscillator(Implementation implementation, double frequency,
+                                                          double sampleRate)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorComplexOscillator(frequency, sampleRate);
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ScalarComplexOscillator(frequency, sampleRate);
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarComplexOscillator(frequency, sampleRate);
+            case VECTOR_SIMD_PREFERRED -> new VectorComplexOscillator(frequency, sampleRate);
+            default -> throw new IllegalArgumentException("No complex oscillator implementation for " +
+                implementation);
+        };
     }
 }

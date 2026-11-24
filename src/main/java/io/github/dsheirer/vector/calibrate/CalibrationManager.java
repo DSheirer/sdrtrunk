@@ -19,23 +19,14 @@
 
 package io.github.dsheirer.vector.calibrate;
 
-import io.github.dsheirer.dsp.am.AmDemodulatorCalibration;
+import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.calibration.VectorCalibrationSettings;
 import io.github.dsheirer.vector.calibrate.channelizer.ChannelDFTCalibration;
-import io.github.dsheirer.vector.calibrate.demodulator.DifferentialDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealDcRemovalCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealHalfBand11TapFilterCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealHalfBand15TapFilterCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealHalfBand23TapFilterCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealHalfBand63TapFilterCalibration;
-import io.github.dsheirer.vector.calibrate.filter.RealHalfBandDefaultFilterCalibration;
+import io.github.dsheirer.vector.calibrate.filter.RealHalfBandFilterCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainCalibration;
-import io.github.dsheirer.vector.calibrate.gain.ComplexGainControlCalibration;
-import io.github.dsheirer.vector.calibrate.interpolator.InterpolatorCalibration;
-import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
@@ -43,13 +34,25 @@ import io.github.dsheirer.vector.calibrate.sync.DMRSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.NXDNSoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P1SoftSyncCalibration;
 import io.github.dsheirer.vector.calibrate.sync.P25P2SoftSyncCalibration;
-import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Stream;
+import jdk.incubator.vector.FloatVector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +63,7 @@ public class CalibrationManager
 {
     private static final Logger mLog = LoggerFactory.getLogger(CalibrationManager.class);
     private Map<CalibrationType, Calibration> mCalibrationMap = new HashMap<>();
+    private final Map<CalibrationType,Implementation> mImplementationOverrides = new ConcurrentHashMap<>();
     private static CalibrationManager sInstance;
     private static VectorCalibrationSettings sVectorCalibrationSettings;
 
@@ -76,7 +80,7 @@ public class CalibrationManager
      *
      * Note: invoke this method first with a preferences instance to ensure it is the one that is used.
      */
-    public static CalibrationManager getInstance(Settings settings)
+    public static synchronized CalibrationManager getInstance(Settings settings)
     {
         if(sVectorCalibrationSettings == null)
         {
@@ -89,7 +93,7 @@ public class CalibrationManager
     /**
      * Access a singleton instance of this class.
      */
-    public static CalibrationManager getInstance()
+    public static synchronized CalibrationManager getInstance()
     {
         if(sInstance == null)
         {
@@ -98,35 +102,175 @@ public class CalibrationManager
                 sVectorCalibrationSettings = new Settings().getVectorCalibrationSettings();
             }
 
-            sInstance = new CalibrationManager();
+            CalibrationManager manager = new CalibrationManager();
 
-            sInstance.add(new AmDemodulatorCalibration());
-            sInstance.add(new ChannelDFTCalibration());
-            sInstance.add(new ComplexGainCalibration());
-            sInstance.add(new ComplexGainControlCalibration());
-            sInstance.add(new ComplexOscillatorCalibration());
-            sInstance.add(new ComplexMixerCalibration());
-            sInstance.add(new DMRSoftSyncCalibration());
-            sInstance.add(new DifferentialDemodulatorCalibration());
-            sInstance.add(new FirFilterCalibration());
-            sInstance.add(new FmDemodulatorCalibration());
-            sInstance.add(new InterpolatorCalibration());
-            sInstance.add(new MagnitudeCalibration());
-            sInstance.add(new NXDNSoftSyncCalibration());
-            sInstance.add(new P25P1SoftSyncCalibration());
-            sInstance.add(new P25P2SoftSyncCalibration());
-            sInstance.add(new RealDcRemovalCalibration());
-            sInstance.add(new RealHalfBand11TapFilterCalibration());
-            sInstance.add(new RealHalfBand15TapFilterCalibration());
-            sInstance.add(new RealHalfBand23TapFilterCalibration());
-            sInstance.add(new RealHalfBand63TapFilterCalibration());
-            sInstance.add(new RealHalfBandDefaultFilterCalibration());
-            sInstance.add(new RealOscillatorCalibration());
-//            sInstance.add(new HilbertCalibration()); //Not currently used
-            sInstance.add(new WindowCalibration()); //Not currently used
+            for(Calibration calibration : createCalibrations())
+            {
+                manager.add(calibration);
+            }
+
+            manager.removeStaleSettings();
+            manager.checkEnvironment();
+            mLog.info(manager.getSummary());
+            sInstance = manager;
         }
 
         return sInstance;
+    }
+
+    /**
+     * Removes stored calibration results that don't belong to a current calibration type and version, such as results
+     * from removed calibrations and from earlier versions of a calibration.
+     */
+    private void removeStaleSettings()
+    {
+        Set<String> current = new HashSet<>();
+
+        for(CalibrationType type : mCalibrationMap.keySet())
+        {
+            current.add(type.getPreferenceKey());
+        }
+
+        for(Setting setting : List.of(Setting.VECTOR_CALIBRATION, Setting.VECTOR_CALIBRATION_RESULT))
+        {
+            try
+            {
+                Preferences node = setting.getNode();
+
+                for(String key : node.keys())
+                {
+                    if(!current.contains(key))
+                    {
+                        node.remove(key);
+                        mLog.info("Removed stale calibration setting [" + key + "]");
+                    }
+                }
+            }
+            catch(BackingStoreException | IllegalStateException e)
+            {
+                mLog.warn("Unable to remove stale calibration settings", e);
+            }
+        }
+    }
+
+    /**
+     * Resets all calibrations when the computing environment (CPU, vector width, JDK or operating system) differs from
+     * the environment of the stored calibrations, since the optimal implementations can differ.  When no environment
+     * is stored, such as after upgrading from a version that didn't store it, the current environment is stored and
+     * the existing calibrations are kept.
+     */
+    private void checkEnvironment()
+    {
+        String current = getEnvironment();
+        String stored = Setting.VECTOR_CALIBRATION_ENVIRONMENT.get(null);
+
+        if(stored != null && !stored.equals(current))
+        {
+            mLog.info("Computing environment changed from [" + stored + "] to [" + current +
+                "] - resetting calibrations");
+            reset();
+        }
+
+        Setting.VECTOR_CALIBRATION_ENVIRONMENT.put(current);
+    }
+
+    /**
+     * Description of the computing environment that calibrations depend on.
+     */
+    public static String getEnvironment()
+    {
+        StringBuilder sb = new StringBuilder();
+        String cpu = getCpuName();
+
+        if(!cpu.isEmpty())
+        {
+            sb.append(cpu).append(", ");
+        }
+
+        sb.append(System.getProperty("os.name")).append(" ").append(System.getProperty("os.arch"));
+        sb.append(", Java ").append(Runtime.version().feature());
+        sb.append(", ").append(FloatVector.SPECIES_PREFERRED.vectorBitSize()).append("-bit vectors");
+        return sb.toString();
+    }
+
+    /**
+     * CPU model name, where the operating system provides it without running a program.
+     * @return name or an empty string
+     */
+    private static String getCpuName()
+    {
+        String identifier = System.getenv("PROCESSOR_IDENTIFIER"); //Windows
+
+        if(identifier != null && !identifier.isBlank())
+        {
+            return identifier.trim();
+        }
+
+        Path cpuinfo = Path.of("/proc/cpuinfo"); //Linux
+
+        if(Files.isReadable(cpuinfo))
+        {
+            try(Stream<String> lines = Files.lines(cpuinfo))
+            {
+                Optional<String> model = lines.filter(line -> line.startsWith("model name") || line.startsWith("Model"))
+                    .map(line -> line.substring(line.indexOf(':') + 1).trim())
+                    .filter(name -> !name.isEmpty())
+                    .findFirst();
+
+                if(model.isPresent())
+                {
+                    return model.get();
+                }
+            }
+            catch(IOException | UncheckedIOException e)
+            {
+                //CPU name is optional
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * One line summary of each calibration's selected implementation and its speedup over scalar.
+     */
+    public String getSummary()
+    {
+        StringBuilder sb = new StringBuilder("Vector calibrations for [").append(getEnvironment()).append("]:");
+
+        for(CalibrationType type : getCalibrationTypes().stream().sorted().toList())
+        {
+            Calibration calibration = getCalibration(type);
+            sb.append(" ").append(type.name()).append("=").append(calibration.getImplementation());
+            calibration.getResult().ifPresent(result ->
+                sb.append(String.format(Locale.ROOT, " (%.2fx)", result.getSelectedSpeedup())));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Creates an instance of each calibration used by the system.
+     */
+    public static List<Calibration> createCalibrations()
+    {
+        return List.of(
+            new ChannelDFTCalibration(),
+            new ComplexGainCalibration(),
+            new ComplexOscillatorCalibration(),
+            new ComplexMixerCalibration(),
+            new DMRSoftSyncCalibration(),
+            new FirFilterCalibration(),
+            new FmDemodulatorCalibration(),
+            new NXDNSoftSyncCalibration(),
+            new P25P1SoftSyncCalibration(),
+            new P25P2SoftSyncCalibration(),
+            RealHalfBandFilterCalibration.tap11(),
+            RealHalfBandFilterCalibration.tap15(),
+            RealHalfBandFilterCalibration.tap23(),
+            RealHalfBandFilterCalibration.tap63(),
+            RealHalfBandFilterCalibration.defaultLength(),
+            new RealOscillatorCalibration());
     }
 
     /**
@@ -169,6 +313,13 @@ public class CalibrationManager
      */
     public Implementation getImplementation(CalibrationType type)
     {
+        Implementation override = mImplementationOverrides.get(type);
+
+        if(override != null)
+        {
+            return override;
+        }
+
         if(sVectorCalibrationSettings.isVectorEnabled())
         {
             Calibration calibration = getCalibration(type);
@@ -182,6 +333,25 @@ public class CalibrationManager
         }
 
         return Implementation.SCALAR;
+    }
+
+    /**
+     * Overrides the implementation that the factories create for the calibration type, regardless of the stored
+     * calibration and the vector setting.  This lets tests exercise a specific implementation through the application
+     * code paths.  The override isn't stored.
+     * @param type of calibration
+     * @param implementation to use, or null to remove the override
+     */
+    public void setImplementationOverride(CalibrationType type, Implementation implementation)
+    {
+        if(implementation == null)
+        {
+            mImplementationOverrides.remove(type);
+        }
+        else
+        {
+            mImplementationOverrides.put(type, implementation);
+        }
     }
 
     /**
@@ -226,36 +396,52 @@ public class CalibrationManager
     }
 
     /**
-     * Calibrates any calibrations that are not currently calibrated
-     * @throws CalibrationException if any errors are encountered by any of the calibrations.
+     * Calibrates each uncalibrated calibration.  A calibration that fails is logged and left uncalibrated, so it uses
+     * the scalar implementation, and the remaining calibrations continue.  Logs the summary when finished.
      */
-    public void calibrate() throws CalibrationException
+    public void calibrate()
     {
         List<Calibration> uncalibrated = getUncalibrated();
 
         if(uncalibrated.isEmpty())
         {
             mLog.info("No additional calibrations are required at this time.");
+            return;
         }
-        else
+
+        mLog.info("Calibrating software for optimal performance on this computer.");
+        mLog.info("*** Please be patient, this may take a few minutes ***");
+
+        int calibrationCounter = 0;
+        int failed = 0;
+
+        for(Calibration calibration: uncalibrated)
         {
-            mLog.info("Calibrating software for optimal performance on this computer.");
-            mLog.info("*** Please be patient, this may take a few minutes ***");
+            mLog.info("Calibrating [" + ++calibrationCounter + " of " + uncalibrated.size() +
+                "] Type: " + calibration.getType());
 
-            int calibrationCounter = 0;
-
-            for(Calibration calibration: uncalibrated)
+            try
             {
-                if(!calibration.isCalibrated())
-                {
-                    mLog.info("Calibrating [" + ++calibrationCounter + " of " + uncalibrated.size() +
-                            "] Type: " + calibration.getType());
-                    calibration.calibrate();
-                }
+                calibration.calibrate();
             }
-
-            mLog.info("Calibration Complete!");
+            catch(CalibrationException | RuntimeException e)
+            {
+                failed++;
+                mLog.error("Calibration failed for [" + calibration.getType() + "] - it will use the scalar " +
+                    "implementation", e);
+            }
         }
+
+        mLog.info("Calibration Complete!" + (failed > 0 ? "  [" + failed + "] calibrations failed." : ""));
+        mLog.info(getSummary());
+    }
+
+    /**
+     * Indicates if vector operations are enabled, so that calibration has an effect.
+     */
+    public boolean isVectorEnabled()
+    {
+        return sVectorCalibrationSettings.isVectorEnabled();
     }
 
     /**
@@ -283,7 +469,6 @@ public class CalibrationManager
     {
         CalibrationManager manager = getInstance();
 //        manager.reset();
-        manager.reset(CalibrationType.DIFFERENTIAL_DEMODULATOR);
 
         if(!manager.isCalibrated())
         {

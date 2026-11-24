@@ -29,8 +29,6 @@ import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.settings.CalibrateRequest;
-import io.github.dsheirer.gui.settings.SettingsPageType;
-import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.gui.settings.calibration.CalibrationDialog;
 import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.icon.IconModel;
@@ -193,6 +191,14 @@ public class SDRTrunk implements Listener<TunerEvent>
         if(headless)
         {
             mLog.info("starting main application headless");
+
+            //There's no calibration dialog when headless, so calibrate here, before any channels start, otherwise
+            //every operation would stay on the scalar implementation
+            if(calibrationManager.isVectorEnabled() && !calibrationManager.isCalibrated())
+            {
+                calibrationManager.calibrate();
+            }
+
             autoStartChannels();
             return;
         }
@@ -240,9 +246,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
                     if(calibrate.isPresent() && calibrate.get().getText().equals("Calibrate"))
                     {
-                        MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest(
-                            SettingsPageType.PERFORMANCE));
-                        MyEventBus.getGlobalEventBus().post(new CalibrateRequest());
+                        //Opens the Performance settings page and starts calibrating, then auto-starts channels.  No
+                        //channels or tuner channelizers exist yet, so they all use the new calibrations.
+                        MyEventBus.getGlobalEventBus().post(new CalibrateRequest(this::autoStartChannels));
                     }
                     else
                     {

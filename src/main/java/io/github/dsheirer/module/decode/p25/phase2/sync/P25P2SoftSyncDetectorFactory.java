@@ -35,16 +35,28 @@ public class P25P2SoftSyncDetectorFactory
      */
     public static P25P2SoftSyncDetector getDetector()
     {
-        Implementation implementation = CalibrationManager.getInstance()
-                .getImplementation(CalibrationType.P25P2_SOFT_SYNC_DETECTOR);
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.P25P2_SOFT_SYNC_DETECTOR);
+        return getDetector(implementation);
+    }
 
+    /**
+     * Creates the P25 Phase 2 soft sync detector implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static P25P2SoftSyncDetector getDetector(Implementation implementation)
+    {
         return switch(implementation)
         {
+            case SCALAR, UNCALIBRATED -> new P25P2SoftSyncDetectorScalar();
             case VECTOR_SIMD_64 -> new P25P2SoftSyncDetectorVector64();
             case VECTOR_SIMD_128 -> new P25P2SoftSyncDetectorVector128();
             case VECTOR_SIMD_256 -> new P25P2SoftSyncDetectorVector256();
             case VECTOR_SIMD_512 -> new P25P2SoftSyncDetectorVector512();
-            default -> new P25P2SoftSyncDetectorScalar();
+            default -> throw new IllegalArgumentException("No P25 Phase 2 soft sync detector implementation for " +
+                implementation);
         };
     }
 }

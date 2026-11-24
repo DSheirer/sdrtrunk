@@ -126,6 +126,10 @@ tasks.named('compileJava') {
 
 test {
     useJUnitPlatform()
+
+    //Tests use in-memory preferences, so they start from empty settings and never read or change the user's settings,
+    //such as the vector calibrations that select DSP implementations
+    systemProperty 'java.util.prefs.PreferencesFactory', 'io.github.dsheirer.settings.MemoryPreferencesFactory'
 }
 
 dependencies {

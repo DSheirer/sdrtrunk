@@ -19,8 +19,6 @@
 
 package io.github.dsheirer.dsp.am;
 
-import io.github.dsheirer.dsp.magnitude.IMagnitudeCalculator;
-import io.github.dsheirer.dsp.magnitude.MagnitudeFactory;
 import io.github.dsheirer.dsp.squelch.AdaptiveSquelch;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
@@ -41,8 +39,6 @@ public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener
      * thump at the end of a transmission.
      */
     private static final double AUDIO_DELAY_SECONDS = 0.032;
-    private final IMagnitudeCalculator mMagnitudeCalculator = MagnitudeFactory.getMagnitudeCalculator();
-    private final IAmDemodulator mAmDemodulator;
     private final AdaptiveSquelch mAdaptiveSquelch;
     private final AmAudioNormalizer mAudioNormalizer = new AmAudioNormalizer(DEFAULT_SAMPLE_RATE);
     private float[] mDelayedEnvelope;
@@ -60,7 +56,6 @@ public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener
      */
     public SquelchingAMDemodulator(float squelchThreshold, boolean squelchAutoTrack, double bandwidth)
     {
-        mAmDemodulator = AmDemodulatorFactory.getAmDemodulator(ENVELOPE_GAIN);
         mAdaptiveSquelch = new AdaptiveSquelch(squelchThreshold, squelchAutoTrack, bandwidth);
         setAudioDelay(DEFAULT_SAMPLE_RATE);
     }
@@ -109,8 +104,17 @@ public class SquelchingAMDemodulator implements ISquelchingDemodulator, Listener
         mAdaptiveSquelch.setSquelchChanged(false);
         setSquelchChanged(false);
 
-        float[] magnitude = mMagnitudeCalculator.calculate(i, q);
-        float[] demodulated = mAmDemodulator.demodulateMagnitude(magnitude);
+        float[] magnitude = new float[i.length];
+        float[] demodulated = new float[i.length];
+
+        //One pass for the squared magnitude, which the squelch uses, and the envelope.  The JIT compiler vectorizes this
+        //loop, so it is as fast as a hand-written vector implementation, and about twice as fast as separate passes.
+        for(int x = 0; x < i.length; x++)
+        {
+            float squaredMagnitude = (i[x] * i[x]) + (q[x] * q[x]);
+            magnitude[x] = squaredMagnitude;
+            demodulated[x] = (float)Math.sqrt(squaredMagnitude) * ENVELOPE_GAIN;
+        }
 
         for(int x = 0; x < i.length; x++)
         {

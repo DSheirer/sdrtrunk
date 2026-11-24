@@ -283,3 +283,10 @@
 {
     -fx-fill: -fx-text-base-color;
 }
+
+/* Calibration results */
+
+.settings-editor .settings-results-header
+{
+    -fx-font-weight: bold;
+}

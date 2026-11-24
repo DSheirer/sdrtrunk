@@ -47,7 +47,7 @@ public enum SettingsPageType
         context -> new AppearanceSettingsPage(context.settings())),
     PERFORMANCE(Group.GENERAL, "Performance", FontAwesome.TACHOMETER,
         "CPU vector (SIMD) operations and their calibration.",
-        context -> new PerformanceSettingsPage(context.settings())),
+        context -> new PerformanceSettingsPage(context.settings(), context.channelProcessingManager())),
 
     TUNERS(Group.RADIO, "Tuners", FontAwesome.SIGNAL,
         "How tuner samples are divided into channels, and tuner specific options.",

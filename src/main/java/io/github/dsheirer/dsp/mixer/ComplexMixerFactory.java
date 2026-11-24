@@ -22,16 +22,12 @@ package io.github.dsheirer.dsp.mixer;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating complex mixer instances from scalar and vector implementations.
  */
 public class ComplexMixerFactory
 {
-    private static final Logger mLog = LoggerFactory.getLogger(ComplexMixerFactory.class);
-
     /**
      * Creates an instance of the optimal implementation of a complex mixer for this hardware.
      * @param frequency of the mixing oscillator
@@ -41,23 +37,24 @@ public class ComplexMixerFactory
     public static ComplexMixer getMixer(double frequency, double sampleRate)
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.MIXER_COMPLEX);
+        return getMixer(implementation, frequency, sampleRate);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the complex mixer implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static ComplexMixer getMixer(Implementation implementation, double frequency, double sampleRate)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                {
-                    return new VectorComplexMixer(frequency, sampleRate);
-                }
-            case SCALAR:
-            case UNCALIBRATED:
-                {
-                    return new ScalarComplexMixer(frequency, sampleRate);
-                }
-            default:
-                {
-                    mLog.warn("Unrecognized complex mixer implementation: " + implementation);
-                    return new ScalarComplexMixer(frequency, sampleRate);
-                }
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarComplexMixer(frequency, sampleRate);
+            case VECTOR_SIMD_PREFERRED -> new VectorComplexMixer(frequency, sampleRate);
+            default -> throw new IllegalArgumentException("No complex mixer implementation for " +
+                implementation);
+        };
     }
 }

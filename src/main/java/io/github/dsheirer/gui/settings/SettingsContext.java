@@ -19,14 +19,18 @@
 
 package io.github.dsheirer.gui.settings;
 
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.settings.Settings;
 
 /**
- * What the settings pages can use: the settings, and the Radio Reference service for the account controls.
+ * What the settings pages can use: the settings, the Radio Reference service for the account controls, and the
+ * channel processing manager so that calibration can wait until no channels are processing.
  * @param settings to edit
  * @param radioReference service shared with the playlist editor, or null when there isn't one
+ * @param channelProcessingManager for the processing state of channels, or null when there isn't one
  */
-public record SettingsContext(Settings settings, RadioReference radioReference)
+public record SettingsContext(Settings settings, RadioReference radioReference,
+                              ChannelProcessingManager channelProcessingManager)
 {
 }

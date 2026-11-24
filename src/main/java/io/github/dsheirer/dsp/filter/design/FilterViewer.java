@@ -83,8 +83,6 @@ public class FilterViewer extends Application
 
         //        float[] taps = FilterFactory.getHighPass(8000, 3000, filterLength, windowType);
 
-//        taps = HilbertTransform.HALF_BAND_FILTER_47_TAP;
-
         if(taps == null)
         {
             throw new IllegalStateException("Couldn't design filter");

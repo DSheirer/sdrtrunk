@@ -157,6 +157,15 @@ public abstract class SettingsPage extends ScrollPane
     }
 
     /**
+     * Handles a request that opened this page, for requests that also ask the page to do something.  The default
+     * does nothing.
+     * @param request that opened this page
+     */
+    public void process(ViewSettingsEditorRequest request)
+    {
+    }
+
+    /**
      * Completes the page after the subclass constructor has added its sections: adds the reset button when the page
      * has rows that track a default.  Called once by the settings dialog.
      */

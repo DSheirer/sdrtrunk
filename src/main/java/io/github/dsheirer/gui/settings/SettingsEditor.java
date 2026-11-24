@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.settings;
 
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.Settings;
@@ -70,10 +71,12 @@ public class SettingsEditor extends BorderPane
      *
      * @param settings to edit
      * @param radioReference service for the Radio Reference account controls, or null
+     * @param channelProcessingManager for the processing state of channels, or null
      */
-    public SettingsEditor(Settings settings, RadioReference radioReference)
+    public SettingsEditor(Settings settings, RadioReference radioReference,
+                          ChannelProcessingManager channelProcessingManager)
     {
-        mContext = new SettingsContext(settings, radioReference);
+        mContext = new SettingsContext(settings, radioReference, channelProcessingManager);
 
         getStyleClass().add("settings-editor");
         URL stylesheet = SettingsEditor.class.getResource("/settings_editor.css");
@@ -120,6 +123,7 @@ public class SettingsEditor extends BorderPane
             //A requested page might be hidden by a search, so clear the search first
             mSearchField.clear();
             showPage(request.getPageType());
+            getPage(request.getPageType()).process(request);
         }
     }
 

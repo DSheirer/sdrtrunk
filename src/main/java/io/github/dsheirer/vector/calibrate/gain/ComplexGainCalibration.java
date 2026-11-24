@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,25 +20,21 @@
 package io.github.dsheirer.vector.calibrate.gain;
 
 import io.github.dsheirer.dsp.gain.complex.ComplexGain;
-import io.github.dsheirer.dsp.gain.complex.ScalarComplexGain;
-import io.github.dsheirer.dsp.gain.complex.VectorComplexGain;
-import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
 import io.github.dsheirer.vector.calibrate.Calibration;
-import io.github.dsheirer.vector.calibrate.CalibrationException;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import java.util.List;
 
 /**
- * Determines the optimal scalar vs vector implementation of complex gain.
+ * Complex gain calibration
  */
 public class ComplexGainCalibration extends Calibration
 {
     private static final int BUFFER_SIZE = 2048;
-    private static final int ITERATION_DURATION_MS = 1000;
-    private static final int WARMUP_ITERATIONS = 5;
-    private static final int TEST_ITERATIONS = 5;
     private static final float GAIN = 0.99f;
+    private final float[] mI;
+    private final float[] mQ;
 
     /**
      * Constructs an instance
@@ -46,105 +42,26 @@ public class ComplexGainCalibration extends Calibration
     public ComplexGainCalibration()
     {
         super(CalibrationType.GAIN_COMPLEX);
+        mI = getFloatSamples(BUFFER_SIZE);
+        mQ = getFloatSamples(BUFFER_SIZE);
     }
 
-    @Override public void calibrate() throws CalibrationException
+    @Override protected List<Candidate> getCandidates()
     {
-        float[] i = getFloatSamples(BUFFER_SIZE);
-        float[] q = getFloatSamples(BUFFER_SIZE);
-
-        Mean scalarMean = new Mean();
-        for(int x = 0; x < WARMUP_ITERATIONS; x++)
-        {
-            long score = testScalar(i, q);
-            scalarMean.increment(score);
-        }
-
-        mLog.info("COMPLEX GAIN WARMUP - SCALAR:" + DECIMAL_FORMAT.format(scalarMean.getResult()));
-
-        i = getFloatSamples(BUFFER_SIZE);
-        q = getFloatSamples(BUFFER_SIZE);
-
-        Mean vectorMean = new Mean();
-        for(int x = 0; x < WARMUP_ITERATIONS; x++)
-        {
-            long score = testVector(i, q);
-            vectorMean.increment(score);
-        }
-
-        mLog.info("COMPLEX GAIN WARMUP - VECTOR:" + DECIMAL_FORMAT.format(vectorMean.getResult()));
-
-        i = getFloatSamples(BUFFER_SIZE);
-        q = getFloatSamples(BUFFER_SIZE);
-
-        scalarMean.clear();;
-        for(int x = 0; x < TEST_ITERATIONS; x++)
-        {
-            long score = testScalar(i, q);
-            scalarMean.increment(score);
-        }
-
-        mLog.info("COMPLEX GAIN - SCALAR:" + DECIMAL_FORMAT.format(scalarMean.getResult()));
-
-        i = getFloatSamples(BUFFER_SIZE);
-        q = getFloatSamples(BUFFER_SIZE);
-
-        vectorMean.clear();
-        for(int x = 0; x < TEST_ITERATIONS; x++)
-        {
-            long score = testVector(i, q);
-            vectorMean.increment(score);
-        }
-
-        mLog.info("COMPLEX GAIN - VECTOR:" + DECIMAL_FORMAT.format(vectorMean.getResult()));
-
-        if(scalarMean.getResult() > vectorMean.getResult())
-        {
-            setImplementation(Implementation.SCALAR);
-        }
-        else
-        {
-            setImplementation(Implementation.VECTOR_SIMD_PREFERRED);
-        }
-
-        mLog.info("COMPLEX GAIN - SET IMPLEMENTATION TO:" + getImplementation());
-    }
-
-    private long testScalar(float[] i, float[] q)
-    {
-        float accumulator = 0.0f;
-        long count = 0;
-
-        ComplexGain scalar = new ScalarComplexGain(GAIN);
-
-        long start = System.currentTimeMillis();
-
-        while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
-        {
-            ComplexSamples amplified = scalar.apply(i, q, start);
-            accumulator += amplified.i()[2];
-            count++;
-        }
-
-        return count + (long)(accumulator * 0);
-    }
-
-    private long testVector(float[] i, float[] q)
-    {
-        float accumulator = 0.0f;
-        long count = 0;
-
-        ComplexGain scalar = new VectorComplexGain(GAIN);
-
-        long start = System.currentTimeMillis();
-
-        while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
-        {
-            ComplexSamples amplified = scalar.apply(i, q, start);
-            accumulator += amplified.i()[2];
-            count++;
-        }
-
-        return count + (long)(accumulator * 0);
+        return List.of(
+            candidate(Implementation.SCALAR, () -> {
+                ComplexGain operation = ComplexGainFactory.getComplexGain(Implementation.SCALAR, GAIN);
+                return () -> {
+                    //The gain is applied in place
+                    return operation.apply(mI.clone(), mQ.clone(), 0L);
+                };
+            }),
+            candidate(Implementation.VECTOR_SIMD_PREFERRED, () -> {
+                ComplexGain operation = ComplexGainFactory.getComplexGain(Implementation.VECTOR_SIMD_PREFERRED, GAIN);
+                return () -> {
+                    //The gain is applied in place
+                    return operation.apply(mI.clone(), mQ.clone(), 0L);
+                };
+            }));
     }
 }

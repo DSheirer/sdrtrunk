@@ -24,50 +24,35 @@ import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
 
 /**
- * Factory for selecting and creating the optimal implementation of complex gain
- * control for this hardware.
+ * Factory for selecting and creating the optimal implementation of complex gain for this hardware.
  */
 public class ComplexGainFactory
 {
-    /**
-     * Instantiates the optimal complex gain control implementation for this hardware,
-     * as determined by the Calibration Manager.
-     */
-    public static IComplexGainControl getComplexGainControl()
-    {
-        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.GAIN_CONTROL_COMPLEX);
-
-        switch(implementation)
-        {
-            case VECTOR_SIMD_PREFERRED:
-            {
-                return new VectorComplexGainControl();
-            }
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ComplexGainControl();
-        }
-    }
-
     /**
      * Instantiates the optimal complex gain implementation for this hardware,
      * as determined by the Calibration Manager.
      */
     public static ComplexGain getComplexGain(float gain)
     {
-        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.GAIN_CONTROL_COMPLEX);
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.GAIN_COMPLEX);
+        return getComplexGain(implementation, gain);
+    }
 
-        switch(implementation)
+    /**
+     * Creates the complex gain implementation.
+     *
+     * Calibration creates its candidates with this method so that it measures exactly what the application uses.
+     * @param implementation to create, where UNCALIBRATED creates the scalar implementation
+     * @throws IllegalArgumentException if there is no such implementation
+     */
+    public static ComplexGain getComplexGain(Implementation implementation, float gain)
+    {
+        return switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-            {
-                return new VectorComplexGain(gain);
-            }
-            case SCALAR:
-            case UNCALIBRATED:
-            default:
-                return new ScalarComplexGain(gain);
-        }
+            case SCALAR, UNCALIBRATED -> new ScalarComplexGain(gain);
+            case VECTOR_SIMD_PREFERRED -> new VectorComplexGain(gain);
+            default -> throw new IllegalArgumentException("No complex gain implementation for " +
+                implementation);
+        };
     }
 }
