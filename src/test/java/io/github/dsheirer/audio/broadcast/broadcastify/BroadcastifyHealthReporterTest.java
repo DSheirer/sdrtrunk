@@ -124,6 +124,8 @@ public class BroadcastifyHealthReporterTest
             "County", "p25"));
         node.started(SINCE);
         other.started(SINCE);
+        node.setCallsCounted();
+        other.setCallsCounted();
         HealthHistory history = new HealthHistory();
 
         for(long t = SINCE; t <= SINCE + 1_200_000; t += 10_000)

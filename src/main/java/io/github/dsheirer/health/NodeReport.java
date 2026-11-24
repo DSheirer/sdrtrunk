@@ -71,7 +71,11 @@ public class NodeReport
 
             if(a.isSite())
             {
-                sites.add(site(a, b));
+                //A site whose calls nothing counts (yet: DMR, NXDN) is left out, rather than reported as having none.
+                if(a.calls() != null)
+                {
+                    sites.add(site(a, b));
+                }
             }
             else if(a.info().mode() != null && a.frequency() > 0)
             {
@@ -157,7 +161,7 @@ public class NodeReport
         site.add("cc", cc);
 
         CallTally.Totals callsA = a.calls();
-        CallTally.Totals callsB = b != null ? b.calls() : CallTally.Totals.EMPTY;
+        CallTally.Totals callsB = b != null && b.calls() != null ? b.calls() : CallTally.Totals.EMPTY;
         JsonObject calls = new JsonObject();
         calls.addProperty("started", callsA.started() - callsB.started());
         calls.addProperty("recorded", callsA.get(CallOutcome.RECORDED) - callsB.get(CallOutcome.RECORDED));

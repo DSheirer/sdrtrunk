@@ -145,6 +145,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     public P25TrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
+        calls(); //This control channel's calls are counted (node health reports)
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 phase1)
         {

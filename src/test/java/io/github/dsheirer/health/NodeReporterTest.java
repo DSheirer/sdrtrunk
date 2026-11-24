@@ -86,17 +86,19 @@ public class NodeReporterTest
         firsts.sort(Long::compare);
         assertTrue(firsts.get(49) - firsts.get(0) > NodeReporter.INTERVAL_MS * 0.7, "spread over the interval");
 
-        int sameMinute = 0;
+        //50 times spread at random over 5 minutes have about 8 neighbours within a second of each other, by chance.
+        //Seeding that leaves nearby seeds alike puts nearly all 50 within a second of one another.
+        int withinASecond = 0;
 
         for(int i = 1; i < firsts.size(); i++)
         {
             if(firsts.get(i) - firsts.get(i - 1) < 1000)
             {
-                sameMinute++;
+                withinASecond++;
             }
         }
 
-        assertTrue(sameMinute < 10, "not bunched together: " + sameMinute);
+        assertTrue(withinASecond < 25, "not bunched together: " + withinASecond);
     }
 
     @Test

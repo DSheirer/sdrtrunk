@@ -106,11 +106,14 @@ public class HealthRegistry
     }
 
     /**
-     * Calls announced by a standard channel's control channel, and their outcomes.
+     * Calls announced by a standard channel's control channel, and their outcomes.  Asking for them says they're
+     * counted: the channel's sites are reported from now on.
      */
     public CallTally calls(Channel channel)
     {
-        return channel(channel).getCalls();
+        ChannelHealth health = channel(channel);
+        health.setCallsCounted();
+        return health.getCalls();
     }
 
     /**

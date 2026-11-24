@@ -45,6 +45,7 @@ public class NodeReportTest
         other.started(SINCE);
         site.setFrequency(854_787_500);
         fm.setFrequency(155_520_000);
+        site.setCallsCounted();
         site.identity("wacn", 781824);
         site.identity("sysId", 939);
         site.identity("rfss", 1);
@@ -144,6 +145,26 @@ public class NodeReportTest
         assertFalse(radio.has("droppedS"));
 
         assertRequiredFields(report);
+    }
+
+    @Test
+    void a_site_whose_calls_nothing_counts_is_left_out_not_reported_with_none()
+    {
+        ChannelHealth dmr = new ChannelHealth(ChannelHealthTest.info(104, "dmr"));
+        dmr.started(SINCE);
+
+        for(int i = 0; i < 100; i++)
+        {
+            dmr.control("dmr", true, SINCE + i * 100L);
+        }
+
+        HealthSnapshot now = snapshot(SINCE + 300_000, dmr);
+        assertNull(NodeReport.build(new NodeReporter.Window(null, now, false, 0), node(), "1.0.0", info -> true));
+
+        dmr.setCallsCounted();
+        now = snapshot(SINCE + 300_000, dmr);
+        assertEquals(1, NodeReport.build(new NodeReporter.Window(null, now, false, 0), node(), "1.0.0", info -> true)
+            .getAsJsonArray("sites").size());
     }
 
     @Test
