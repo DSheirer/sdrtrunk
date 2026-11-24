@@ -22,6 +22,9 @@ package io.github.dsheirer.health;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -53,6 +56,7 @@ public class NodeReport
         HealthSnapshot now = window.now();
         HealthSnapshot base = window.base();
         JsonArray sites = new JsonArray();
+        List<ChannelHealth.ChannelInfo> siteChannels = new ArrayList<>();
         JsonArray channels = new JsonArray();
 
         for(ChannelHealth.Totals a: now.channels())
@@ -75,6 +79,7 @@ public class NodeReport
             if(a.isSite() && a.calls() != null)
             {
                 sites.add(site(a, b));
+                siteChannels.add(a.info());
             }
             else if(a.info().mode() != null && a.frequency() > 0)
             {
@@ -86,6 +91,8 @@ public class NodeReport
         {
             return null;
         }
+
+        nameReceivers(sites, siteChannels);
 
         JsonObject report = new JsonObject();
         report.addProperty("v", VERSION);
@@ -127,6 +134,43 @@ public class NodeReport
         }
 
         return report;
+    }
+
+    /**
+     * A site heard by more than one of the node's channels (receivers) has an entry for each: each says which
+     * receiver it is, by its channel's name.  A site heard once doesn't.
+     */
+    private static void nameReceivers(JsonArray sites, List<ChannelHealth.ChannelInfo> channels)
+    {
+        Map<String,Integer> heard = new HashMap<>();
+
+        for(int i = 0; i < sites.size(); i++)
+        {
+            heard.merge(sameSite(sites.get(i).getAsJsonObject()), 1, Integer::sum);
+        }
+
+        for(int i = 0; i < sites.size(); i++)
+        {
+            JsonObject site = sites.get(i).getAsJsonObject();
+
+            if(heard.get(sameSite(site)) > 1)
+            {
+                ChannelHealth.ChannelInfo info = channels.get(i);
+                site.addProperty("receiver", info.name() != null && !info.name().isBlank() ? info.name() :
+                    "channel " + info.channelId());
+            }
+        }
+    }
+
+    /**
+     * What makes two entries the same site: its protocol and the identity its control channel gives, or without one,
+     * the name the user gave it.
+     */
+    private static String sameSite(JsonObject site)
+    {
+        JsonObject id = site.getAsJsonObject("id");
+        return site.get("protocol").getAsString() + "/" +
+            (id != null && !id.isEmpty() ? id.toString() : "name:" + site.get("name").getAsString());
     }
 
     private static JsonObject site(ChannelHealth.Totals a, ChannelHealth.Totals b)

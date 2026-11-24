@@ -176,6 +176,55 @@ public class NodeReportTest
     }
 
     @Test
+    void a_site_two_receivers_hear_has_an_entry_for_each_saying_which()
+    {
+        ChannelHealth rooftop = receiver(201, "Rooftop", 5);
+        ChannelHealth indoor = receiver(202, "Indoor", 5);
+        ChannelHealth other = receiver(203, "Other site", 6);
+        HealthSnapshot now = snapshot(SINCE + 300_000, rooftop, indoor, other);
+        JsonObject report = NodeReport.build(new NodeReporter.Window(null, now, false, 0), node(), "1.0.0",
+            info -> true);
+
+        java.util.Map<String,JsonObject> byReceiver = new java.util.HashMap<>();
+        JsonObject single = null;
+
+        for(var e: report.getAsJsonArray("sites"))
+        {
+            JsonObject site = e.getAsJsonObject();
+
+            if(site.has("receiver"))
+            {
+                byReceiver.put(site.get("receiver").getAsString(), site);
+            }
+            else
+            {
+                single = site;
+            }
+        }
+
+        assertEquals(java.util.Set.of("Rooftop", "Indoor"), byReceiver.keySet(), "the same site, twice");
+        assertEquals(byReceiver.get("Rooftop").get("id"), byReceiver.get("Indoor").get("id"));
+        assertEquals(6, single.getAsJsonObject("id").get("site").getAsInt(), "a site heard once says no receiver");
+    }
+
+    /**
+     * A channel decoding a P25 site's control channel.
+     */
+    private static ChannelHealth receiver(int channelId, String name, int site)
+    {
+        ChannelHealth health = new ChannelHealth(ChannelHealthTest.info(channelId, "p25"));
+        ChannelHealth named = new ChannelHealth(new ChannelHealth.ChannelInfo(channelId, name, health.getInfo().system(),
+            "Downtown", health.getInfo().aliasListName(), "p25"));
+        named.started(SINCE);
+        named.setCallsCounted();
+        named.identity("wacn", 781824);
+        named.identity("sysId", 939);
+        named.identity("site", site);
+        named.control("p25", true, SINCE + 1000);
+        return named;
+    }
+
+    @Test
     void no_report_when_nothing_feeds_the_node()
     {
         HealthSnapshot[] s = twoSnapshots();
