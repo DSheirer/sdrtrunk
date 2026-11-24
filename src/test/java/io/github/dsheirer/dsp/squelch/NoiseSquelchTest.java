@@ -20,12 +20,16 @@
 package io.github.dsheirer.dsp.squelch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.dsp.filter.ChannelFilterDesigner;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.dsp.fm.ScalarFMDemodulator;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +76,53 @@ class NoiseSquelchTest
     {
         float[] filter = ChannelFilterDesigner.design(25000.0, 12500.0);
         assertEquals(0.298f, NoiseSquelch.getNoiseVariance(25000.0, filter), 0.01f);
+    }
+
+    /**
+     * Squelch events must alternate with un-squelch events, including when the hysteresis is the minimum of one buffer.
+     */
+    @Test
+    void shortHysteresisSquelchesBetweenTransmissions()
+    {
+        double sampleRate = 8000.0;
+        int bufferSize = 80;
+        NoiseSquelch squelch = new NoiseSquelch(NoiseSquelch.DEFAULT_NOISE_OPEN_THRESHOLD,
+                NoiseSquelch.DEFAULT_NOISE_CLOSE_THRESHOLD, 1, 1);
+        squelch.setSampleRate(sampleRate);
+        List<SquelchState> states = new ArrayList<>();
+        squelch.setSquelchStateListener(states::add);
+
+        Random random = new Random(3);
+        for(int t = 0; t < 5; t++)
+        {
+            for(int b = 0; b < 40; b++)
+            {
+                //Voice: a tone that is below the 3 kHz noise high-pass cutoff
+                float[] voice = new float[bufferSize];
+                for(int x = 0; x < bufferSize; x++)
+                {
+                    voice[x] = (float)(0.5 * Math.sin(2.0 * Math.PI * 1000.0 * (b * bufferSize + x) / sampleRate));
+                }
+                squelch.process(voice);
+            }
+
+            for(int b = 0; b < 40; b++)
+            {
+                float[] noise = new float[bufferSize];
+                for(int x = 0; x < bufferSize; x++)
+                {
+                    noise[x] = random.nextBoolean() ? 1.0f : -1.0f;
+                }
+                squelch.process(noise);
+            }
+        }
+
+        assertEquals(SquelchState.SQUELCH, states.get(states.size() - 1));
+
+        for(int x = 1; x < states.size(); x++)
+        {
+            assertNotEquals(states.get(x - 1), states.get(x), "Squelch states must alternate: " + states);
+        }
     }
 
     /**
