@@ -32,6 +32,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
 import io.github.dsheirer.module.decode.nxdn.layer2.Direction;
 import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
+import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.RFSSStatusBroadcast;
@@ -135,6 +136,21 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         {
             //A control channel (CAC) frame carries one message, checked by its CRC.
             mHealth.control("nxdn", nxdn.isValid(), nxdn.getTimestamp());
+
+            //This site's own information (not an adjacent site's): its location and radio access number.
+            if(nxdn.isValid() && nxdn instanceof SiteInformation site)
+            {
+                if(site.getLocationID() != null)
+                {
+                    identity("system", site.getLocationID().getSystem());
+                    identity("site", site.getLocationID().getSiteOrIntegrator());
+                }
+
+                if(site.hasRAN())
+                {
+                    mHealth.identity("ran", site.getRAN());
+                }
+            }
         }
     }
 
