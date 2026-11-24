@@ -69,13 +69,12 @@ public class NodeReport
                 continue; //Not running in the window
             }
 
-            if(a.isSite())
+            //A site is a channel that decodes control messages and whose calls are counted.  One whose calls nothing
+            //counts (a DMR or NXDN channel that isn't trunked) is reported as the conventional channel it is, never as a
+            //site with no calls.
+            if(a.isSite() && a.calls() != null)
             {
-                //A site whose calls nothing counts (yet: DMR, NXDN) is left out, rather than reported as having none.
-                if(a.calls() != null)
-                {
-                    sites.add(site(a, b));
-                }
+                sites.add(site(a, b));
             }
             else if(a.info().mode() != null && a.frequency() > 0)
             {

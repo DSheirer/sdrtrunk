@@ -29,6 +29,9 @@ import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.nxdn.NXDNMessage;
+import io.github.dsheirer.module.decode.nxdn.layer2.Direction;
+import io.github.dsheirer.module.decode.nxdn.layer2.RFChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.RFSSStatusBroadcast;
@@ -38,7 +41,7 @@ import io.github.dsheirer.source.SourceEvent;
 
 /**
  * Measures how well a standard (not traffic) channel is heard, for node health reports: control messages decoded and
- * lost, seconds locked and the site's identity on a control channel; openings and seconds open on a conventional
+ * lost (P25 TSBKs, DMR CSBKs, NXDN control channel frames), seconds locked and the site's identity on a control channel; openings and seconds open on a conventional
  * channel.  The channel's traffic channel manager counts the calls (CallTally).  The totals are kept in the
  * HealthRegistry.
  *
@@ -126,6 +129,12 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         else if(message instanceof CSBKMessage csbk)
         {
             mHealth.control("dmr", csbk.isValid(), csbk.getTimestamp());
+        }
+        else if(message instanceof NXDNMessage nxdn && nxdn.getLICH() != null &&
+            nxdn.getLICH().getRFChannel() == RFChannel.RCCH && nxdn.getLICH().getDirection() == Direction.OUTBOUND)
+        {
+            //A control channel (CAC) frame carries one message, checked by its CRC.
+            mHealth.control("nxdn", nxdn.isValid(), nxdn.getTimestamp());
         }
     }
 

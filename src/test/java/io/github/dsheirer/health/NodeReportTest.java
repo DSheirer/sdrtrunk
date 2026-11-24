@@ -148,7 +148,7 @@ public class NodeReportTest
     }
 
     @Test
-    void a_site_whose_calls_nothing_counts_is_left_out_not_reported_with_none()
+    void a_channel_whose_calls_nothing_counts_is_never_a_site_with_none()
     {
         ChannelHealth dmr = new ChannelHealth(ChannelHealthTest.info(104, "dmr"));
         dmr.started(SINCE);
@@ -160,6 +160,14 @@ public class NodeReportTest
 
         HealthSnapshot now = snapshot(SINCE + 300_000, dmr);
         assertNull(NodeReport.build(new NodeReporter.Window(null, now, false, 0), node(), "1.0.0", info -> true));
+
+        //With a frequency, it's the conventional channel it is.
+        dmr.setFrequency(453_100_000);
+        now = snapshot(SINCE + 300_000, dmr);
+        JsonObject conventional = NodeReport.build(new NodeReporter.Window(null, now, false, 0), node(), "1.0.0",
+            info -> true);
+        assertFalse(conventional.has("sites"));
+        assertEquals("dmr", conventional.getAsJsonArray("channels").get(0).getAsJsonObject().get("mode").getAsString());
 
         dmr.setCallsCounted();
         now = snapshot(SINCE + 300_000, dmr);
