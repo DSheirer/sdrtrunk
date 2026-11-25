@@ -21,9 +21,8 @@ package io.github.dsheirer.source.tuner.ui;
 import io.github.dsheirer.gui.control.FrequencyControl;
 import io.github.dsheirer.gui.control.FrequencyEntry;
 import io.github.dsheirer.gui.control.FrequencyField;
-import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
+import io.github.dsheirer.gui.spectrum.MainSpectralDisplay;
 import io.github.dsheirer.settings.Settings;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
@@ -958,7 +957,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
 
                 if(tuner != null)
                 {
-                    SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
+                    MainSpectralDisplay.setTunerEnabled(true);
                     ThreadPool.CACHED.submit(() -> mTunerManager.getDiscoveredTunerModel().broadcast(
                             new TunerEvent(tuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)));
                 }
