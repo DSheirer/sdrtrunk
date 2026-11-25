@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * Copyright (C) 2014-2026 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,9 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.settings.identifier;
+package io.github.dsheirer.settings.identifier.talkgroup;
 
-import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
+import io.github.dsheirer.settings.identifier.IntegerFormat;
 
 public class MDC1200RadioFormatter extends AbstractIntegerFormatter
 {

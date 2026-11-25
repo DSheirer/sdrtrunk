@@ -632,10 +632,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
         {
             SourceConfigTuner sourceConfig = new SourceConfigTuner();
             sourceConfig.setFrequency(nxdnChannel.getDownlinkFrequency());
-            if(mParentChannel.getSourceConfiguration() instanceof SourceConfigTuner parentConfigTuner)
-            {
-                sourceConfig.setPreferredTuner(parentConfigTuner.getPreferredTuner());
-            }
+            sourceConfig.setPreferredTuner(getPreferredTuner(mParentChannel));
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(nxdnChannel.getDownlinkFrequency(), trafficChannel);
             ChannelStartProcessingRequest startChannelRequest = new ChannelStartProcessingRequest(trafficChannel,

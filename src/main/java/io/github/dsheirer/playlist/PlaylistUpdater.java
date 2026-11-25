@@ -114,6 +114,7 @@ public class PlaylistUpdater
     private static boolean convertMdcIdentifiers(PlaylistV2 playlist)
     {
         boolean updated = false;
+        int notConverted = 0;
 
         for(Alias alias: playlist.getAliases())
         {
@@ -142,6 +143,11 @@ public class PlaylistUpdater
                 }
                 else
                 {
+                    if(id instanceof MDC1200ID)
+                    {
+                        notConverted++;
+                    }
+
                     continue;
                 }
 
@@ -155,6 +161,12 @@ public class PlaylistUpdater
                 alias.setAliasIdentifiers(identifiers);
                 updated = true;
             }
+        }
+
+        if(notConverted > 0)
+        {
+            mLog.warn("Unable to convert [" + notConverted + "] legacy MDC-1200 identifiers to radio identifiers - " +
+                "please edit and convert these alias identifiers manually");
         }
 
         return updated;
