@@ -39,7 +39,7 @@ import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.decode.mdc1200.MDCMessage;
 import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
 import io.github.dsheirer.settings.identifier.IntegerFormat;
-import io.github.dsheirer.settings.identifier.MDC1200RadioFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import java.util.List;
 import org.junit.jupiter.api.Test;

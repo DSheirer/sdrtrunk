@@ -129,14 +129,14 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
                 mRadioIdField.setTooltip(new Tooltip(radioDetail.getTooltip()));
                 mIntegerTextFormatter.setValue(value);
                 mIntegerTextFormatter.valueProperty().addListener(mRadioValueChangeListener);
+                getFormatLabel().setText(radioDetail.getTooltip());
             }
             else
             {
+                getFormatLabel().setText(" ");
                 mLog.warn("Couldn't find radio detail for protocol [" + getItem().getProtocol() +
                     "] and format [" + format + "]");
             }
-
-            getFormatLabel().setText(radioDetail.getTooltip());
         }
         else
         {

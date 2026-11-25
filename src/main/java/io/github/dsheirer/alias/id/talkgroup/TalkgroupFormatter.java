@@ -20,7 +20,7 @@
 package io.github.dsheirer.alias.id.talkgroup;
 
 import io.github.dsheirer.settings.identifier.IntegerFormat;
-import io.github.dsheirer.settings.identifier.MDC1200RadioFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AnalogTalkgroupFormatter;

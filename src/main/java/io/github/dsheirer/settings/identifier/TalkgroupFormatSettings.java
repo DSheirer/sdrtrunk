@@ -32,6 +32,7 @@ import io.github.dsheirer.settings.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
