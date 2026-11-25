@@ -27,6 +27,7 @@ import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyField;
 import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
@@ -93,6 +94,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private Slider mJmbeToneGainSlider;
     private ToggleSwitch mLegacyToneLevelsButton;
     private Slider mJmbeNoiseGainSlider;
+    private AccessCodeFilterEditor mColorCodeFilterEditor;
 
     /**
      * Constructs an instance
@@ -211,6 +213,10 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(editorBox, 0, row, 4, 1);
             gridPane.getChildren().add(editorBox);
+
+            row++;
+            GridPane.setConstraints(getColorCodeFilterEditor(), 0, row, 8, 1);
+            gridPane.getChildren().add(getColorCodeFilterEditor());
 
             row++;
             addAudioControls(gridPane, row, "AMBE Audio", getJmbeNoiseGainSlider(), getJmbeAGCButton(),
@@ -507,6 +513,17 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 //        return mUplinkFrequencyField;
 //    }
 
+    private AccessCodeFilterEditor getColorCodeFilterEditor()
+    {
+        if(mColorCodeFilterEditor == null)
+        {
+            mColorCodeFilterEditor = new AccessCodeFilterEditor("Color Code", DecodeConfigDMR.COLOR_CODE_MAXIMUM, 1,
+                false, AccessCodeFilter.Format.DECIMAL, modifiedProperty());
+        }
+
+        return mColorCodeFilterEditor;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -687,10 +704,12 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         getJmbeNoiseGainSlider().setDisable(disable);
         getJmbeToneGainSlider().setDisable(disable);
         getLegacyToneLevelsButton().setDisable(disable);
+        getColorCodeFilterEditor().setEditorDisabled(disable);
 
         if(config instanceof DecodeConfigDMR)
         {
             DecodeConfigDMR decodeConfig = (DecodeConfigDMR)config;
+            getColorCodeFilterEditor().setFilter(decodeConfig.getColorCodeFilter());
 
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getIgnoreCRCChecksumsButton().setSelected(decodeConfig.getIgnoreCRCChecksums());
@@ -712,6 +731,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreCRCChecksumsButton().setSelected(false);
             getIgnoreDataCallsButton().setSelected(false);
             getUseCompressedTalkgroupsToggle().setSelected(false);
+            getColorCodeFilterEditor().setFilter(null);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
             getJmbeAGCButton().setSelected(false);
@@ -744,6 +764,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());
         config.setLegacyToneLevels(getLegacyToneLevelsButton().isSelected());
+        config.setColorCodeFilter(getColorCodeFilterEditor().getFilter());
         getItem().setDecodeConfiguration(config);
     }
 

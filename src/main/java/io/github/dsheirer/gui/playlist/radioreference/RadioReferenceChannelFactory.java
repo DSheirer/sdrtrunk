@@ -22,12 +22,15 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.Modulation;
+import io.github.dsheirer.module.decode.squelch.SquelchDecoderConfig;
 import io.github.dsheirer.rrapi.type.Site;
 import io.github.dsheirer.rrapi.type.SiteFrequency;
 import io.github.dsheirer.rrapi.type.System;
@@ -46,6 +49,12 @@ public final class RadioReferenceChannelFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(RadioReferenceChannelFactory.class);
 
+    /**
+     * P25 NACs that accept any NAC ($F7E receive, $F7F repeater) and are never used as a filter.
+     */
+    private static final int NAC_RECEIVE_ANY = 0xF7E;
+    private static final int NAC_REPEAT_ANY = 0xF7F;
+
     private RadioReferenceChannelFactory()
     {
     }
@@ -61,6 +70,23 @@ public final class RadioReferenceChannelFactory
      */
     public static Channel conventional(ModeDecoderType modeDecoderType, long frequency, String system, String site,
                                        String name)
+    {
+        return conventional(modeDecoderType, frequency, system, site, name, null);
+    }
+
+    /**
+     * Creates a conventional channel for a radio reference frequency, with the frequency's tone applied: a CTCSS or
+     * DCS tone enables tone squelch on an analog FM channel.
+     * @param modeDecoderType of the frequency's radio reference mode
+     * @param frequency in Hertz
+     * @param system name for the channel
+     * @param site name for the channel
+     * @param name of the channel
+     * @param tone field of the radio reference frequency, may be null
+     * @return channel, or null when sdrtrunk has no decoder for the mode
+     */
+    public static Channel conventional(ModeDecoderType modeDecoderType, long frequency, String system, String site,
+                                       String name, String tone)
     {
         if(modeDecoderType.hasDecoderType())
         {
@@ -93,12 +119,92 @@ public final class RadioReferenceChannelFactory
                 }
             }
 
+            applyTone(decodeConfiguration, tone, frequency, name);
             channel.setDecodeConfiguration(decodeConfiguration);
             return channel;
         }
 
         mLog.warn("Can't create channel configuration for [" + modeDecoderType.name() + "] no supported decoder type");
         return null;
+    }
+
+    /**
+     * Applies a radio reference tone to the decode configuration when the tone applies to the channel's protocol: a
+     * CTCSS or DCS tone enables tone squelch on an analog FM channel, and a NAC (P25), color code (DMR) or RAN (NXDN)
+     * enables the channel's access code filter to include only that code.  Tones that don't apply, or that aren't
+     * recognized, are ignored.
+     */
+    static void applyTone(DecodeConfiguration decodeConfiguration, String tone, long frequency, String name)
+    {
+        RadioReferenceTone parsed = RadioReferenceTone.parse(tone);
+
+        if(parsed == null)
+        {
+            if(tone != null && !tone.isBlank() && !tone.trim().equalsIgnoreCase("CSQ"))
+            {
+                mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - tone [" + tone +
+                    "] not recognized - not applied");
+            }
+
+            return;
+        }
+
+        if(decodeConfiguration instanceof DecodeConfigP25Phase1 && parsed.type() == RadioReferenceTone.Type.NAC &&
+            (parsed.accessCode() == NAC_RECEIVE_ANY || parsed.accessCode() == NAC_REPEAT_ANY))
+        {
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - NAC [" + parsed +
+                "] accepts any NAC - no filter applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigP25Phase1 p25 && parsed.type() == RadioReferenceTone.Type.NAC)
+        {
+            p25.setNacFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.HEX));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - NAC filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigDMR dmr && parsed.type() == RadioReferenceTone.Type.COLOR_CODE)
+        {
+            dmr.setColorCodeFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.DECIMAL));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - color code filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigNXDN nxdn && (parsed.type() == RadioReferenceTone.Type.RAN ||
+            parsed.type() == RadioReferenceTone.Type.COLOR_CODE))
+        {
+            nxdn.setRanFilter(includeFilter(parsed.accessCode(), AccessCodeFilter.Format.DECIMAL));
+            mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - RAN filter [" + parsed +
+                "] applied");
+        }
+        else if(decodeConfiguration instanceof DecodeConfigNBFM nbfm)
+        {
+            SquelchDecoderConfig squelch = switch(parsed.type())
+            {
+                case CTCSS -> new SquelchDecoderConfig(SquelchDecoderConfig.SquelchType.CTCSS,
+                    parsed.ctcssCode().name());
+                case DCS -> new SquelchDecoderConfig(SquelchDecoderConfig.SquelchType.DCS, parsed.dcsCode().name());
+                default -> null;
+            };
+
+            if(squelch != null)
+            {
+                List<SquelchDecoderConfig> squelchDecoders = new ArrayList<>();
+                squelchDecoders.add(squelch);
+                nbfm.setSquelchDecoders(squelchDecoders);
+                mLog.info("Radio Reference import [" + name + "] at [" + frequency + "] - tone squelch [" + parsed +
+                    "] applied");
+            }
+        }
+    }
+
+    /**
+     * Enabled access code filter that includes only the code.
+     */
+    private static AccessCodeFilter includeFilter(int code, AccessCodeFilter.Format format)
+    {
+        AccessCodeFilter filter = new AccessCodeFilter(format);
+        filter.setMode(AccessCodeFilter.Mode.INCLUDE);
+        filter.setValueSet(List.of(code));
+        filter.setEnabled(true);
+        return filter;
     }
 
     /**

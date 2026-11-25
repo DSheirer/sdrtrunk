@@ -579,7 +579,8 @@ public class RadioReferencePlaylistActions
         String system = source.length > 0 ? source[0] : null;
         String site = source.length > 2 ? source[2] : source.length > 1 ? source[1] : null;
         String name = candidate.alphaTag() != null ? candidate.alphaTag() : candidate.title();
-        Channel channel = RadioReferenceChannelFactory.conventional(mode, candidate.frequencyHz(), system, site, name);
+        Channel channel = RadioReferenceChannelFactory.conventional(mode, candidate.frequencyHz(), system, site, name,
+            candidate.tone());
 
         if(channel == null)
         {

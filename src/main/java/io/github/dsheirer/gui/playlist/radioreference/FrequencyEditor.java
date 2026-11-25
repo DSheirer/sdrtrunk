@@ -210,7 +210,7 @@ public class FrequencyEditor extends VBox
             mFrequency = item.getDownlinkHz();
             getAlphaTagTextField().setText(item.getAlphaTag());
             getFrequencyTextField().setText(FREQUENCY_FORMATTER.format(item.getDownlink()));
-            getToneTextField().setText(item.getTone());
+            getToneTextField().setText(RadioReferenceTone.getToneField(item));
             updateMode(item.getMode());
             getSystemTextField().setText(category != null ? category.getName() : null);
             getSiteTextField().setText(subCategory != null ? subCategory.getName() : null);
@@ -379,7 +379,7 @@ public class FrequencyEditor extends VBox
             mCreateButton.setDisable(true);
             mCreateButton.setOnAction(event -> {
                 Channel channel = createChannel(mModeDecoderType, mFrequency, getSystemTextField().getText(),
-                    getSiteTextField().getText(), getNameTextField().getText());
+                    getSiteTextField().getText(), getNameTextField().getText(), getToneTextField().getText());
 
                 if(channel != null)
                 {
@@ -414,9 +414,10 @@ public class FrequencyEditor extends VBox
      * @param name value
      * @return configured channel or null
      */
-    private Channel createChannel(ModeDecoderType modeDecoderType, long frequency, String system, String site, String name)
+    private Channel createChannel(ModeDecoderType modeDecoderType, long frequency, String system, String site, String name,
+                                  String tone)
     {
-        return RadioReferenceChannelFactory.conventional(modeDecoderType, frequency, system, site, name);
+        return RadioReferenceChannelFactory.conventional(modeDecoderType, frequency, system, site, name, tone);
     }
 
     private TextField getSystemTextField()
