@@ -486,10 +486,17 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
     }
 
     /**
-     * Updates the end time for an ongoing call to reflect progress
-     * @param channel descriptor for the traffic channel
+     * Processes call audio: updates the end time for an ongoing call to reflect progress, or creates a call event when
+     * there isn't one, since a conventional transmission can send audio (and the talker alias) before the first call
+     * message that identifies the call.  The first call message then updates this event.
+     * @param channel descriptor for the traffic channel, can be null
+     * @param talkerAlias for the talker of this transmission, can be null
+     * @param encrypted true when the call is known to be encrypted
+     * @param canStartCall true when the audio is reliable enough to create a call event when there isn't one
+     * @param timestamp of the audio
      */
-    public void processCallProgressUpdate(IChannelDescriptor channel, long timestamp)
+    public void processAudio(IChannelDescriptor channel, NXDNTalkerAliasIdentifier talkerAlias, boolean encrypted,
+                             boolean canStartCall, long timestamp)
     {
         mLock.lock();
         try
@@ -497,11 +504,33 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             long frequency = channel != null ? channel.getDownlinkFrequency() : 0;
             NXDNChannelEventTracker tracker = getTrackerRemoveIfStale(frequency, timestamp);
 
-            if(tracker != null)
+            if(tracker == null)
             {
-                tracker.updateDurationTraffic(timestamp);
-                broadcast(tracker);
+                if(!canStartCall)
+                {
+                    return;
+                }
+
+                //Only the talker alias: TO/FROM left in the decoder state from the previous call may not be this call's
+                List<Identifier> identifiers = new ArrayList<>();
+
+                if(talkerAlias != null)
+                {
+                    identifiers.add(talkerAlias);
+                }
+
+                tracker = createTracker(encrypted ? DecodeEventType.CALL_ENCRYPTED : DecodeEventType.CALL,
+                        getMergedIdentifierCollection(identifiers), channel instanceof NXDNChannel nxdn ? nxdn : null,
+                        timestamp);
+                tracker.setStartedFromAudio(true);
             }
+            else if(tracker.isStartedFromAudio())
+            {
+                tracker.addIdentifierIfMissing(talkerAlias);
+            }
+
+            tracker.updateDurationTraffic(timestamp);
+            broadcast(tracker);
         }
         finally
         {
@@ -555,9 +584,27 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             MutableIdentifierCollection ic = getMergedIdentifierCollection(identifiers);
             //Apply the stored talker alias for the radio (enrich() returns a copy, so update the collection in place)
             mTalkerAliasManager.enrichMutable(ic);
+            boolean identified = false;
+
             if(tracker != null)
             {
-                if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))
+                if(tracker.isStartedFromAudio())
+                {
+                    //The event was created from the call audio.  This first call message identifies the call.
+                    Identifier eventAlias = tracker.getEvent().getIdentifierCollection()
+                            .getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+
+                    if(eventAlias != null && ic.getIdentifier(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM) == null)
+                    {
+                        ic.update(eventAlias);
+                    }
+
+                    tracker.getEvent().setIdentifierCollection(ic);
+                    tracker.getEvent().setDecodeEventType(getType(callType, encryption));
+                    tracker.setStartedFromAudio(false);
+                    identified = true;
+                }
+                else if(tracker.isSameCallCheckingToAndFrom(ic, timestamp))
                 {
                     tracker.updateDurationControl(timestamp);
                 }
@@ -568,10 +615,14 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 }
             }
 
-            if(tracker == null)
+            if(tracker == null || identified)
             {
-                DecodeEventType eventType = getType(callType, encryption);
-                tracker = createTracker(eventType, ic, channel, timestamp);
+                if(tracker == null)
+                {
+                    DecodeEventType eventType = getType(callType, encryption);
+                    tracker = createTracker(eventType, ic, channel, timestamp);
+                }
+
                 AudioCodec audioCodec = vco.getCodec();
                 TransmissionMode mode = vco.getTransmissionMode();
 
