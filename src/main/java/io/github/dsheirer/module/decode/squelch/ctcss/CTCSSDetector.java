@@ -198,6 +198,12 @@ public class CTCSSDetector
         if(maxPower > threshold)
         {
             int detectedIndex = mFineResolution ? refine(maxIndex, samples.length) : maxIndex;
+
+            if(detectedIndex != maxIndex)
+            {
+                ctcssMessage.setRefinement(mDetectingCodeArray[maxIndex], mDetectingCodeArray[detectedIndex]);
+            }
+
             CTCSSCode detected = mDetectingCodeArray[detectedIndex];
             updateDetectionState(detected, ctcssMessage);
         }
