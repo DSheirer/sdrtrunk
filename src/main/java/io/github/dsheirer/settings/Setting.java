@@ -84,11 +84,19 @@ public enum Setting
     MAIN_WINDOW_COMPACT_VIEW(Node.GUI, "sdrtrunk.main.window.compact.view"),
     MAIN_WINDOW_MENU_BAR_AUTO_HIDE(Node.GUI, "sdrtrunk.main.window.menu.bar.auto.hide"),
     MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE(Node.GUI, "sdrtrunk.now.playing.details.visible"),
-    MAIN_WINDOW_RESOURCE_STATUS_VISIBLE(Node.GUI, "sdrtrunk.resource.status.visible"),
     MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE(Node.GUI, "sdrtrunk.spectral.display.visible"),
     MAIN_WINDOW_SPECTRAL_DIVIDER(Node.GUI, "sdrtrunk.main.window.spectral.fraction"),
     //False when the user chose no tuner, so that no tuner is shown automatically at startup or after a tuner error
     MAIN_WINDOW_SPECTRAL_TUNER_ENABLED(Node.GUI, "sdrtrunk.main.window.spectral.tuner.enabled"),
+    //The status bar was the resource status bar, so it keeps that key
+    MAIN_WINDOW_STATUS_BAR_VISIBLE(Node.GUI, "sdrtrunk.resource.status.visible"),
+    MAIN_WINDOW_STATUS_ITEM_CHANNELS(Node.GUI, "sdrtrunk.main.window.status.item.channels"),
+    MAIN_WINDOW_STATUS_ITEM_CPU(Node.GUI, "sdrtrunk.main.window.status.item.cpu"),
+    MAIN_WINDOW_STATUS_ITEM_EVENT_LOGS(Node.GUI, "sdrtrunk.main.window.status.item.event.logs"),
+    MAIN_WINDOW_STATUS_ITEM_MEMORY(Node.GUI, "sdrtrunk.main.window.status.item.memory"),
+    MAIN_WINDOW_STATUS_ITEM_RECORDINGS(Node.GUI, "sdrtrunk.main.window.status.item.recordings"),
+    MAIN_WINDOW_STATUS_ITEM_STREAMING(Node.GUI, "sdrtrunk.main.window.status.item.streaming"),
+    MAIN_WINDOW_STATUS_ITEM_TUNERS(Node.GUI, "sdrtrunk.main.window.status.item.tuners"),
     MAIN_WINDOW_TOOLBAR_LABELS(Node.GUI, "sdrtrunk.main.window.toolbar.labels"),
     MAIN_WINDOW_TOOLBAR_VISIBLE(Node.GUI, "sdrtrunk.main.window.toolbar.visible"),
 

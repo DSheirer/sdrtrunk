@@ -25,6 +25,14 @@ import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.audio.AudioView;
 import io.github.dsheirer.gui.broadcast.BroadcastStatusView;
+import io.github.dsheirer.gui.playlist.streaming.ViewStreamingRequest;
+import io.github.dsheirer.gui.status.ChannelStatusItem;
+import io.github.dsheirer.gui.status.CpuStatusItem;
+import io.github.dsheirer.gui.status.MemoryStatusItem;
+import io.github.dsheirer.gui.status.StatusBar;
+import io.github.dsheirer.gui.status.StorageStatusItem;
+import io.github.dsheirer.gui.status.StreamingStatusItem;
+import io.github.dsheirer.gui.status.TunerStatusItem;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.map.MapView;
 import io.github.dsheirer.gui.nowplaying.NowPlayingView;
@@ -38,7 +46,6 @@ import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.monitor.DiagnosticMonitor;
 import io.github.dsheirer.monitor.ResourceMonitor;
-import io.github.dsheirer.monitor.StatusBox;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
@@ -46,12 +53,11 @@ import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.util.DesktopLauncher;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -106,7 +112,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Main application window: menu bar, optional toolbar, audio playback display, the spectrum and waterfall, the Now Playing, Map and
- * Tuners tabs, the optional streaming status and the optional resource status bar.
+ * Tuners tabs, the optional streaming status and the optional status bar.
  *
  * The spectrum and waterfall can be hidden from the View menu, the hide button in the display settings panel or a
  * keyboard shortcut.  A hidden spectrum is disposed so that it uses no processing or memory.
@@ -146,11 +152,13 @@ public class MainWindow
     private final NowPlayingView mNowPlayingView;
     private final TabPane mTabPane = new TabPane();
     private BroadcastStatusView mBroadcastStatusView;
-    private StatusBox mStatusBox;
+    private StatusBar mStatusBar;
+    private Tab mNowPlayingTab;
+    private Tab mTunersTab;
     private final CheckMenuItem mToolbarMenuItem = new CheckMenuItem("Toolbar");
     private final CheckMenuItem mSpectralMenuItem = new CheckMenuItem("Spectrum & Waterfall");
     private final CheckMenuItem mBroadcastMenuItem = new CheckMenuItem("Streaming Status");
-    private final CheckMenuItem mResourceMenuItem = new CheckMenuItem("Resource Status Bar");
+    private final CheckMenuItem mStatusBarMenuItem = new CheckMenuItem("Status Bar");
     private final CheckMenuItem mNowPlayingDetailsMenuItem = new CheckMenuItem("Now Playing Channel Details");
     private final CheckMenuItem mAutoHideMenuItem = new CheckMenuItem("Auto-hide Menu Bar");
     private final CheckMenuItem mCompactMenuItem = new CheckMenuItem("Compact View");
@@ -177,7 +185,7 @@ public class MainWindow
      * @param aliasModel for alias lookup
      * @param iconModel for alias icons
      * @param mapService for the map
-     * @param resourceMonitor for the status bar
+     * @param resourceMonitor for the status bar, which starts and stops it
      * @param diagnosticMonitor for the reports
      * @param exitHandler that shuts down the application, invoked on a background thread
      */
@@ -233,7 +241,7 @@ public class MainWindow
         mSpectralMenuItem.setSelected(spectralVisible);
         mNowPlayingDetailsMenuItem.setSelected(detailsVisible);
         mBroadcastMenuItem.setSelected(Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.getBoolean(false));
-        mResourceMenuItem.setSelected(Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.getBoolean(true));
+        mStatusBarMenuItem.setSelected(Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.getBoolean(true));
         mToolbarMenuItem.setSelected(Setting.MAIN_WINDOW_TOOLBAR_VISIBLE.getBoolean(true));
         mCompactMenuItem.setSelected(Setting.MAIN_WINDOW_COMPACT_VIEW.getBoolean(false));
         installViewToggles();
@@ -355,6 +363,11 @@ public class MainWindow
     {
         mAudioView.dispose();
 
+        if(mStatusBar != null)
+        {
+            mStatusBar.dispose();
+        }
+
         if(mBroadcastStatusView != null)
         {
             mBroadcastStatusView.dispose();
@@ -396,7 +409,7 @@ public class MainWindow
     }
 
     /**
-     * Indicates if the window shows the compact view: the toolbar and audio display only.
+     * Indicates if the window shows the compact view: the toolbar, audio display and status dots only.
      */
     public boolean isCompact()
     {
@@ -404,8 +417,9 @@ public class MainWindow
     }
 
     /**
-     * Shows the normal or compact view.  The compact view shows the menu bar, toolbar and audio display only and
-     * disposes the spectral display.  The window remembers a separate size and location for each view.
+     * Shows the normal or compact view.  The compact view shows the menu bar, toolbar, audio display and the status
+     * bar's status dots only, and disposes the spectral display.  The window remembers a separate size and location
+     * for each view.
      */
     private void updateLayout()
     {
@@ -480,7 +494,10 @@ public class MainWindow
             mRoot.applyCss();
             mRoot.layout();
             double decoration = Math.max(0, mStage.getHeight() - mStage.getScene().getHeight());
-            double height = Math.ceil(mTop.prefHeight(mStage.getScene().getWidth()) + decoration);
+            double width = mStage.getScene().getWidth();
+            Node bottom = mRoot.getBottom();
+            double content = mTop.prefHeight(width) + (bottom != null ? bottom.prefHeight(width) : 0);
+            double height = Math.ceil(content + decoration);
             mStage.setMinHeight(0);
             mStage.setMaxHeight(Double.MAX_VALUE);
             mStage.setHeight(height);
@@ -517,12 +534,12 @@ public class MainWindow
                 mPlaylistManager.getRadioReference().getFrequencyIndex() : null,
             new RadioReferencePlaylistActions(mPlaylistManager), true);
 
-        Tab nowPlaying = new Tab("Now Playing", mNowPlayingView);
+        mNowPlayingTab = new Tab("Now Playing", mNowPlayingView);
         Tab map = new Tab("Map", mapView);
-        Tab tuners = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
+        mTunersTab = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
             mSettings));
 
-        mTabPane.getTabs().addAll(nowPlaying, map, tuners);
+        mTabPane.getTabs().addAll(mNowPlayingTab, map, mTunersTab);
         mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         mTabPane.getStyleClass().add("main-tab-pane");
     }
@@ -624,21 +641,78 @@ public class MainWindow
         return Double.isNaN(value) ? 0.3 : Math.max(0.05, Math.min(0.6, value));
     }
 
+    /**
+     * Shows or removes the status bar to match the View menu choice.  The compact view shows its status dots only.
+     */
     private void updateStatusBar()
     {
-        if(mResourceMenuItem.isSelected() && !isCompact())
+        if(mStatusBarMenuItem.isSelected())
         {
-            if(mStatusBox == null)
+            if(mStatusBar == null)
             {
-                mStatusBox = new StatusBox(mResourceMonitor);
+                mStatusBar = createStatusBar();
             }
 
-            mRoot.setBottom(mStatusBox);
+            mStatusBar.setMode(true, isCompact());
+            mRoot.setBottom(mStatusBar);
         }
         else
         {
+            if(mStatusBar != null)
+            {
+                mStatusBar.setMode(false, isCompact());
+            }
+
             mRoot.setBottom(null);
         }
+    }
+
+    private StatusBar createStatusBar()
+    {
+        StreamingStatusItem streaming = new StreamingStatusItem(mPlaylistManager.getBroadcastModel());
+        streaming.setAction(() -> {
+            if(isCompact())
+            {
+                MyEventBus.getGlobalEventBus().post(new ViewStreamingRequest());
+            }
+            else
+            {
+                mBroadcastMenuItem.setSelected(!mBroadcastMenuItem.isSelected());
+            }
+        }, "Click to show or hide the streaming status.  In the compact view, click to edit the streams.");
+
+        TunerStatusItem tuners = new TunerStatusItem(mTunerManager.getDiscoveredTunerModel());
+        tuners.setOpenTunersAction(() -> showTab(mTunersTab));
+
+        ChannelStatusItem channels = new ChannelStatusItem(mPlaylistManager.getChannelProcessingManager());
+        channels.setAction(() -> showTab(mNowPlayingTab), "Click to open the Now Playing tab.");
+
+        CpuStatusItem cpu = new CpuStatusItem(mResourceMonitor);
+        MemoryStatusItem memory = new MemoryStatusItem(mResourceMonitor);
+        StorageStatusItem recordings = new StorageStatusItem("Recordings", "Rec",
+            Setting.MAIN_WINDOW_STATUS_ITEM_RECORDINGS, mResourceMonitor.recordingsUsageProperty());
+        recordings.setAction(() -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryRecording()));
+        StorageStatusItem eventLogs = new StorageStatusItem("Event Logs", "Logs",
+            Setting.MAIN_WINDOW_STATUS_ITEM_EVENT_LOGS, mResourceMonitor.eventLogsUsageProperty());
+        eventLogs.setAction(() -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryEventLog()));
+
+        StatusBar statusBar = new StatusBar(mResourceMonitor, List.of(streaming, tuners, channels),
+            List.of(cpu, memory, recordings, eventLogs));
+        statusBar.setHideAction(() -> mStatusBarMenuItem.setSelected(false));
+        return statusBar;
+    }
+
+    /**
+     * Selects the tab, leaving the compact view first since it doesn't show the tabs.
+     */
+    private void showTab(Tab tab)
+    {
+        if(isCompact())
+        {
+            mCompactMenuItem.setSelected(false);
+        }
+
+        mTabPane.getSelectionModel().select(tab);
     }
 
     private MenuBar createMenuBar()
@@ -673,7 +747,7 @@ public class MainWindow
 
         mCompactMenuItem.setAccelerator(COMPACT_VIEW_SHORTCUT);
         Menu view = new Menu("View", null, mCompactMenuItem, new SeparatorMenuItem(), mToolbarMenuItem,
-            mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem, mResourceMenuItem,
+            mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem, mStatusBarMenuItem,
             new SeparatorMenuItem(), spectrumTuner);
 
         if(isAutoHideSupported())
@@ -683,7 +757,7 @@ public class MainWindow
 
         //These only apply to the normal view
         for(MenuItem item: List.of(mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem,
-            mResourceMenuItem, spectrumTuner))
+            spectrumTuner))
         {
             item.disableProperty().bind(mCompactMenuItem.selectedProperty());
         }
@@ -870,9 +944,10 @@ public class MainWindow
                 applyDividers();
             }
         });
-        mResourceMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
-            Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.putBoolean(selected);
+        mStatusBarMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.putBoolean(selected);
             updateStatusBar();
+            fitCompactWindow();
         });
         mCompactMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
             Setting.MAIN_WINDOW_COMPACT_VIEW.putBoolean(selected);
@@ -975,7 +1050,7 @@ public class MainWindow
             try
             {
                 directory = folder.get().toFile();
-                Desktop.getDesktop().open(directory);
+                DesktopLauncher.open(directory);
             }
             catch(Exception e)
             {
@@ -995,7 +1070,7 @@ public class MainWindow
         ThreadPool.CACHED.submit(() -> {
             try
             {
-                Desktop.getDesktop().browse(URI.create(url));
+                DesktopLauncher.browse(url);
             }
             catch(Exception e)
             {
