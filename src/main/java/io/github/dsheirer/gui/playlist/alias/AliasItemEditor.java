@@ -24,6 +24,7 @@ import com.google.common.eventbus.Subscribe;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasPriorityChangedEvent;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.action.AliasAction;
@@ -206,6 +207,42 @@ public class AliasItemEditor extends Editor<Alias>
         getChildren().add(hbox);
     }
 
+    /**
+     * Updates the Listen toggle when the playback priority of the alias being edited is changed elsewhere, for example
+     * by the Now Playing channel table's Mute/Unmute menu item.  When the editor has unsaved changes it is left as it
+     * is, so the user's edits are not discarded.
+     */
+    @Subscribe
+    public void aliasPriorityChanged(AliasPriorityChangedEvent event)
+    {
+        Alias alias = event.getAlias();
+
+        if(alias == null)
+        {
+            return;
+        }
+
+        Platform.runLater(() -> {
+            if(alias == getItem() && !modifiedProperty().get())
+            {
+                int priority = alias.getPlaybackPriority();
+                boolean canMonitor = (priority != io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR);
+                getMonitorAudioToggleSwitch().setSelected(canMonitor);
+
+                if(canMonitor && priority != io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY)
+                {
+                    getMonitorPriorityComboBox().getSelectionModel().select(priority);
+                }
+                else
+                {
+                    getMonitorPriorityComboBox().getSelectionModel().select(null);
+                }
+
+                //The toggle and combo box listeners mark the editor modified - it matches the alias again
+                modifiedProperty().set(false);
+            }
+        });
+    }
 
     @Subscribe
     public void settingsUpdated(SettingsType settingsType)

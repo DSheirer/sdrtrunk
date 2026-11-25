@@ -19,6 +19,7 @@
 package io.github.dsheirer.gui.nowplaying;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataField;
@@ -35,6 +36,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.SettingsType;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.identifier.TalkgroupFormatSettings;
@@ -57,10 +59,14 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.CustomMenuItem;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -103,17 +109,18 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     private final Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
     private final TableColumnMonitor<Row> mTableColumnMonitor;
     private Channel mUserSelectedChannel;
+    private final ChannelMuteAction mChannelMuteAction;
 
     /**
      * Constructs an instance.  Construct on the JavaFX application thread.
-     * @param channelProcessingManager for the channel metadata and processing chains
+     * @param playlistManager for the channel metadata, processing chains and aliases
      * @param iconModel for alias icons
-     * @param settings for talkgroup formatting and column settings
+     * @param settings for talkgroup formatting, column settings and channel mute
      */
-    public ChannelMetadataView(ChannelProcessingManager channelProcessingManager, IconModel iconModel,
-                               Settings settings)
+    public ChannelMetadataView(PlaylistManager playlistManager, IconModel iconModel, Settings settings)
     {
-        mChannelProcessingManager = channelProcessingManager;
+        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
+        mChannelMuteAction = new ChannelMuteAction(playlistManager, settings.getChannelMuteSettings());
         mChannelMetadataModel = mChannelProcessingManager.getChannelMetadataModel();
         mIconModel = iconModel;
         mTalkgroupFormatSettings = settings.getTalkgroupFormatSettings();
@@ -180,6 +187,9 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     {
         List<ChannelMetadata> channelMetadata = new ArrayList<>(channelAndMetadata.getChannelMetadata());
 
+        //A channel with no alias is muted at its audio modules, which are new with each processing chain
+        mChannelMuteAction.reapplyChannelMute(channelAndMetadata.getChannel());
+
         Platform.runLater(() -> {
             for(ChannelMetadata metadata: channelMetadata)
             {
@@ -223,6 +233,12 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
         {
             row.scheduleRefresh();
         }
+
+        //Remember the alias each call goes to, for Mute between calls
+        if(channelMetadataField == ChannelMetadataField.USER_TO)
+        {
+            mChannelMuteAction.rememberCallAlias(channelMetadata);
+        }
     }
 
     /**
@@ -255,7 +271,10 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     {
         TableRow<Row> tableRow = new TableRow<>();
         ContextMenu contextMenu = new ContextMenu();
-        contextMenu.setOnShowing(event -> {
+        //The menu items are built when the row is right-clicked, before the row shows the menu.  Building them in the
+        //menu's onShowing handler doesn't work: ContextMenu.show() returns without showing (and without firing
+        //onShowing) while the menu has no items, so the menu never opened.
+        tableRow.addEventFilter(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
             contextMenu.getItems().clear();
             Row row = tableRow.getItem();
             Channel channel = row != null ? mChannelMetadataModel.getChannelFromMetadata(row.getChannelMetadata()) : null;
@@ -265,6 +284,17 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
                 MenuItem viewChannel = new MenuItem("View/Edit: " + channel.getShortTitle());
                 viewChannel.setOnAction(e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
                 contextMenu.getItems().add(viewChannel);
+
+                //Mute/Unmute local speaker audio; recording and streaming continue.  The tooltip says what changes.
+                ChannelMetadata metadata = row.getChannelMetadata();
+                Alias governingAlias = mChannelMuteAction.resolveChannelAlias(metadata, channel);
+                boolean isMuted = mChannelMuteAction.isChannelMuted(metadata, channel);
+                CustomMenuItem muteItem = new CustomMenuItem(new Label(isMuted ? "Unmute" : "Mute"));
+                Tooltip.install(muteItem.getContent(), new Tooltip(governingAlias != null ?
+                    "Listen setting of alias " + governingAlias.getName() + " - saved in the playlist" :
+                    "This channel only (" + channel.getShortTitle() + ") - it has no alias"));
+                muteItem.setOnAction(e -> mChannelMuteAction.setChannelMuted(metadata, channel, !isMuted));
+                contextMenu.getItems().add(muteItem);
             }
             else
             {
