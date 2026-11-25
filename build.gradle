@@ -313,9 +313,10 @@ def configure(RuntimeZipTask rt, List<String> jvmArgs) {
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
     //java.management for JVM resource monitoring
+    //jdk.management for the process CPU usage in the status bar (com.sun.management.OperatingSystemMXBean)
     //java.base, java.desktop, java.logging, java.net.http, java.prefs, javafx.controls - required by sdrtrunk (jdeps)
     rt.extension.addModules('jdk.charsets', 'jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility', 'java.management',
-            'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls')
+            'jdk.management', 'java.base', 'java.desktop', 'java.logging', 'java.net.http', 'java.prefs', 'javafx.controls')
 
     //Use only the modules listed above.  The runtime plugin's module auto-detection uses a bundled ASM library that
     //can't read Java 27 class files and logs a 'Failed to scan' error for each sdrtrunk class.  The jdeps module check

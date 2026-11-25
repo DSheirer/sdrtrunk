@@ -258,9 +258,9 @@ public class BroadcastStatusView extends VBox
     /**
      * Status severity used to color the status.
      */
-    enum Severity {OK, NEUTRAL, WARNING, ERROR, DISABLED}
+    public enum Severity {OK, NEUTRAL, WARNING, ERROR, DISABLED}
 
-    static Severity getSeverity(BroadcastState state)
+    public static Severity getSeverity(BroadcastState state)
     {
         if(state == null)
         {

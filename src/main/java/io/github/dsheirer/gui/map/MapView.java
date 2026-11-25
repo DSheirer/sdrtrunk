@@ -42,8 +42,7 @@ import io.github.dsheirer.settings.map.MapSettings;
 import io.github.dsheirer.settings.radioreference.RadioReferenceSettings;
 import io.github.dsheirer.service.radioreference.RadioReferenceFrequencyIndex;
 import io.github.dsheirer.service.radioreference.SiteRecord;
-import java.awt.Desktop;
-import java.net.URI;
+import io.github.dsheirer.util.DesktopLauncher;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -660,10 +659,7 @@ public class MapView extends SplitPane
         Thread.ofVirtual().start(() -> {
             try
             {
-                if(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE))
-                {
-                    Desktop.getDesktop().browse(URI.create(url));
-                }
+                DesktopLauncher.browse(url);
             }
             catch(Exception e)
             {
