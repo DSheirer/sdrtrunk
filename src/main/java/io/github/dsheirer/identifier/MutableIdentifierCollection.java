@@ -206,6 +206,13 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
                 {
                     remove(existing);
                     add(identifier);
+
+                    //An alias belongs to the FROM radio it was received for.  When the FROM radio changes to a
+                    //different radio, remove the previous radio's alias so it is not attributed to the new radio.
+                    if(identifier instanceof RadioIdentifier && identifier.getRole() == Role.FROM)
+                    {
+                        remove(IdentifierClass.USER, Form.TALKER_ALIAS, Role.FROM);
+                    }
                 }
                 //Always replace a radio identifier with a fully qualified variant of itself
                 else if(existing instanceof  RadioIdentifier &&
