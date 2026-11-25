@@ -218,6 +218,7 @@ public class NXDNMessageFactory
             case TYPE_D_OUT_15_CC_HEADER_DELAY:
                 return new HeaderDelay(message, timestamp, type, ran, lich);
             case CONTROL_OUT_16_CC_IDLE:
+            case TRAFFIC_IN_16_CC_IDLE:
             case TRAFFIC_OUT_16_CC_IDLE:
             case TYPE_D_IN_16_CC_IDLE:
             case TYPE_D_OUT_16_CC_IDLE:
