@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.spectrum;
 
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
@@ -47,6 +48,8 @@ import org.slf4j.LoggerFactory;
 public class MainSpectralDisplay extends StackPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(MainSpectralDisplay.class);
+    //SDRTrunk.properties key used by earlier versions, read only to migrate it
+    private static final String LEGACY_TUNER_ENABLED_KEY = "spectral.display.enabled";
 
     private final PlaylistManager mPlaylistManager;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
@@ -186,12 +189,12 @@ public class MainSpectralDisplay extends StackPane
         ThreadPool.CACHED.submit(() -> {
             if(tuner != null)
             {
-                SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
+                setTunerEnabled(true);
                 mDiscoveredTunerModel.broadcast(new TunerEvent(tuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
             }
             else
             {
-                SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, false);
+                setTunerEnabled(false);
                 mDiscoveredTunerModel.broadcast(new TunerEvent(current,
                     TunerEvent.Event.REQUEST_CLEAR_MAIN_SPECTRAL_DISPLAY));
             }
@@ -235,6 +238,33 @@ public class MainSpectralDisplay extends StackPane
     public void clearTuner()
     {
         showTuner(null);
+    }
+
+    /**
+     * Indicates if a tuner can be shown automatically: false after the user chose no tuner, until they choose one.
+     * Moves the value stored by earlier versions in the SDRTrunk.properties file to the setting, once.  Any thread.
+     */
+    public static boolean isTunerEnabled()
+    {
+        String stored = Setting.MAIN_WINDOW_SPECTRAL_TUNER_ENABLED.get(null);
+
+        if(stored != null)
+        {
+            return Boolean.parseBoolean(stored);
+        }
+
+        boolean enabled = SystemProperties.getInstance().get(LEGACY_TUNER_ENABLED_KEY, true);
+        setTunerEnabled(enabled);
+        SystemProperties.getInstance().remove(LEGACY_TUNER_ENABLED_KEY);
+        return enabled;
+    }
+
+    /**
+     * Sets whether a tuner can be shown automatically.  Any thread.
+     */
+    public static void setTunerEnabled(boolean enabled)
+    {
+        Setting.MAIN_WINDOW_SPECTRAL_TUNER_ENABLED.putBoolean(enabled);
     }
 
     /**

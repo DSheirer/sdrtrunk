@@ -41,7 +41,61 @@
     -fx-opacity: 0.8;
 }
 
-.main-window .main-playlist-tab-icon
+.main-window .main-toolbar
+{
+    -fx-padding: 3 6 3 6;
+    -fx-spacing: 4;
+}
+
+.main-window .main-toolbar .button,
+.main-window .main-toolbar .toggle-button
+{
+    -fx-background-color: transparent;
+    -fx-background-radius: 4;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-padding: 4 7 2 7;
+    -fx-graphic-text-gap: 6;
+}
+
+/* Neutral translucent overlays so the states read in light and dark themes */
+.main-window .main-toolbar .button:hover,
+.main-window .main-toolbar .toggle-button:hover
+{
+    -fx-background-color: rgba(128, 128, 128, 0.18);
+}
+
+.main-window .main-toolbar .toggle-button:selected
+{
+    -fx-background-color: rgba(128, 128, 128, 0.26);
+    -fx-border-color: transparent transparent -fx-accent transparent;
+}
+
+/* A toggle labeled with the action a click takes, rather than shown as on or off */
+.main-window .main-toolbar .toggle-button.main-toolbar-action:selected
+{
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.main-window .main-toolbar .toggle-button.main-toolbar-action:selected:hover
+{
+    -fx-background-color: rgba(128, 128, 128, 0.18);
+}
+
+.main-window .main-toolbar .button:focus-visible,
+.main-window .main-toolbar .toggle-button:focus-visible
+{
+    -fx-background-color: -fx-focus-color, -fx-background;
+    -fx-background-insets: 0, 1;
+}
+
+.main-window .main-toolbar .main-toolbar-icon
+{
+    -fx-fill: -fx-text-base-color;
+}
+
+.main-window .main-toolbar .main-toolbar-playlist .main-toolbar-icon
 {
     -fx-fill: -fx-accent;
 }

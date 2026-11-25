@@ -30,6 +30,9 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
@@ -98,9 +101,10 @@ public class MessageRecordingViewer extends VBox
             });
             createNewViewerMenu.getItems().addAll(dmrMenuItem, nxdnMenuItem, p25p1MenuItem, p25p2MenuItem);
 
-            MenuItem exitMenu = new MenuItem("Exit");
-            exitMenu.onActionProperty().set(event -> ((Stage)getScene().getWindow()).close());
-            fileMenu.getItems().addAll(createNewViewerMenu, new SeparatorMenuItem(), exitMenu);
+            MenuItem closeMenu = new MenuItem("Close");
+            closeMenu.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.SHORTCUT_DOWN));
+            closeMenu.onActionProperty().set(event -> ((Stage)getScene().getWindow()).close());
+            fileMenu.getItems().addAll(createNewViewerMenu, new SeparatorMenuItem(), closeMenu);
             mMenuBar.getMenus().add(fileMenu);
         }
 
