@@ -36,7 +36,7 @@ public class IndividualPagingWithPriority extends MacStructureVariableLength
     private static final int PRIORITY_ID_2 = 9;
     private static final int PRIORITY_ID_3 = 10;
     private static final int PRIORITY_ID_4 = 11;
-    private static final IntField ID_COUNT = IntField.range(14, 15);
+    private static final IntField LEN = IntField.range(14, 15); //Number of IDs less one
     private static final IntField TARGET_ADDRESS_1 = IntField.length24(OCTET_3_BIT_16);
     private static final IntField TARGET_ADDRESS_2 = IntField.length24(OCTET_6_BIT_40);
     private static final IntField TARGET_ADDRESS_3 = IntField.length24(OCTET_9_BIT_64);
@@ -67,20 +67,7 @@ public class IndividualPagingWithPriority extends MacStructureVariableLength
      */
     public static int getLength(CorrectedBinaryMessage message, int offset)
     {
-        int count = message.getInt(ID_COUNT, offset);
-
-        switch(count)
-        {
-            case 1:
-                return 5;
-            case 2:
-                return 8;
-            case 3:
-                return 11;
-            case 4:
-            default:
-                return 14;
-        }
+        return 2 + 3 * getIdCount(message, offset);
     }
 
     @Override
@@ -156,7 +143,7 @@ public class IndividualPagingWithPriority extends MacStructureVariableLength
 
     public static int getIdCount(BinaryMessage message, int offset)
     {
-        return message.getInt(ID_COUNT, offset);
+        return message.getInt(LEN, offset) + 1;
     }
 
     /**
@@ -175,21 +162,7 @@ public class IndividualPagingWithPriority extends MacStructureVariableLength
      */
     public static int getLength(BinaryMessage message, int offset)
     {
-        int count = getIdCount(message, offset);
-
-        switch(count)
-        {
-            case 1:
-                return 5;
-            case 2:
-                return 8;
-            case 3:
-                return 11;
-            case 4:
-                return 14;
-        }
-
-        return 5;
+        return 2 + 3 * getIdCount(message, offset);
     }
 
     public boolean isTalkgroupPriority1()
