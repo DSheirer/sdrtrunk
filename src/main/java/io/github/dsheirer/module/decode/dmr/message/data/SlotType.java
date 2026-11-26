@@ -97,7 +97,9 @@ public class SlotType
         int errorCount = Golay24.checkAndCorrect(decodedMessage, 0);
         decodedMessage.setCorrectedBitCount(errorCount);
         SlotType slotType = new SlotType(decodedMessage);
-        slotType.setValid(errorCount < 3);
+        //Golay24 returns 2 when uncorrectable.  The 4 padding bits are zero in every Golay(20,8) codeword, so a
+        //correction that sets any of them is a miscorrection.
+        slotType.setValid(errorCount < 2 && decodedMessage.getInt(0, 3) == 0);
         return slotType;
     }
 
