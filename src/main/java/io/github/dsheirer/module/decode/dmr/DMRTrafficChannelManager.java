@@ -268,7 +268,6 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                     //Set the frequency for the traffic channel configuration
                     SourceConfigTuner trafficSourceConfig = new SourceConfigTuner();
                     trafficSourceConfig.setFrequency(currentFrequency);
-                    trafficSourceConfig.setPreferredTuner(originalSourceConfig.getPreferredTuner());
                     trafficChannel.setSourceConfiguration(trafficSourceConfig);
 
                     //Post a request for message and decode event history to transfer to the new REST channel.  This has
@@ -486,7 +485,6 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 {
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
                     sourceConfig.setFrequency(frequency);
-                    sourceConfig.setPreferredTuner(getPreferredTuner(mParentChannel));
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedChannelFrequencyMap.put(frequency, trafficChannel);
                     //Preload the channel grant event for the traffic channel to use/maintain

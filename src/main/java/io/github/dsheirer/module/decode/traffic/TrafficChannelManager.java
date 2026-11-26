@@ -22,9 +22,6 @@ package io.github.dsheirer.module.decode.traffic;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.alias.TalkerAliasManager;
 import io.github.dsheirer.module.Module;
-import io.github.dsheirer.source.config.SourceConfigTuner;
-import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import io.github.dsheirer.source.config.SourceConfiguration;
 
 /**
  * Traffic Channel Manager base class
@@ -80,28 +77,4 @@ public abstract class TrafficChannelManager extends Module
      * @param channel for the current control channel
      */
     protected abstract void processControlFrequencyUpdate(long previous, long current, Channel channel);
-
-    /**
-     * Preferred tuner from a parent channel's tuner source configuration, so that traffic channels can inherit it.
-     * @param parentChannel for the control channel
-     * @return preferred tuner name, or null if the parent channel doesn't specify one.
-     */
-    protected static String getPreferredTuner(Channel parentChannel)
-    {
-        if(parentChannel != null)
-        {
-            SourceConfiguration sourceConfiguration = parentChannel.getSourceConfiguration();
-
-            if(sourceConfiguration instanceof SourceConfigTuner tuner)
-            {
-                return tuner.getPreferredTuner();
-            }
-            else if(sourceConfiguration instanceof SourceConfigTunerMultipleFrequency multipleFrequency)
-            {
-                return multipleFrequency.getPreferredTuner();
-            }
-        }
-
-        return null;
-    }
 }

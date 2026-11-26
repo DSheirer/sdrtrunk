@@ -57,7 +57,7 @@ public class MDC1200ID extends AliasID
 
     public String toString()
     {
-        return "MDC-1200: " + (mID != null ? mID : "(empty)") + " **INVALID - USE RADIO ID INSTEAD**";
+        return "MDC-1200: " + (mID != null ? mID : "(empty)") + " **INVALID - USE TALKGROUP INSTEAD**";
     }
 
     @Override

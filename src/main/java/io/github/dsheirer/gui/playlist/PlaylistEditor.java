@@ -40,7 +40,6 @@ import javafx.application.Platform;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.image.WritableImage;
@@ -48,11 +47,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.paint.Color;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -145,54 +148,62 @@ public class PlaylistEditor extends BorderPane
         {
             mMenuBar = new MenuBar();
 
-            //File
-            MenuItem screenCaptureItem = new MenuItem("Screen Capture");
-            screenCaptureItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.ALT_DOWN));
-            screenCaptureItem.setOnAction(event -> captureScreen());
+            //File Menu
+            Menu fileMenu = new Menu("_File");
+            fileMenu.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.ALT_ANY));
 
-            MenuItem closeItem = new MenuItem("Close");
-            closeItem.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.SHORTCUT_DOWN));
-            closeItem.setOnAction(event -> getMenuBar().getScene().getWindow().hide());
+            MenuItem closeItem = new MenuItem("_Close");
+            closeItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.ALT_ANY));
+            closeItem.setOnAction(event -> getMenuBar().getParent().getScene().getWindow().hide());
+            fileMenu.getItems().add(closeItem);
+            mMenuBar.getMenus().add(fileMenu);
 
-            mMenuBar.getMenus().add(new Menu("File", null, screenCaptureItem, new SeparatorMenuItem(), closeItem));
+            Menu viewMenu = new Menu("_View");
+            viewMenu.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.ALT_ANY));
 
-            //Tools: the same windows as the main window's Tools menu
-            MenuItem iconManagerItem = new MenuItem("Icon Manager");
+            MenuItem iconManagerItem = new MenuItem("_Icon Manager");
+            iconManagerItem.setAccelerator(new KeyCodeCombination(KeyCode.I, KeyCombination.ALT_ANY));
             iconManagerItem.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
+            viewMenu.getItems().add(iconManagerItem);
 
-            MenuItem settingsItem = new MenuItem("Settings...");
-            settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
+            MenuItem settingsItem = new MenuItem("_Settings");
+            settingsItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
             settingsItem.setOnAction(event -> MyEventBus.getGlobalEventBus()
                 .post(new ViewSettingsEditorRequest(SettingsPageType.FORMATS)));
+            viewMenu.getItems().add(settingsItem);
 
-            mMenuBar.getMenus().add(new Menu("Tools", null, iconManagerItem, settingsItem));
+            mMenuBar.getMenus().add(viewMenu);
+
+            Menu screenShot = new Menu("_Screenshot");
+            IconNode cameraNode = new IconNode(FontAwesome.CAMERA);
+            cameraNode.setFill(Color.DARKGRAY);
+            screenShot.setGraphic(cameraNode);
+            MenuItem menuItem = new MenuItem();
+            screenShot.getItems().add(menuItem);
+            screenShot.setOnShowing(event -> screenShot.hide());
+            screenShot.setOnShown(event -> menuItem.fire());
+            menuItem.setOnAction(event -> {
+                WritableImage image = getMenuBar().getScene().snapshot(null);
+                final BufferedImage bufferedImage = io.github.dsheirer.gui.FxToolkit.toBufferedImage(image);
+                String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
+                final Path captureFile = mSettings.getDirectorySettings().getDirectoryScreenCapture().resolve(filename);
+
+                ThreadPool.CACHED.submit(() -> {
+                    try
+                    {
+                        ImageIO.write(bufferedImage, "png", captureFile.toFile());
+                    }
+                    catch(IOException e)
+                    {
+                        mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
+                    }
+                });
+            });
+            mMenuBar.getMenus().add(screenShot);
+
         }
 
         return mMenuBar;
-    }
-
-    /**
-     * Saves an image of the playlist editor window to the screen captures folder.
-     */
-    private void captureScreen()
-    {
-        WritableImage image = getMenuBar().getScene().snapshot(null);
-        final BufferedImage bufferedImage = io.github.dsheirer.gui.FxToolkit.toBufferedImage(image);
-        String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
-
-        ThreadPool.CACHED.submit(() -> {
-            Path captureFile = null;
-
-            try
-            {
-                captureFile = mSettings.getDirectorySettings().getDirectoryScreenCapture().resolve(filename);
-                ImageIO.write(bufferedImage, "png", captureFile.toFile());
-            }
-            catch(Exception e)
-            {
-                mLog.error("Couldn't write screen capture to file [" + captureFile + "]", e);
-            }
-        });
     }
 
     private TabPane getTabPane()

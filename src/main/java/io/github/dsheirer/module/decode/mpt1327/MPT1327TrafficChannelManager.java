@@ -64,7 +64,6 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
     private ChannelMap mChannelMap;
-    private String mPreferredTuner;
 
     /**
      * Constructs an MPT1327 traffic channel manage.
@@ -75,7 +74,6 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     {
         createTrafficChannels(parentChannel);
         mChannelMap = channelMap;
-        mPreferredTuner = getPreferredTuner(parentChannel);
     }
 
     /**
@@ -158,7 +156,6 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
                 SourceConfigTuner sourceConfig = new SourceConfigTuner();
                 sourceConfig.setFrequency(mpt1327Channel.getDownlinkFrequency());
-                sourceConfig.setPreferredTuner(mPreferredTuner);
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelMap.put(mpt1327Channel, trafficChannel);
                 getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, mpt1327Channel,

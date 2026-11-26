@@ -223,20 +223,6 @@ public enum LICH
     }
 
     /**
-     * Indicates if this is a super frame that carries a voice transmission, with FACCH1 or voice, and not a super frame
-     * idle (e.g. repeater hang time).
-     */
-    public boolean isVoiceTransmission()
-    {
-        return switch(this)
-        {
-            case RTCH_INBOUND_SUPER_IDLE, RTCH_OUTBOUND_SUPER_IDLE, RDCH_INBOUND_SUPER_IDLE, RDCH_OUTBOUND_SUPER_IDLE,
-                 RTCH_C_OUTBOUND_SUPER_IDLE -> false;
-            default -> isSuperFrame() && (getStructure().isFACCH1() || getStructure().isVoice());
-        };
-    }
-
-    /**
      * Indicates if this is a (4x) super frame (true) or single frame (false)
      */
     public boolean isSuperFrame()

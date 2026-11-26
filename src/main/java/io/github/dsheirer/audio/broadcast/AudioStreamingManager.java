@@ -145,62 +145,69 @@ public class AudioStreamingManager implements Listener<AudioSegment>
             {
                 it.remove();
 
-                if(mAudioRecordingListener != null && audioSegment.hasBroadcastChannels())
+                if(mAudioRecordingListener != null)
                 {
-                    IdentifierCollection identifiers =
-                            new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());
+                    //Broadcast channels are compiled dynamically from the segment's current identifiers, so a channel
+                    //left behind by a previous talkgroup is never present here.  Compute once and reuse below.
+                    Set<BroadcastChannel> broadcastChannels = audioSegment.getBroadcastChannels();
 
-                    if(identifiers.getToIdentifier() instanceof PatchGroupIdentifier patchGroupIdentifier)
+                    if(!broadcastChannels.isEmpty())
                     {
-                        if(mSettings.getCallManagementSettings()
-                                .getPatchGroupStreamingOption() == PatchGroupStreamingOption.TALKGROUPS)
+                        IdentifierCollection identifiers =
+                                new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());
+
+                        if(identifiers.getToIdentifier() instanceof PatchGroupIdentifier patchGroupIdentifier)
                         {
-                            //Decompose the patch group into the individual (patched) talkgroups and process the audio
-                            //segment for each patched talkgroup.
-                            PatchGroup patchGroup = patchGroupIdentifier.getValue();
-
-                            List<Identifier> ids = new ArrayList<>();
-                            ids.addAll(patchGroup.getPatchedTalkgroupIdentifiers());
-                            ids.addAll(patchGroup.getPatchedRadioIdentifiers());
-
-                            //If there are no patched radios/talkgroups, override user preference and stream as a patch group
-                            if(ids.isEmpty() || audioSegment.getAliasList() == null)
+                            if(mSettings.getCallManagementSettings()
+                                    .getPatchGroupStreamingOption() == PatchGroupStreamingOption.TALKGROUPS)
                             {
-                                processAudioSegment(audioSegment, identifiers, audioSegment.getBroadcastChannels());
+                                //Decompose the patch group into the individual (patched) talkgroups and process the
+                                //audio segment for each patched talkgroup.
+                                PatchGroup patchGroup = patchGroupIdentifier.getValue();
+
+                                List<Identifier> ids = new ArrayList<>();
+                                ids.addAll(patchGroup.getPatchedTalkgroupIdentifiers());
+                                ids.addAll(patchGroup.getPatchedRadioIdentifiers());
+
+                                //If there are no patched radios/talkgroups, override user preference and stream as a patch group
+                                if(ids.isEmpty() || audioSegment.getAliasList() == null)
+                                {
+                                    processAudioSegment(audioSegment, identifiers, broadcastChannels);
+                                }
+                                else
+                                {
+                                    AliasList aliasList = audioSegment.getAliasList();
+
+                                    for(Identifier identifier: ids)
+                                    {
+                                        List<Alias> aliases = aliasList.getAliases(identifier);
+                                        Set<BroadcastChannel> patchedChannels = new HashSet<>();
+                                        for(Alias alias: aliases)
+                                        {
+                                            patchedChannels.addAll(alias.getBroadcastChannels());
+                                        }
+
+                                        if(!patchedChannels.isEmpty())
+                                        {
+                                            MutableIdentifierCollection decomposedIdentifiers =
+                                                    new MutableIdentifierCollection(identifiers.getIdentifiers());
+                                            //Remove patch group TO identifier & replace with the patched talkgroup/radio
+                                            decomposedIdentifiers.remove(Role.TO);
+                                            decomposedIdentifiers.update(identifier);
+                                            processAudioSegment(audioSegment, decomposedIdentifiers, patchedChannels);
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
-                                AliasList aliasList = audioSegment.getAliasList();
-
-                                for(Identifier identifier: ids)
-                                {
-                                    List<Alias> aliases = aliasList.getAliases(identifier);
-                                    Set<BroadcastChannel> broadcastChannels = new HashSet<>();
-                                    for(Alias alias: aliases)
-                                    {
-                                        broadcastChannels.addAll(alias.getBroadcastChannels());
-                                    }
-
-                                    if(!broadcastChannels.isEmpty())
-                                    {
-                                        MutableIdentifierCollection decomposedIdentifiers =
-                                                new MutableIdentifierCollection(identifiers.getIdentifiers());
-                                        //Remove patch group TO identifier & replace with the patched talkgroup/radio
-                                        decomposedIdentifiers.remove(Role.TO);
-                                        decomposedIdentifiers.update(identifier);
-                                        processAudioSegment(audioSegment, decomposedIdentifiers, broadcastChannels);
-                                    }
-                                }
+                                processAudioSegment(audioSegment, identifiers, broadcastChannels);
                             }
                         }
                         else
                         {
-                            processAudioSegment(audioSegment, identifiers, audioSegment.getBroadcastChannels());
+                            processAudioSegment(audioSegment, identifiers, broadcastChannels);
                         }
-                    }
-                    else
-                    {
-                        processAudioSegment(audioSegment, identifiers, audioSegment.getBroadcastChannels());
                     }
                 }
 

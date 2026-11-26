@@ -21,7 +21,6 @@ package io.github.dsheirer.gui.spectrum;
 
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
@@ -29,7 +28,6 @@ import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.scene.layout.StackPane;
@@ -49,8 +47,6 @@ import org.slf4j.LoggerFactory;
 public class MainSpectralDisplay extends StackPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(MainSpectralDisplay.class);
-    //SDRTrunk.properties key used by earlier versions, read only to migrate it
-    private static final String LEGACY_TUNER_ENABLED_KEY = "spectral.display.enabled";
 
     private final PlaylistManager mPlaylistManager;
     private final DiscoveredTunerModel mDiscoveredTunerModel;
@@ -190,12 +186,12 @@ public class MainSpectralDisplay extends StackPane
         ThreadPool.CACHED.submit(() -> {
             if(tuner != null)
             {
-                setTunerEnabled(true);
+                SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
                 mDiscoveredTunerModel.broadcast(new TunerEvent(tuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
             }
             else
             {
-                setTunerEnabled(false);
+                SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, false);
                 mDiscoveredTunerModel.broadcast(new TunerEvent(current,
                     TunerEvent.Event.REQUEST_CLEAR_MAIN_SPECTRAL_DISPLAY));
             }
@@ -234,67 +230,11 @@ public class MainSpectralDisplay extends StackPane
     }
 
     /**
-     * Zooms the display to the zoom level and centres it on the frequency.  Used when a channel's "show in
-     * waterfall" request names the channel frequency.  Queued on the display thread after showTuner() so the tuner's
-     * frequency range is known, then applied on the FX thread; the zoom is reset first so it always re-centres.
-     * Can be called from any thread and doesn't block.
-     * @param zoom level (0 = full bandwidth, each level doubles)
-     * @param frequency to centre
-     */
-    public void zoomTo(int zoom, long frequency)
-    {
-        mExecutor.submit(() -> {
-            TunerSpectralDisplay display;
-
-            synchronized(MainSpectralDisplay.this)
-            {
-                display = mDisplay;
-            }
-
-            if(display != null)
-            {
-                Platform.runLater(() -> {
-                    SpectralDisplayModel model = display.getSpectralDisplay().getModel();
-                    model.resetZoom();
-                    model.setZoom(zoom, frequency, 0.5);
-                });
-            }
-        });
-    }
-
-    /**
      * Stops showing the selected tuner.  Can be called from any thread and doesn't block.
      */
     public void clearTuner()
     {
         showTuner(null);
-    }
-
-    /**
-     * Indicates if a tuner can be shown automatically: false after the user chose no tuner, until they choose one.
-     * Moves the value stored by earlier versions in the SDRTrunk.properties file to the setting, once.  Any thread.
-     */
-    public static boolean isTunerEnabled()
-    {
-        String stored = Setting.MAIN_WINDOW_SPECTRAL_TUNER_ENABLED.get(null);
-
-        if(stored != null)
-        {
-            return Boolean.parseBoolean(stored);
-        }
-
-        boolean enabled = SystemProperties.getInstance().get(LEGACY_TUNER_ENABLED_KEY, true);
-        setTunerEnabled(enabled);
-        SystemProperties.getInstance().remove(LEGACY_TUNER_ENABLED_KEY);
-        return enabled;
-    }
-
-    /**
-     * Sets whether a tuner can be shown automatically.  Any thread.
-     */
-    public static void setTunerEnabled(boolean enabled)
-    {
-        Setting.MAIN_WINDOW_SPECTRAL_TUNER_ENABLED.putBoolean(enabled);
     }
 
     /**

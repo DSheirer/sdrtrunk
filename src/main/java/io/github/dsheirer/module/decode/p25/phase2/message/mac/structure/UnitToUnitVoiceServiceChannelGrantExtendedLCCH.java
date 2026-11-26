@@ -43,15 +43,15 @@ public class UnitToUnitVoiceServiceChannelGrantExtendedLCCH extends MacStructure
 {
     private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_4_BIT_24);
     private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_5_BIT_32);
-    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_8_BIT_56, OCTET_8_BIT_56 + 19);
+    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_8_BIT_56, OCTET_8_BIT_56 + 20);
     private static final IntField SOURCE_SUID_SYSTEM = IntField.range(76, 87);
     private static final IntField SOURCE_SUID_ID = IntField.length24(OCTET_12_BIT_88);
-    private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.range(OCTET_15_BIT_112, OCTET_15_BIT_112 + 3);
+    private static final IntField TRANSMIT_FREQUENCY_BAND = IntField.range(OCTET_15_BIT_112, OCTET_15_BIT_112 + 4);
     private static final IntField TRANSMIT_CHANNEL_NUMBER = IntField.range(116, 127);
-    private static final IntField RECEIVE_FREQUENCY_BAND = IntField.range(OCTET_17_BIT_128, OCTET_17_BIT_128 + 3);
+    private static final IntField RECEIVE_FREQUENCY_BAND = IntField.range(OCTET_17_BIT_128, OCTET_17_BIT_128 + 4);
     private static final IntField RECEIVE_CHANNEL_NUMBER = IntField.range(132, 143);
     private static final IntField FRAGMENT_0_TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_16);
-    private static final IntField FRAGMENT_0_FULLY_QUALIFIED_TARGET_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 19);
+    private static final IntField FRAGMENT_0_FULLY_QUALIFIED_TARGET_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 20);
     private static final IntField FRAGMENT_0_FULLY_QUALIFIED_TARGET_SYSTEM = IntField.range(60, 71);
     private static final IntField FRAGMENT_0_FULLY_QUALIFIED_TARGET_RADIO = IntField.length24(OCTET_10_BIT_72);
     private static final IntField FRAGMENT_0_MULTI_FRAGMENT_CRC = IntField.range(96, 111);

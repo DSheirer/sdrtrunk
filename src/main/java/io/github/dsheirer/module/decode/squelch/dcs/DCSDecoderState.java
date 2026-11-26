@@ -24,15 +24,15 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Maintains the decoder state from the stream of decoded DCS code messages.
  */
 public class DCSDecoderState extends DecoderState
 {
-    private Map<DCSCode,Integer> mDcsCodeCountsMap = new ConcurrentHashMap<>();
+    private Map<DCSCode,Integer> mDcsCodeCountsMap = new HashMap<>();
     private DCSCode mCurrentCode = DCSCode.UNKNOWN;
 
     /**
@@ -54,14 +54,15 @@ public class DCSDecoderState extends DecoderState
     {
         if(message instanceof DCSMessage dcsMessage)
         {
-            DCSCode code = dcsMessage.getDCSCode();
+            mCurrentCode = dcsMessage.getDCSCode();
 
-            //Status messages (e.g. code lost) carry no code: don't count them, otherwise a null key ends up in the
-            //counts map and the activity summary throws a NullPointerException.
-            if(code != null)
+            if(!mDcsCodeCountsMap.containsKey(mCurrentCode))
             {
-                mCurrentCode = code;
-                mDcsCodeCountsMap.merge(code, 1, Integer::sum);
+                mDcsCodeCountsMap.put(mCurrentCode, 1);
+            }
+            else
+            {
+                mDcsCodeCountsMap.put(mCurrentCode, mDcsCodeCountsMap.get(mCurrentCode) + 1);
             }
 
             getIdentifierCollection().update(dcsMessage.getIdentifiers());

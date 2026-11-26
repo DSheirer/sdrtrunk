@@ -763,8 +763,8 @@ public class AliasItemEditor extends Editor<Alias>
             ltrMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.LTR));
 
             Menu mdcMenu = new ProtocolMenu(Protocol.MDC1200);
-            mdcMenu.getItems().add(new AddRadioIdItem(Protocol.MDC1200));
-            mdcMenu.getItems().add(new AddRadioIdRangeItem(Protocol.MDC1200));
+            mdcMenu.getItems().add(new AddTalkgroupItem(Protocol.MDC1200));
+            mdcMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.MDC1200));
 
             Menu mptMenu = new ProtocolMenu(Protocol.MPT1327);
             mptMenu.getItems().add(new AddTalkgroupItem(Protocol.MPT1327));

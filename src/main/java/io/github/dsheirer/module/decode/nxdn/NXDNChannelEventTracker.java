@@ -30,7 +30,6 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 public class NXDNChannelEventTracker extends ChannelEventTracker<DecodeEvent>
 {
     private boolean mTrafficChannelAllocated = false;
-    private boolean mStartedFromAudio = false;
 
     /**
      * Constructs an instance
@@ -40,24 +39,6 @@ public class NXDNChannelEventTracker extends ChannelEventTracker<DecodeEvent>
     public NXDNChannelEventTracker(DecodeEvent event)
     {
         super(event);
-    }
-
-    /**
-     * Indicates if this event was created from the call audio, before a call message identified the call.  The first
-     * call message updates this event instead of creating a new event.
-     */
-    public boolean isStartedFromAudio()
-    {
-        return mStartedFromAudio;
-    }
-
-    /**
-     * Sets the flag to indicate if this event was created from the call audio, before a call message identified the call.
-     * @param startedFromAudio as the flag
-     */
-    public void setStartedFromAudio(boolean startedFromAudio)
-    {
-        mStartedFromAudio = startedFromAudio;
     }
 
     /**
