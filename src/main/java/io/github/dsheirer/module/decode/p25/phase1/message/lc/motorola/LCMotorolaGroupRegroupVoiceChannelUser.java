@@ -86,6 +86,14 @@ public class LCMotorolaGroupRegroupVoiceChannelUser extends VoiceLinkControlMess
     }
 
     /**
+     * Indicates if this message has a non-zero radio talker identifier.
+     */
+    public boolean hasRadio()
+    {
+        return getInt(SOURCE_ADDRESS) > 0;
+    }
+
+    /**
      * List of identifiers contained in this message
      */
     @Override
@@ -95,7 +103,11 @@ public class LCMotorolaGroupRegroupVoiceChannelUser extends VoiceLinkControlMess
         {
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getSupergroupAddress());
-            mIdentifiers.add(getSourceAddress());
+
+            if(hasRadio())
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
         }
 
         return mIdentifiers;
