@@ -1600,7 +1600,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             boolean p1 = ip.isTalkgroupPriority1();
             broadcast(P25DecodeEvent.builder(DecodeEventType.PAGE, message.getTimestamp())
                     .channel(getCurrentChannel())
-                    .details(p1 ? "PRIORITY " : "" + "USER PAGE-RETURN TO CONTROL CHANNEL")
+                    .details((p1 ? "PRIORITY " : "") + "USER PAGE-RETURN TO CONTROL CHANNEL")
                     .identifiers(getIdentifierCollectionForUser(ip.getTargetAddress1(), message.getTimestamp()))
                     .timeslot(getTimeslot())
                     .build());
@@ -1610,7 +1610,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 boolean p2 = ip.isTalkgroupPriority2();
                 broadcast(P25DecodeEvent.builder(DecodeEventType.PAGE, message.getTimestamp())
                         .channel(getCurrentChannel())
-                        .details(p2 ? "PRIORITY " : "" + "USER PAGE-RETURN TO CONTROL CHANNEL")
+                        .details((p2 ? "PRIORITY " : "") + "USER PAGE-RETURN TO CONTROL CHANNEL")
                         .identifiers(getIdentifierCollectionForUser(ip.getTargetAddress2(), message.getTimestamp()))
                         .timeslot(getTimeslot())
                         .build());
@@ -1620,7 +1620,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     boolean p3 = ip.isTalkgroupPriority3();
                     broadcast(P25DecodeEvent.builder(DecodeEventType.PAGE, message.getTimestamp())
                             .channel(getCurrentChannel())
-                            .details(p3 ? "PRIORITY " : "" + "USER PAGE-RETURN TO CONTROL CHANNEL")
+                            .details((p3 ? "PRIORITY " : "") + "USER PAGE-RETURN TO CONTROL CHANNEL")
                             .identifiers(getIdentifierCollectionForUser(ip.getTargetAddress3(), message.getTimestamp()))
                             .timeslot(getTimeslot())
                             .build());
@@ -1630,7 +1630,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         boolean p4 = ip.isTalkgroupPriority4();
                         broadcast(P25DecodeEvent.builder(DecodeEventType.PAGE, message.getTimestamp())
                                 .channel(getCurrentChannel())
-                                .details(p4 ? "PRIORITY " : "" + "USER PAGE-RETURN TO CONTROL CHANNEL")
+                                .details((p4 ? "PRIORITY " : "") + "USER PAGE-RETURN TO CONTROL CHANNEL")
                                 .identifiers(getIdentifierCollectionForUser(ip.getTargetAddress4(), message.getTimestamp()))
                                 .timeslot(getTimeslot())
                                 .build());
