@@ -43,7 +43,7 @@ public class TelephoneInterconnectAnswerRequest extends MacStructure
     private static final IntField DIGIT_8 = IntField.length4(OCTET_5_BIT_32 + 4);
     private static final IntField DIGIT_9 = IntField.length4(OCTET_6_BIT_40);
     private static final IntField DIGIT_10 = IntField.length4(OCTET_6_BIT_40 + 4);
-    private static final IntField TARGET_ADDRESS = IntField.length4(OCTET_7_BIT_48);
+    private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_7_BIT_48);
 
     private List<Identifier> mIdentifiers;
     private Identifier mTargetAddress;
