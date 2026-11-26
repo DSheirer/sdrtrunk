@@ -354,6 +354,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             if(event.getTimeslot() == getTimeslot() && event.getSquelchState() == SquelchState.SQUELCH)
             {
                 closeAudioSegment();
+                reset();
             }
         }
     }
