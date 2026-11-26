@@ -33,7 +33,7 @@ import java.util.List;
 public class UnitToUnitAnswerRequestExtended extends MacStructureVoiceService
 {
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_16);
-    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 20);
+    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 19);
     private static final IntField SOURCE_SUID_SYSTEM = IntField.range(60, 71);
     private static final IntField SOURCE_SUID_ID = IntField.length24(OCTET_10_BIT_72);
 
