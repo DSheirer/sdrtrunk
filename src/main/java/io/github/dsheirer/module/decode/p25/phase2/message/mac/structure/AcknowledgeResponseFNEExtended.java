@@ -33,10 +33,10 @@ import java.util.List;
 public class AcknowledgeResponseFNEExtended extends MacStructureMultiFragment
 {
     private static final IntField SERVICE_TYPE = IntField.range(26, 31);
-    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_5_BIT_32, OCTET_5_BIT_32 + 20);
+    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_5_BIT_32, OCTET_5_BIT_32 + 19);
     private static final IntField SOURCE_SUID_SYSTEM = IntField.range(52, 63);
     private static final IntField SOURCE_SUID_ID = IntField.length24(OCTET_9_BIT_64);
-    private static final IntField TARGET_SUID_WACN = IntField.range(OCTET_12_BIT_88, OCTET_12_BIT_88 + 20);
+    private static final IntField TARGET_SUID_WACN = IntField.range(OCTET_12_BIT_88, OCTET_12_BIT_88 + 19);
     private static final IntField TARGET_SUID_SYSTEM = IntField.range(108, 119);
     private static final IntField TARGET_SUID_ID = IntField.length24(OCTET_16_BIT_120);
     private static final IntField FRAGMENT_0_SOURCE_ADDRESS = IntField.length24(OCTET_3_BIT_16);

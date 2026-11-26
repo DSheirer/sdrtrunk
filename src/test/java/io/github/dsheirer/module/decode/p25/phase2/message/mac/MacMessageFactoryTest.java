@@ -105,7 +105,12 @@ public class MacMessageFactoryTest
         //Opcode, service options, target 1000, source SUID (WACN 0xBEE00, system 0x123, ID 2000)
         List<MacMessage> messages = decode(new int[]{0xC5, 0x00, 0x00, 0x03, 0xE8, 0xBE, 0xE0, 0x01, 0x23, 0x00,
             0x07, 0xD0});
-        assertInstanceOf(UnitToUnitAnswerRequestExtended.class, messages.get(0).getMacStructure());
+        UnitToUnitAnswerRequestExtended request = assertInstanceOf(UnitToUnitAnswerRequestExtended.class,
+            messages.get(0).getMacStructure());
+        assertEquals(1000, request.getTargetAddress().getValue());
+        assertEquals(0xBEE00, request.getSourceSUID().getWacn());
+        assertEquals(0x123, request.getSourceSUID().getSystem());
+        assertEquals(2000, request.getSourceSUID().getRadio());
         assertReleaseFollows(messages);
     }
 
