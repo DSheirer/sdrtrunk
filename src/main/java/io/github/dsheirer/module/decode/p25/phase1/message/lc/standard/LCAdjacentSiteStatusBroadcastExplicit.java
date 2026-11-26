@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,14 +45,18 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
     private static final IntField SITE = IntField.length8(OCTET_5_BIT_40);
     private static final IntField UPLINK_FREQUENCY_BAND = IntField.length4(OCTET_6_BIT_48);
     private static final IntField UPLINK_CHANNEL_NUMBER = IntField.length12(OCTET_6_BIT_48 + 4);
-    private static final IntField SERVICE_CLASS = IntField.length8(OCTET_8_BIT_64);
+    //Octet 8 is the C, F, V and A flags and 4 reserved bits; this message has no service class (AABF-D 7.3.25)
+    private static final int CONVENTIONAL_CHANNEL_FLAG = 64;
+    private static final int SITE_FAILURE_FLAG = 65;
+    private static final int VALID_INFORMATION_FLAG = 66;
+    private static final int ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG = 67;
 
     private List<Identifier> mIdentifiers;
     private Identifier mLRA;
     private Identifier mRFSS;
     private Identifier mSite;
     private IBandChannelDescriptor mChannel;
-    private SystemServiceClass mSystemServiceClass;
+    private List<String> mSiteFlags;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -73,7 +76,7 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         sb.append(" SITE:").append(getSite());
         sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
+        sb.append(" FLAGS ").append(getSiteFlags());
         return sb.toString();
     }
 
@@ -118,16 +121,67 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         return mChannel;
     }
 
-    public SystemServiceClass getSystemServiceClass()
+    /**
+     * Indicates if the channel is a conventional repeater channel
+     */
+    public boolean isConventionalChannel()
     {
-        if(mSystemServiceClass == null)
-        {
-            mSystemServiceClass = new SystemServiceClass(getInt(SERVICE_CLASS));
-        }
-
-        return mSystemServiceClass;
+        return getMessage().get(CONVENTIONAL_CHANNEL_FLAG);
     }
 
+    /**
+     * Indicates if the site is in a failure condition
+     */
+    public boolean isFailedConditionSite()
+    {
+        return getMessage().get(SITE_FAILURE_FLAG);
+    }
+
+    /**
+     * Indicates if the site information is valid
+     */
+    public boolean isValidSiteInformation()
+    {
+        return getMessage().get(VALID_INFORMATION_FLAG);
+    }
+
+    /**
+     * Indicates if the site has an active network connection to the RFSS controller
+     */
+    public boolean isActiveNetworkConnectionToRfssControllerSite()
+    {
+        return getMessage().get(ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG);
+    }
+
+    public List<String> getSiteFlags()
+    {
+        if(mSiteFlags == null)
+        {
+            mSiteFlags = new ArrayList<>();
+
+            if(isConventionalChannel())
+            {
+                mSiteFlags.add("CONVENTIONAL CHANNEL");
+            }
+
+            if(isFailedConditionSite())
+            {
+                mSiteFlags.add("FAILURE CONDITION");
+            }
+
+            if(isValidSiteInformation())
+            {
+                mSiteFlags.add("VALID INFORMATION");
+            }
+
+            if(isActiveNetworkConnectionToRfssControllerSite())
+            {
+                mSiteFlags.add("ACTIVE RFSS CONNECTION");
+            }
+        }
+
+        return mSiteFlags;
+    }
 
     /**
      * List of identifiers contained in this message
