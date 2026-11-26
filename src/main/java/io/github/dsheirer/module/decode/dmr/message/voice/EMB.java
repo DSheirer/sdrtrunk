@@ -46,7 +46,7 @@ public class EMB
 
     private static final int[] WORD = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] COLOR_CODE = new int[]{0, 1, 2, 3};
-    private static final int ENCRYPTION_PI = 4;
+    private static final int PREEMPTION_POWER_CONTROL_INDICATOR = 4;
     private static final int[] LINK_CONTROL_START_STOP = new int[]{5, 6};
     //Maximum correctable bit errors for a minimum Hamming distance 6 code: (6 - 1) / 2 = 2.  Any decode that differs
     //from the received word by more than this is ambiguous and is flagged invalid by both the hard and soft decoders.
@@ -233,11 +233,13 @@ public class EMB
     }
 
     /**
-     * Indicates if this call is encrypted
+     * Pre-emption and power control indicator (PI), TS 102 361-1 9.3.2.  When set, the embedded signalling in this burst
+     * carries reverse channel information for the other logical channel; when clear, it carries this channel's embedded
+     * signalling or the null embedded message.  It does not indicate encryption.
      */
-    public boolean isEncrypted()
+    public boolean isReverseChannel()
     {
-        return getMessage().get(ENCRYPTION_PI);
+        return getMessage().get(PREEMPTION_POWER_CONTROL_INDICATOR);
     }
 
     @Override
@@ -245,7 +247,7 @@ public class EMB
     {
         StringBuilder sb = new StringBuilder();
         sb.append(" EMB-");
-        sb.append(isEncrypted() ? "EN" : "UN");
+        sb.append(isReverseChannel() ? "RC-" : "");
         sb.append(getLCSS());
         sb.append("CC:").append(getColorCode());
         return sb.toString();

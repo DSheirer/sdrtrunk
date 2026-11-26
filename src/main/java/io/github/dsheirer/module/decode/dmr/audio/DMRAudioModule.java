@@ -122,21 +122,14 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     mEncryptedCallStateEstablished = true;
                     mEncryptedCall = false;
                 }
-                //Both Motorola and Hytera signal their Basic Privacy (BP) scrambling in some of the Voice B-F frames
-                //in the EMB field.
-                else if(message instanceof VoiceEMBMessage voice)
+                //Motorola and Hytera signal Basic Privacy (BP) parameters in the voice frame F single burst.  The EMB
+                //PI bit is the pre-emption and power control indicator (TS 102 361-1 9.3.2), not an encryption flag,
+                //so other voice frames leave the state to the link control or PI header.
+                else if(message instanceof VoiceEMBMessage voice && voice.hasEmbeddedParameters() &&
+                        voice.getEmbeddedParameters().getShortBurst() instanceof EmbeddedEncryptionParameters)
                 {
-                    if(voice.hasEmbeddedParameters() &&
-                       voice.getEmbeddedParameters().getShortBurst() instanceof EmbeddedEncryptionParameters)
-                    {
-                        mEncryptedCallStateEstablished = true;
-                        mEncryptedCall = true;
-                    }
-                    else if(voice.getEMB().isValid())
-                    {
-                        mEncryptedCallStateEstablished = true;
-                        mEncryptedCall = voice.getEMB().isEncrypted();
-                    }
+                    mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = true;
                 }
                 else if(message instanceof VoiceHeader vh && vh.getLCMessage() instanceof AbstractVoiceChannelUser vcu &&
                         vcu.isValid())

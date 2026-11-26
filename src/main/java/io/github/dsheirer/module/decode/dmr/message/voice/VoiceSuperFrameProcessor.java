@@ -118,14 +118,6 @@ public class VoiceSuperFrameProcessor
      */
     public void process(VoiceMessage voiceMessage)
     {
-        if(voiceMessage instanceof VoiceEMBMessage voiceEMB)
-        {
-            if(voiceEMB.getEMB().isValid() && voiceEMB.getEMB().isEncrypted())
-            {
-                mEncrypted = true;
-            }
-        }
-
         switch(voiceMessage.getSyncPattern())
         {
             case BASE_STATION_VOICE:
@@ -144,7 +136,10 @@ public class VoiceSuperFrameProcessor
                 mFragmentE = voiceMessage.getIvFragments();
                 break;
             case BS_VOICE_FRAME_F:
-                if(voiceMessage instanceof VoiceEMBMessage voiceFrame6)
+                //With PI set, the embedded field carries reverse channel information for the other logical channel
+                //(TS 102 361-1 6.4.2), not a single burst for this one.
+                if(voiceMessage instanceof VoiceEMBMessage voiceFrame6 &&
+                   !(voiceFrame6.getEMB().isValid() && voiceFrame6.getEMB().isReverseChannel()))
                 {
                     BinaryMessage frameFFragment = voiceFrame6.getFLCFragment();
                     ShortBurst shortBurst = extractShortBurst(frameFFragment);
