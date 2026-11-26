@@ -20,6 +20,7 @@
 package io.github.dsheirer.health;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.Tuner;
@@ -81,28 +82,51 @@ public class HealthRegistry
     }
 
     /**
-     * The totals of a standard channel, made on first use.
+     * The totals of a standard channel, made on first use.  Its name, system, site and alias list are read as they
+     * are when a report is made, so edits to them count from then on.  A channel whose decoder changed (MPT1327 to
+     * NBFM, say) when its processing starts again gets new totals: it's another kind of channel now, and what it
+     * measured as the old one isn't reported as the new.
      */
     public ChannelHealth channel(Channel channel)
     {
-        return mChannels.computeIfAbsent(channel.getChannelID(), id -> {
-            String mode = channel.getDecodeConfiguration() != null ?
-                HealthMonitor.conventionalMode(channel.getDecodeConfiguration().getDecoderType()) : null;
-            ChannelHealth health = new ChannelHealth(new ChannelHealth.ChannelInfo(id, channel.getName(),
-                channel.getSystem(), channel.getSite(), channel.getAliasListName(), mode));
+        return mChannels.compute(channel.getChannelID(), (id, health) -> {
+            DecoderType decoder = decoder(channel);
+
+            if(health != null && health.getInfo().decoder() == decoder)
+            {
+                return health;
+            }
+
+            ChannelHealth fresh = new ChannelHealth(info(channel), () -> info(channel),
+                health != null ? health.getGeneration() + 1 : 0);
 
             if(channel.getSourceConfiguration() instanceof SourceConfigTuner tuner)
             {
-                health.setFrequency(tuner.getFrequency());
+                fresh.setFrequency(tuner.getFrequency());
             }
             else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency multiple &&
                 multiple.getFrequencies() != null && !multiple.getFrequencies().isEmpty())
             {
-                health.setFrequency(multiple.getFrequencies().getFirst());
+                fresh.setFrequency(multiple.getFrequencies().getFirst());
             }
 
-            return health;
+            return fresh;
         });
+    }
+
+    private static DecoderType decoder(Channel channel)
+    {
+        return channel.getDecodeConfiguration() != null ? channel.getDecodeConfiguration().getDecoderType() : null;
+    }
+
+    /**
+     * What a channel is, as its configuration says now.
+     */
+    private static ChannelHealth.ChannelInfo info(Channel channel)
+    {
+        DecoderType decoder = decoder(channel);
+        return new ChannelHealth.ChannelInfo(channel.getChannelID(), channel.getName(), channel.getSystem(),
+            channel.getSite(), channel.getAliasListName(), HealthMonitor.conventionalMode(decoder), decoder);
     }
 
     /**
@@ -156,7 +180,8 @@ public class HealthRegistry
     }
 
     /**
-     * Tuners in use: name, kind, seconds running since the start, and frequency error left after correction.
+     * Tuners: name, kind, seconds running (with channels) since the start, and frequency error left after
+     * correction.  A tuner never in use has no seconds, and a report leaves it out.
      */
     private List<HealthSnapshot.RadioTotals> radios(long now)
     {
@@ -171,21 +196,39 @@ public class HealthRegistry
 
         for(DiscoveredTuner discovered: mTunerManager.getAvailableTuners())
         {
-            if(!discovered.hasTuner())
+            //Read once: a tuner disabled meanwhile is gone (null), and one tuner's trouble loses no other's.
+            Tuner tuner = discovered.getTuner();
+
+            if(tuner == null)
             {
                 continue;
             }
 
-            Tuner tuner = discovered.getTuner();
-            TunerController controller = tuner.getTunerController();
-            String name = tuner.getPreferredName();
-            double seconds = mTunerSeconds.merge(name, elapsed, Double::sum);
-            Double ppm = controller != null && controller.hasMeasuredFrequencyError() ?
-                Math.round(controller.getPPMFrequencyError() * 100.0) / 100.0 : null;
-            radios.add(new HealthSnapshot.RadioTotals(name, kind(tuner.getTunerClass()), seconds, ppm));
+            try
+            {
+                String name = tuner.getPreferredName();
+                //Running while it has channels: an enabled spare with none isn't hearing anything.
+                double seconds = mTunerSeconds.merge(name, inUse(tuner) ? elapsed : 0.0, Double::sum);
+                TunerController controller = tuner.getTunerController();
+                Double ppm = controller != null && controller.hasMeasuredFrequencyError() ?
+                    Math.round(controller.getPPMFrequencyError() * 100.0) / 100.0 : null;
+                radios.add(new HealthSnapshot.RadioTotals(name, kind(tuner.getTunerClass()), seconds, ppm));
+            }
+            catch(RuntimeException e)
+            {
+                LOGGER.debug("Node health: tuner left out of this snapshot", e);
+            }
         }
 
         return radios;
+    }
+
+    /**
+     * True when the tuner has channels (it's tuned for something).
+     */
+    private static boolean inUse(Tuner tuner)
+    {
+        return tuner.getChannelSourceManager() != null && tuner.getChannelSourceManager().getTunerChannelCount() > 0;
     }
 
     /**

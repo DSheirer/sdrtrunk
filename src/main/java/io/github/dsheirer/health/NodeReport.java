@@ -73,6 +73,12 @@ public class NodeReport
 
             ChannelHealth.Totals b = base != null ? base.channel(a.info().channelId()) : null;
 
+            //Totals started again since the base (its decoder changed): all of these are in the window.
+            if(b != null && b.generation() != a.generation())
+            {
+                b = null;
+            }
+
             if(a.runningMs() - (b != null ? b.runningMs() : 0) <= 0)
             {
                 continue; //Not running in the window

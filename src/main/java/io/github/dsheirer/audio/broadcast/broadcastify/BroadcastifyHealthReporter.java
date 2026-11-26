@@ -37,6 +37,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,6 +65,8 @@ public class BroadcastifyHealthReporter
     private static final Logger LOGGER = LoggerFactory.getLogger(BroadcastifyHealthReporter.class);
     private static final long CHECK_INTERVAL_MS = 10_000;
     private static final Map<String,BroadcastifyHealthReporter> REPORTERS = new HashMap<>();
+    /** One HTTP client for every reporter, made at the first: a stream that restarts doesn't make another. */
+    private static HttpClient sHttpClient;
 
     private final String mKey;
     private final int mSystemId;
@@ -73,6 +76,8 @@ public class BroadcastifyHealthReporter
     private final NodeReporter mReporter;
     private final List<BroadcastifyCallConfiguration> mConfigurations = new CopyOnWriteArrayList<>();
     private ScheduledFuture<?> mFuture;
+    /** Stopped: a check already under way sends nothing (a new reporter may have started for the node). */
+    private volatile boolean mStopped;
     private volatile boolean mResume;
     private boolean mToldNotTaken;
     private boolean mToldUnreachable;
@@ -131,7 +136,9 @@ public class BroadcastifyHealthReporter
         if(url == null)
         {
             LOGGER.info("Broadcastify Calls system [" + configuration.getSystemID() + "] - not sending health " +
-                "reports: the upload server [" + configuration.getHost() + "] doesn't end in call-upload");
+                "reports: " + (BroadcastifyCallConfiguration.DEVELOPMENT_ENDPOINT.equals(configuration.getHost()) ?
+                "Broadcastify's development server [" + configuration.getHost() + "] has no health endpoint" :
+                "the upload server [" + configuration.getHost() + "] doesn't end in call-upload"));
             return null;
         }
 
@@ -141,8 +148,7 @@ public class BroadcastifyHealthReporter
         if(reporter == null)
         {
             reporter = new BroadcastifyHealthReporter(systemId, url, aliasModel, httpClient != null ? httpClient :
-                HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL)
-                    .connectTimeout(Duration.ofSeconds(20)).build(), new NodeReporter(String.valueOf(systemId)));
+                httpClient(), new NodeReporter(String.valueOf(systemId)));
             REPORTERS.put(reporter.mKey, reporter);
         }
 
@@ -154,6 +160,17 @@ public class BroadcastifyHealthReporter
         }
 
         return reporter;
+    }
+
+    private static synchronized HttpClient httpClient()
+    {
+        if(sHttpClient == null)
+        {
+            sHttpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(20)).build();
+        }
+
+        return sHttpClient;
     }
 
     /**
@@ -245,6 +262,8 @@ public class BroadcastifyHealthReporter
 
     private synchronized void stop()
     {
+        mStopped = true;
+
         if(mFuture != null)
         {
             mFuture.cancel(true);
@@ -278,28 +297,72 @@ public class BroadcastifyHealthReporter
 
     private boolean feeds(ChannelHealth.ChannelInfo info, Set<String> streams)
     {
-        String aliasList = info.aliasListName();
+        return feeds(info, feedingAliasLists(streams));
+    }
 
-        if(aliasList == null || aliasList.isEmpty() || streams.isEmpty())
+    private static boolean feeds(ChannelHealth.ChannelInfo info, FeedingAliasLists lists)
+    {
+        String aliasList = info.aliasListName();
+        return aliasList != null && !aliasList.isEmpty() && lists.names().contains(aliasList);
+    }
+
+    /** The alias lists that fed the node when last worked out, for when they can't be now. */
+    private volatile FeedingAliasLists mLastFeeding = new FeedingAliasLists(Set.of(), Set.of());
+
+    private record FeedingAliasLists(Set<String> streams, Set<String> names)
+    {
+    }
+
+    /**
+     * The alias lists with an alias that streams to one of the node's streams.  The aliases are the user's, edited on
+     * the JavaFX thread while this reads them on the scheduler's: an edit at the same moment is a
+     * ConcurrentModificationException, so it's read again, and failing that the last lists worked out for the same
+     * streams are used, so the report still goes.
+     */
+    private FeedingAliasLists feedingAliasLists(Set<String> streams)
+    {
+        if(streams.isEmpty())
         {
-            return false;
+            return new FeedingAliasLists(streams, Set.of());
         }
 
-        for(Alias alias: mAliasModel.getAliases())
+        RuntimeException last = null;
+
+        for(int attempt = 0; attempt < 3; attempt++)
         {
-            if(aliasList.equals(alias.getAliasListName()))
+            try
             {
-                for(String stream: streams)
+                Set<String> names = new HashSet<>();
+
+                for(Alias alias: List.copyOf(mAliasModel.getAliases()))
                 {
-                    if(alias.hasBroadcastChannel(stream))
+                    String list = alias.getAliasListName();
+
+                    if(list != null && !names.contains(list) && streams.stream().anyMatch(alias::hasBroadcastChannel))
                     {
-                        return true;
+                        names.add(list);
                     }
                 }
+
+                FeedingAliasLists lists = new FeedingAliasLists(Set.copyOf(streams), Set.copyOf(names));
+                mLastFeeding = lists;
+                return lists;
+            }
+            catch(ConcurrentModificationException | IndexOutOfBoundsException | NullPointerException e)
+            {
+                last = e;
             }
         }
 
-        return false;
+        FeedingAliasLists previous = mLastFeeding;
+
+        if(previous.streams().equals(streams))
+        {
+            LOGGER.debug("Aliases changing while a health report was made - using the alias lists found before", last);
+            return previous;
+        }
+
+        throw last;
     }
 
     private void check()
@@ -342,12 +405,12 @@ public class BroadcastifyHealthReporter
             }
 
             //Which channels feed the node: worked out once per report, since the alias lists can change.
-            Set<String> streams = streams();
+            FeedingAliasLists lists = feedingAliasLists(streams());
             Set<Integer> feeding = new HashSet<>();
 
             for(ChannelHealth.Totals totals: window.now().channels())
             {
-                if(feeds(totals.info(), streams))
+                if(feeds(totals.info(), lists))
                 {
                     feeding.add(totals.info().channelId());
                 }
@@ -407,6 +470,11 @@ public class BroadcastifyHealthReporter
 
     private void send(JsonObject report, HealthSnapshot now)
     {
+        if(mStopped)
+        {
+            return; //Stopped while the report was made
+        }
+
         int systemId = mSystemId;
         HttpResponse<String> response;
 

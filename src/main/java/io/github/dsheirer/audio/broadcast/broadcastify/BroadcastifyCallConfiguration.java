@@ -183,7 +183,9 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
 
     /**
      * Where node health reports go: the upload server's call-health beside its call-upload, or null when the upload
-     * server's address doesn't end in call-upload.
+     * server's address doesn't end in call-upload.  The development endpoint (call-upload-dev) has none: Broadcastify
+     * takes health reports at api.broadcastify.com/call-health only, and a development node's reports would be taken
+     * as a production node's.
      */
     public static String getHealthUrl(String uploadHost)
     {

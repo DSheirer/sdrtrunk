@@ -77,8 +77,29 @@ public class ChannelHealthTest
 
         health.stopped(13_000);
         totals = health.totals(20_000);
-        assertEquals(2, totals.closes(), "stopping closes an open channel");
+        assertEquals(1, totals.closes(), "a transmission cut off by stopping isn't one completed");
+        assertEquals(3_000 + 3_000, totals.openMs(), "its time open counts, to the stop");
         assertEquals(13_000, totals.runningMs(), "not running after it stopped");
+    }
+
+    /**
+     * A DMR Capacity Plus rest channel that moves starts a second chain (and monitor) for the channel before the first,
+     * now a traffic channel, stops: the channel runs while either does.
+     */
+    @Test
+    void a_channel_runs_while_any_of_its_monitors_does()
+    {
+        ChannelHealth health = new ChannelHealth(info(4, "dmr"));
+        health.started(0);
+        health.started(5_000); //The new rest channel's chain
+        health.stopped(6_000); //The old chain, a traffic channel now
+        assertEquals(10_000, health.totals(10_000).runningMs(), "still running");
+
+        health.stopped(12_000);
+        health.stopped(13_000); //More stops than starts: nothing more
+        assertEquals(12_000, health.totals(20_000).runningMs());
+        health.started(30_000);
+        assertEquals(17_000, health.totals(35_000).runningMs());
     }
 
     @Test

@@ -124,6 +124,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
      * @param parentChannel that owns this traffic channel manager
      */
     private CallOutcomes mCallOutcomes;
+    /** The call each traffic channel was requested for, by frequency, until it starts or is rejected. */
+    private final Map<Long,String> mRequestedCalls = new ConcurrentHashMap<>();
 
     public DMRTrafficChannelManager(Channel parentChannel)
     {
@@ -513,6 +515,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                     //Counted as recorded before the request: one no tuner can take is rejected while it's posted, and
                     //the rejection moves the call to noSource.
                     calls().tally(callKey, newCall, CallOutcome.RECORDED);
+                    mRequestedCalls.put(frequency, callKey);
                     getInterModuleEventBus().post(request);
                 }
                 else
@@ -809,6 +812,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             {
                 mCallEventsTS1.remove(frequency);
                 mCallEventsTS2.remove(frequency);
+                mRequestedCalls.remove(frequency);
+                calls().forget(frequency);
             }
             finally
             {
@@ -826,8 +831,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
             try
             {
-                calls().rejected(CallOutcomes.key(frequency, 1));
-                calls().rejected(CallOutcomes.key(frequency, 2));
+                //Only the call the traffic channel was requested for: the other timeslot's last call (on an earlier
+                //traffic channel, or this one before it stopped) was counted already.
+                calls().rejected(mRequestedCalls.remove(frequency));
 
                 IDecodeEvent event = mCallEventsTS1.get(frequency);
 

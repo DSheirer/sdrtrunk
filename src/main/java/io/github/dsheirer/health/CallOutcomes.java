@@ -98,10 +98,11 @@ public class CallOutcomes
     /**
      * No tuner could take the traffic channel started for the call on this channel: a call counted as recorded is
      * counted as noSource instead.
+     * @param key of the channel the traffic channel was started for, or null (nothing to move)
      */
     public synchronized void rejected(String key)
     {
-        if(mCalls.get(key) == CallOutcome.RECORDED)
+        if(key != null && mCalls.get(key) == CallOutcome.RECORDED)
         {
             mTally.count(CallOutcome.RECORDED, CallOutcome.NO_SOURCE);
             mCalls.put(key, CallOutcome.NO_SOURCE);
@@ -117,11 +118,14 @@ public class CallOutcomes
     }
 
     /**
-     * The control channel moved: the calls on the channels are forgotten (each was counted already).
+     * The traffic channel on a frequency stopped: the calls on its timeslots are forgotten (each was counted already),
+     * so a later call there is counted as new, and a later rejection can't move one of them.
+     * @param frequency of the traffic channel
      */
-    public synchronized void clear()
+    public synchronized void forget(long frequency)
     {
-        mCalls.clear();
-        mHeard.clear();
+        String prefix = frequency + "/";
+        mCalls.keySet().removeIf(key -> key.startsWith(prefix));
+        mHeard.keySet().removeIf(key -> key.startsWith(prefix));
     }
 }

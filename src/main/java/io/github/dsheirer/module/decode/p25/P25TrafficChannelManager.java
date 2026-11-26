@@ -144,7 +144,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     public P25TrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
-        calls(); //This control channel's calls are counted (node health reports)
 
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1 phase1)
         {
@@ -1276,7 +1275,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     }
 
     /**
-     * Calls announced by this control channel and what became of each, for node health reports.
+     * Calls announced by this control channel and what became of each, for node health reports.  Counted from the
+     * first channel grant, as on DMR and NXDN: a conventional P25 channel, which grants none, is reported as a channel
+     * whatever control messages (a call alert, a status) it decodes, never as a trunked site with no calls.
      */
     private CallTally calls()
     {

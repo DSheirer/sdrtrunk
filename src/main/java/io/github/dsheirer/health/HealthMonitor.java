@@ -22,7 +22,9 @@ package io.github.dsheirer.health;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
@@ -73,6 +75,9 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
     private final Listener<SourceEvent> mSourceEventListener = this::receive;
     private final Listener<IDecodeEvent> mDecodeEventListener = this::receive;
     private IDecodeEvent mLastCall;
+    private boolean mStarted;
+    /** Its processing chain became a traffic channel: what it decodes now isn't the channel's. */
+    private volatile boolean mDetached;
 
     /**
      * @param channel the monitor measures (a standard channel)
@@ -167,7 +172,7 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
      */
     private void receive(IDecodeEvent event)
     {
-        if(mCalls != null && event != mLastCall && event.getEventType() == DecodeEventType.CALL)
+        if(!mDetached && mCalls != null && event != mLastCall && event.getEventType() == DecodeEventType.CALL)
         {
             mLastCall = event;
             mCalls.count(null, CallOutcome.RECORDED);
@@ -176,6 +181,11 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
 
     private void receive(IMessage message)
     {
+        if(mDetached)
+        {
+            return;
+        }
+
         if(message instanceof TSBKMessage tsbk)
         {
             mHealth.control("p25", tsbk.isValid(), tsbk.getTimestamp());
@@ -300,6 +310,11 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
 
     private void receive(SquelchStateEvent event)
     {
+        if(mDetached)
+        {
+            return;
+        }
+
         if(event.getSquelchState() == SquelchState.UNSQUELCH)
         {
             mHealth.opened(System.currentTimeMillis());
@@ -312,7 +327,7 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
 
     private void receive(SourceEvent event)
     {
-        if(event.getEvent() == SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE && event.getValue() != null)
+        if(!mDetached && event.getEvent() == SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE && event.getValue() != null)
         {
             mHealth.setFrequency(event.getValue().longValue());
         }
@@ -323,15 +338,52 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
     {
     }
 
+    /**
+     * Its processing chain became a traffic channel (a DMR Capacity Plus rest channel that moved: a new chain is
+     * started for the channel, with a monitor of its own).  This one stops counting toward the channel, now.
+     */
+    @Subscribe
+    public void channelChanged(ChannelConfigurationChangeNotification notification)
+    {
+        if(notification.getChannel() != null && notification.getChannel().isTrafficChannel())
+        {
+            detach(System.currentTimeMillis());
+        }
+    }
+
+    synchronized void detach(long now)
+    {
+        mDetached = true;
+        stop(now);
+    }
+
     @Override
     public void start()
     {
-        mHealth.started(System.currentTimeMillis());
+        start(System.currentTimeMillis());
     }
 
     @Override
     public void stop()
     {
-        mHealth.stopped(System.currentTimeMillis());
+        stop(System.currentTimeMillis());
+    }
+
+    synchronized void start(long now)
+    {
+        if(!mStarted && !mDetached)
+        {
+            mStarted = true;
+            mHealth.started(now);
+        }
+    }
+
+    synchronized void stop(long now)
+    {
+        if(mStarted)
+        {
+            mStarted = false;
+            mHealth.stopped(now);
+        }
     }
 }

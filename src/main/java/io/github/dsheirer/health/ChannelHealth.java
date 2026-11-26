@@ -19,9 +19,11 @@
 
 package io.github.dsheirer.health;
 
+import io.github.dsheirer.module.decode.DecoderType;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 /**
  * Running totals of how well one standard (not traffic) channel is heard, since it started: as a trunked site's
@@ -37,6 +39,8 @@ public class ChannelHealth
     public static final long LOCK_HOLD_MS = 2000;
 
     private final ChannelInfo mInfo;
+    private final Supplier<ChannelInfo> mCurrentInfo;
+    private final int mGeneration;
     private final CallTally mCalls = new CallTally();
     private boolean mCallsCounted;
 
@@ -49,7 +53,7 @@ public class ChannelHealth
     private long mLockedMs;
     private long mLastGood;
 
-    private boolean mRunning;
+    private int mRunning;
     private long mRunningMs;
     private long mRunningSince;
     private long mOpens;
@@ -59,12 +63,53 @@ public class ChannelHealth
 
     public ChannelHealth(ChannelInfo info)
     {
-        mInfo = info;
+        this(info, null, 0);
     }
 
+    /**
+     * @param info of the channel when it started
+     * @param currentInfo of the channel as it is now (edits to its name, system, site and alias list), or null when
+     *                    it can't change
+     * @param generation of the channel's totals: they start again from nothing when its decoder changes, and a
+     *                   report doesn't take one generation's from another's
+     */
+    public ChannelHealth(ChannelInfo info, Supplier<ChannelInfo> currentInfo, int generation)
+    {
+        mInfo = info;
+        mCurrentInfo = currentInfo;
+        mGeneration = generation;
+    }
+
+    /**
+     * What the channel is now: its name, system, site and alias list as they are, its decoder (and mode) as it was
+     * when these totals started.
+     */
     public ChannelInfo getInfo()
     {
+        if(mCurrentInfo != null)
+        {
+            try
+            {
+                ChannelInfo now = mCurrentInfo.get();
+
+                if(now != null)
+                {
+                    return new ChannelInfo(mInfo.channelId(), now.name(), now.system(), now.site(),
+                        now.aliasListName(), mInfo.mode(), mInfo.decoder());
+                }
+            }
+            catch(RuntimeException e)
+            {
+                //Being edited: as it was
+            }
+        }
+
         return mInfo;
+    }
+
+    public int getGeneration()
+    {
+        return mGeneration;
     }
 
     /**
@@ -85,29 +130,39 @@ public class ChannelHealth
     }
 
     /**
-     * The channel started (or restarted) processing.
+     * One of the channel's monitors started (or restarted) processing.  A channel can have two for a moment: a DMR
+     * Capacity Plus rest channel that moves starts a new processing chain for the channel while the old one becomes a
+     * traffic channel.  It's running while any is.
      */
     public synchronized void started(long now)
     {
-        if(!mRunning)
+        if(mRunning++ == 0)
         {
-            mRunning = true;
             mRunningSince = now;
         }
     }
 
     /**
-     * The channel stopped processing.
+     * One of the channel's monitors stopped processing (each stops once for each start).  When the last does, an open
+     * squelch is cut off: its time counts as open, but it isn't counted as a transmission completed.
      */
     public synchronized void stopped(long now)
     {
-        if(mRunning)
+        if(mRunning == 0)
         {
-            mRunningMs += Math.max(0, now - mRunningSince);
-            mRunning = false;
+            return;
         }
 
-        closed(now);
+        if(--mRunning == 0)
+        {
+            mRunningMs += Math.max(0, now - mRunningSince);
+
+            if(mOpenedAt > 0)
+            {
+                mOpenMs += Math.max(0, now - mOpenedAt);
+                mOpenedAt = 0;
+            }
+        }
     }
 
     /**
@@ -224,12 +279,12 @@ public class ChannelHealth
         }
 
         boolean lockedNow = mLastGood > 0 && now - mLastGood <= LOCK_HOLD_MS;
-        long running = mRunningMs + (mRunning ? Math.max(0, now - mRunningSince) : 0);
+        long running = mRunningMs + (mRunning > 0 ? Math.max(0, now - mRunningSince) : 0);
         long open = mOpenMs + (mOpenedAt > 0 ? Math.max(0, now - mOpenedAt) : 0);
 
-        return new Totals(mInfo, mProtocol, mFrequency, Collections.unmodifiableMap(new TreeMap<>(mIdentity)), mGood,
+        return new Totals(getInfo(), mProtocol, mFrequency, Collections.unmodifiableMap(new TreeMap<>(mIdentity)), mGood,
             mBad, mBadCounted, locked, lockedNow, mCallsCounted ? mCalls.totals() : null, running, mOpens, mCloses,
-            open);
+            open, mGeneration);
     }
 
     /**
@@ -241,10 +296,15 @@ public class ChannelHealth
      * @param aliasListName of the channel (which aliases, and so which streams, its calls go to)
      * @param mode a conventional channel's mode as a node health report names it (fm, am, p25, dmr, nxdn), or null
      *             when the decoder can't be a conventional channel
+     * @param decoder of the channel, or null when it has none (or isn't known)
      */
     public record ChannelInfo(int channelId, String name, String system, String site, String aliasListName,
-                              String mode)
+                              String mode, DecoderType decoder)
     {
+        public ChannelInfo(int channelId, String name, String system, String site, String aliasListName, String mode)
+        {
+            this(channelId, name, system, site, aliasListName, mode, null);
+        }
     }
 
     /**
@@ -262,11 +322,23 @@ public class ChannelHealth
      * @param opens squelch openings
      * @param closes squelch closings (transmissions completed)
      * @param openMs milliseconds open
+     * @param generation of the channel's totals (they start again when its decoder changes)
      */
     public record Totals(ChannelInfo info, String protocol, long frequency, Map<String,Integer> identity, long good,
                          long bad, boolean badCounted, long lockedMs, boolean locked, CallTally.Totals calls,
-                         long runningMs, long opens, long closes, long openMs)
+                         long runningMs, long opens, long closes, long openMs, int generation)
     {
+        /**
+         * Totals of a channel's first generation.
+         */
+        public Totals(ChannelInfo info, String protocol, long frequency, Map<String,Integer> identity, long good,
+                      long bad, boolean badCounted, long lockedMs, boolean locked, CallTally.Totals calls,
+                      long runningMs, long opens, long closes, long openMs)
+        {
+            this(info, protocol, frequency, identity, good, bad, badCounted, lockedMs, locked, calls, runningMs, opens,
+                closes, openMs, 0);
+        }
+
         /**
          * True when the channel has decoded control messages: a trunked site.
          */

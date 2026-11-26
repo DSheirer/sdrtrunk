@@ -94,6 +94,26 @@ public class P25TrafficChannelManagerCallOutcomeTest
         return identifiers;
     }
 
+    /**
+     * A P25 channel's calls are counted from its first grant: a conventional channel, which never grants one, has no
+     * calls counted, so a report gives it as a channel whatever control messages it decodes, not as a deaf site.
+     */
+    @Test
+    void calls_are_counted_from_the_first_grant()
+    {
+        Channel parent = new Channel("conventional P25");
+        parent.setDecodeConfiguration(new DecodeConfigP25Phase1());
+        P25TrafficChannelManager manager = new P25TrafficChannelManager(parent);
+        EventBus eventBus = new EventBus();
+        manager.setInterModuleEventBus(eventBus);
+        io.github.dsheirer.health.ChannelHealth health = HealthRegistry.getInstance().channel(parent);
+        org.junit.jupiter.api.Assertions.assertNull(health.totals(0).calls(), "no grant: not counted");
+
+        manager.processP1ControlDirectedChannelGrant(fdma(10), new VoiceServiceOptions(0), talkgroup(100),
+            Opcode.OSP_GROUP_VOICE_CHANNEL_GRANT, 1_000, "test");
+        assertEquals(1, health.totals(0).calls().started());
+    }
+
     @Test
     void a_call_no_tuner_can_take_is_counted_as_no_source_not_recorded()
     {
