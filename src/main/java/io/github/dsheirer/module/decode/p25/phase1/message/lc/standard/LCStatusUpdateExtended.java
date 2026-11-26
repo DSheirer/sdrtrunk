@@ -34,8 +34,8 @@ import java.util.List;
  */
 public class LCStatusUpdateExtended extends ExtendedSourceLinkControlWord
 {
-    private static final IntField UNIT_STATUS = IntField.length8(OCTET_1_BIT_8);
-    private static final IntField USER_STATUS = IntField.length8(OCTET_2_BIT_16);
+    private static final IntField UNIT_STATUS = IntField.length8(OCTET_2_BIT_16);
+    private static final IntField USER_STATUS = IntField.length8(OCTET_1_BIT_8);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_24);
 
     private Identifier mUnitStatus;

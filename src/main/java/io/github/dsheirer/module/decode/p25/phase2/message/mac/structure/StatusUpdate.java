@@ -31,8 +31,8 @@ import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UserStatus;
  */
 public abstract class StatusUpdate extends MacStructure
 {
-    private static final IntField UNIT_STATUS = IntField.length8(OCTET_3_BIT_16);
-    private static final IntField USER_STATUS = IntField.length8(OCTET_4_BIT_24);
+    private static final IntField UNIT_STATUS = IntField.length8(OCTET_4_BIT_24);
+    private static final IntField USER_STATUS = IntField.length8(OCTET_3_BIT_16);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_5_BIT_32);
     private Identifier mUnitStatus;
     private Identifier mUserStatus;
