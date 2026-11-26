@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.motoro
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC16;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaTalkerAliasAssembler;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.MotorolaTalkerAliasComplete;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacStructure;
 import io.github.dsheirer.protocol.Protocol;
@@ -163,17 +164,11 @@ public class MotorolaTalkerAliasAssembler
     }
 
     /**
-     * Trims the message length to exclude pad zeros so that the CRC calculation knows where to finish.
+     * Trims the zero padding after the alias.  The Phase 2 alias has the same layout as Phase 1.
      * @param message containing an encoded talker alias.
      */
     public static void trimTalkerAliasLength(BinaryMessage message)
     {
-        int x = 72; //Minimum bit size WACN + SYS + RADIO + 1 CHARACTER = 18 Hex Characters * 4 Bits Each
-        while(message.nextSetBit(x) > 0 && x < message.size())
-        {
-            x += 8;
-        }
-
-        message.setSize(x);
+        LCMotorolaTalkerAliasAssembler.trimTalkerAliasLength(message);
     }
 }

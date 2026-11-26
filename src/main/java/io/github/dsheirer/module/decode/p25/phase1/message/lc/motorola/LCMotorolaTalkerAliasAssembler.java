@@ -38,6 +38,8 @@ import java.util.Map;
 public class LCMotorolaTalkerAliasAssembler
 {
     private static final int DATA_BLOCK_FRAGMENT_LENGTH = 44;
+    private static final int SUID_LENGTH = 56; //WACN, system and radio ID before the encoded alias
+    private static final int CHUNK_LENGTH = 16; //Encoded characters and the CRC are 16 bits each
     private LCMotorolaTalkerAliasHeader mHeader;
     private Map<Integer, LCMotorolaTalkerAliasDataBlock> mDataBlocks = new HashMap<>();
     private int mSequence = -1;
@@ -159,17 +161,37 @@ public class LCMotorolaTalkerAliasAssembler
 
 
     /**
-     * Trims the message length to exclude pad zeros so that the CRC calculation knows where to finish.
+     * Trims the zero padding after the alias so that the CRC check and the alias decoder know where it ends.  After the
+     * WACN, system and radio ID, the alias is whole 16-bit chunks: the encoded characters, then the CRC-16.  It ends with
+     * the last chunk that is not zero.  Trimming by octets instead cuts off a CRC whose low octet is zero (one alias in
+     * 256).  A CRC of zero looks like padding, so when the CRC check fails one more chunk is tried.
      * @param message containing an encoded talker alias.
      */
     public static void trimTalkerAliasLength(BinaryMessage message)
     {
-        int x = 72; //Minimum bit size WACN + SYS + RADIO + 1 CHARACTER = 18 Hex Characters * 4 Bits Each
-        while(message.nextSetBit(x) > 0 && x < message.size())
+        int size = message.size();
+        int end = SUID_LENGTH + CHUNK_LENGTH;
+
+        for(int chunkEnd = SUID_LENGTH + CHUNK_LENGTH; chunkEnd <= size; chunkEnd += CHUNK_LENGTH)
         {
-            x += 8;
+            int set = message.nextSetBit(chunkEnd - CHUNK_LENGTH);
+
+            if(set >= 0 && set < chunkEnd)
+            {
+                end = chunkEnd;
+            }
         }
 
-        message.setSize(x);
+        message.setSize(end);
+
+        if(!CRC16.check(message) && end + CHUNK_LENGTH <= size)
+        {
+            message.setSize(end + CHUNK_LENGTH);
+
+            if(!CRC16.check(message))
+            {
+                message.setSize(end);
+            }
+        }
     }
 }
