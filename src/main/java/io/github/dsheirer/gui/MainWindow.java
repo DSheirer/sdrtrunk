@@ -25,6 +25,14 @@ import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.audio.AudioView;
 import io.github.dsheirer.gui.broadcast.BroadcastStatusView;
+import io.github.dsheirer.gui.playlist.streaming.ViewStreamingRequest;
+import io.github.dsheirer.gui.status.ChannelStatusItem;
+import io.github.dsheirer.gui.status.CpuStatusItem;
+import io.github.dsheirer.gui.status.MemoryStatusItem;
+import io.github.dsheirer.gui.status.StatusBar;
+import io.github.dsheirer.gui.status.StorageStatusItem;
+import io.github.dsheirer.gui.status.StreamingStatusItem;
+import io.github.dsheirer.gui.status.TunerStatusItem;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.map.MapView;
 import io.github.dsheirer.gui.nowplaying.NowPlayingView;
@@ -32,14 +40,12 @@ import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferencePlaylistActions;
 import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.gui.spectrum.MainSpectralDisplay;
-import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.gui.theme.ThemeManager;
 import io.github.dsheirer.gui.viewer.ViewRecordingViewerRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.monitor.DiagnosticMonitor;
 import io.github.dsheirer.monitor.ResourceMonitor;
-import io.github.dsheirer.monitor.StatusBox;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
@@ -47,9 +53,9 @@ import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.util.DesktopLauncher;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -62,17 +68,32 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -90,8 +111,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main application window: menu bar, audio playback display, the spectrum and waterfall, the Now Playing, Map and
- * Tuners tabs, the optional streaming status and the optional resource status bar.
+ * Main application window: menu bar, optional toolbar, audio playback display, the spectrum and waterfall, the Now Playing, Map and
+ * Tuners tabs, the optional streaming status and the optional status bar.
  *
  * The spectrum and waterfall can be hidden from the View menu, the hide button in the display settings panel or a
  * keyboard shortcut.  A hidden spectrum is disposed so that it uses no processing or memory.
@@ -103,6 +124,15 @@ public class MainWindow
     private static final double DEFAULT_BROADCAST_FRACTION = 0.18;
     static final KeyCombination SPECTRAL_TOGGLE_SHORTCUT = new KeyCodeCombination(KeyCode.S,
         KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN);
+    private static final KeyCombination SCREEN_CAPTURE_SHORTCUT = new KeyCodeCombination(KeyCode.C,
+        KeyCombination.ALT_DOWN);
+    private static final KeyCombination COMPACT_VIEW_SHORTCUT = new KeyCodeCombination(KeyCode.C,
+        KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN);
+    private static final KeyCombination SETTINGS_SHORTCUT = new KeyCodeCombination(KeyCode.COMMA,
+        KeyCombination.SHORTCUT_DOWN);
+    private static final String WEBSITE_URL = "https://github.com/DSheirer/sdrtrunk";
+    private static final String USER_GUIDE_URL = WEBSITE_URL + "/wiki";
+    private static final String ISSUES_URL = WEBSITE_URL + "/issues";
 
     private final Settings mSettings;
     private final PlaylistManager mPlaylistManager;
@@ -122,11 +152,21 @@ public class MainWindow
     private final NowPlayingView mNowPlayingView;
     private final TabPane mTabPane = new TabPane();
     private BroadcastStatusView mBroadcastStatusView;
-    private StatusBox mStatusBox;
-    private final CheckMenuItem mSpectralMenuItem = new CheckMenuItem("Show Spectrum & Waterfall");
-    private final CheckMenuItem mBroadcastMenuItem = new CheckMenuItem("Show Streaming Status");
-    private final CheckMenuItem mResourceMenuItem = new CheckMenuItem("Show Resource Status");
-    private final CheckMenuItem mNowPlayingDetailsMenuItem = new CheckMenuItem("Show Now Playing Channel Details");
+    private StatusBar mStatusBar;
+    private Tab mNowPlayingTab;
+    private Tab mTunersTab;
+    private final CheckMenuItem mToolbarMenuItem = new CheckMenuItem("Toolbar");
+    private final CheckMenuItem mSpectralMenuItem = new CheckMenuItem("Spectrum & Waterfall");
+    private final CheckMenuItem mBroadcastMenuItem = new CheckMenuItem("Streaming Status");
+    private final CheckMenuItem mStatusBarMenuItem = new CheckMenuItem("Status Bar");
+    private final CheckMenuItem mNowPlayingDetailsMenuItem = new CheckMenuItem("Now Playing Channel Details");
+    private final CheckMenuItem mAutoHideMenuItem = new CheckMenuItem("Auto-hide Menu Bar");
+    private final CheckMenuItem mCompactMenuItem = new CheckMenuItem("Compact View");
+    private final VBox mTop = new VBox();
+    private ToolBar mToolBar;
+    private MenuBar mMenuBar;
+    private MenuBarAutoHide mMenuBarAutoHide;
+    private final List<ButtonBase> mToolbarButtons = new ArrayList<>();
     private double mSpectralDivider;
     private double mBroadcastFraction;
     private boolean mUpdatingDividers;
@@ -145,7 +185,7 @@ public class MainWindow
      * @param aliasModel for alias lookup
      * @param iconModel for alias icons
      * @param mapService for the map
-     * @param resourceMonitor for the status bar
+     * @param resourceMonitor for the status bar, which starts and stops it
      * @param diagnosticMonitor for the reports
      * @param exitHandler that shuts down the application, invoked on a background thread
      */
@@ -173,7 +213,7 @@ public class MainWindow
         mSpectralHiddenBar = createSpectralHiddenBar();
 
         boolean detailsVisible = Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.getBoolean(true);
-        mNowPlayingView = new NowPlayingView(playlistManager, iconModel, settings, detailsVisible);
+        mNowPlayingView = new NowPlayingView(playlistManager, iconModel, settings, tunerManager, detailsVisible);
         createTabs(mapService, iconModel);
 
         URL stylesheet = MainWindow.class.getResource("/main_window.css");
@@ -192,23 +232,42 @@ public class MainWindow
         mTabPane.setMinHeight(150);
         VBox.setVgrow(mSplitPane, Priority.ALWAYS);
         mCenter.getChildren().addAll(mSpectralHiddenBar, mSplitPane);
-        mRoot.setTop(new VBox(createMenuBar(), mAudioView));
+        mMenuBar = createMenuBar();
+        mToolBar = createToolBar();
+        mTop.getChildren().addAll(mMenuBar, mToolBar, mAudioView);
+        mRoot.setTop(mTop);
         mRoot.setCenter(mCenter);
 
         mSpectralMenuItem.setSelected(spectralVisible);
         mNowPlayingDetailsMenuItem.setSelected(detailsVisible);
         mBroadcastMenuItem.setSelected(Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.getBoolean(false));
-        mResourceMenuItem.setSelected(Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.getBoolean(true));
-        updateSplitPaneItems();
-        updateStatusBar();
+        mStatusBarMenuItem.setSelected(Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.getBoolean(true));
+        mToolbarMenuItem.setSelected(Setting.MAIN_WINDOW_TOOLBAR_VISIBLE.getBoolean(true));
+        mCompactMenuItem.setSelected(Setting.MAIN_WINDOW_COMPACT_VIEW.getBoolean(false));
+        installViewToggles();
+        updateToolBar();
+        updateLayout();
 
         mStage = new Stage();
         mStage.setTitle(mTitle);
         ApplicationIcons.apply(mStage);
         Scene scene = new Scene(mRoot, 1280, 800);
         ThemeManager.getInstance().register(scene);
-        scene.getAccelerators().put(SPECTRAL_TOGGLE_SHORTCUT,
-            () -> setSpectralDisplayVisible(!mSpectralDisplay.displayVisibleProperty().get()));
+        scene.getAccelerators().put(SPECTRAL_TOGGLE_SHORTCUT, () -> {
+            if(!isCompact())
+            {
+                setSpectralDisplayVisible(!mSpectralMenuItem.isSelected());
+            }
+        });
+
+        if(isAutoHideSupported())
+        {
+            mMenuBarAutoHide = new MenuBarAutoHide(mMenuBar, scene);
+            mAutoHideMenuItem.setSelected(Setting.MAIN_WINDOW_MENU_BAR_AUTO_HIDE.getBoolean(false));
+            mMenuBarAutoHide.enabledProperty().bind(mAutoHideMenuItem.selectedProperty());
+            mAutoHideMenuItem.selectedProperty().addListener((observable, oldValue, selected) ->
+                Setting.MAIN_WINDOW_MENU_BAR_AUTO_HIDE.putBoolean(selected));
+        }
         mStage.setScene(scene);
         mStage.setMinWidth(640);
         mStage.setMinHeight(480);
@@ -219,6 +278,10 @@ public class MainWindow
 
         migrateSwingWindowLocation();
         mSettings.getJavaFxSettings().monitor(mStage, Setting.Window.MAIN_WINDOW);
+
+        //The compact window fits its content, which changes when the menu bar or toolbar shows or hides
+        mMenuBar.managedProperty().addListener((observable, oldValue, managed) -> fitCompactWindow());
+        mToolBar.managedProperty().addListener((observable, oldValue, managed) -> fitCompactWindow());
     }
 
     /**
@@ -243,8 +306,17 @@ public class MainWindow
     public void show()
     {
         mStage.show();
-        //The split pane only applies divider positions once it has a size
-        Platform.runLater(this::applyDividers);
+
+        if(isCompact())
+        {
+            //The compact size needs the window decoration size, which is only known once the window is showing
+            applyCompactWindow();
+        }
+        else
+        {
+            //The split pane only applies divider positions once it has a size
+            Platform.runLater(this::applyDividers);
+        }
     }
 
     /**
@@ -291,6 +363,11 @@ public class MainWindow
     {
         mAudioView.dispose();
 
+        if(mStatusBar != null)
+        {
+            mStatusBar.dispose();
+        }
+
         if(mBroadcastStatusView != null)
         {
             mBroadcastStatusView.dispose();
@@ -304,15 +381,129 @@ public class MainWindow
      */
     public void setSpectralDisplayVisible(boolean visible)
     {
+        Setting.MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE.putBoolean(visible);
+
+        //The menu item and toolbar button listen to this, so set it before the display changes
         mSpectralMenuItem.setSelected(visible);
+        updateSpectralDisplay();
+    }
+
+    /**
+     * Creates or disposes the spectral display to match the View menu choice.  Compact view always disposes it,
+     * since it isn't shown.
+     */
+    private void updateSpectralDisplay()
+    {
+        boolean visible = mSpectralMenuItem.isSelected() && !isCompact();
 
         if(visible != mSpectralDisplay.displayVisibleProperty().get())
         {
-            Setting.MAIN_WINDOW_SPECTRAL_DISPLAY_VISIBLE.putBoolean(visible);
             mSpectralDisplay.setDisplayVisible(visible);
-            updateSplitPaneItems();
-            applyDividers();
+
+            if(!isCompact())
+            {
+                updateSplitPaneItems();
+                applyDividers();
+            }
         }
+    }
+
+    /**
+     * Indicates if the window shows the compact view: the toolbar, audio display and status dots only.
+     */
+    public boolean isCompact()
+    {
+        return mCompactMenuItem.isSelected();
+    }
+
+    /**
+     * Shows the normal or compact view.  The compact view shows the menu bar, toolbar, audio display and the status
+     * bar's status dots only, and disposes the spectral display.  The window remembers a separate size and location
+     * for each view.
+     */
+    private void updateLayout()
+    {
+        boolean compact = isCompact();
+        updateSpectralDisplay();
+
+        if(compact)
+        {
+            mRoot.setCenter(null);
+        }
+        else
+        {
+            mRoot.setCenter(mCenter);
+            updateSplitPaneItems();
+        }
+
+        updateStatusBar();
+    }
+
+    /**
+     * Switches the window between the normal and compact sizes, each stored under its own window key.
+     */
+    private void applyWindowForView()
+    {
+        if(isCompact())
+        {
+            applyCompactWindow();
+        }
+        else
+        {
+            mSettings.getJavaFxSettings().unmonitor(mStage);
+            mStage.setMinHeight(480);
+            mStage.setMaxHeight(Double.MAX_VALUE);
+            mSettings.getJavaFxSettings().monitor(mStage, Setting.Window.MAIN_WINDOW);
+            //The split pane only applies divider positions once it has its new size
+            Platform.runLater(this::applyDividers);
+        }
+    }
+
+    /**
+     * Switches the stage to the compact window and fits its height.  The stored compact location applies when one
+     * exists, otherwise the window keeps its location and width.
+     */
+    private void applyCompactWindow()
+    {
+        if(mStage.isShowing() && isCompact())
+        {
+            mSettings.getJavaFxSettings().unmonitor(mStage);
+            mStage.setMaximized(false);
+            mSettings.getJavaFxSettings().monitor(mStage, Setting.Window.MAIN_WINDOW_COMPACT);
+            fitCompactWindow();
+        }
+    }
+
+    /**
+     * Fits the compact window's height to its content and prevents vertical resizing.  Width stays adjustable.
+     */
+    private void fitCompactWindow()
+    {
+        if(!isCompact() || !mStage.isShowing())
+        {
+            return;
+        }
+
+        //Wait for the layout pass so that the content and decoration heights are current
+        Platform.runLater(() -> {
+            if(!isCompact())
+            {
+                return;
+            }
+
+            mRoot.applyCss();
+            mRoot.layout();
+            double decoration = Math.max(0, mStage.getHeight() - mStage.getScene().getHeight());
+            double width = mStage.getScene().getWidth();
+            Node bottom = mRoot.getBottom();
+            double content = mTop.prefHeight(width) + (bottom != null ? bottom.prefHeight(width) : 0);
+            double height = Math.ceil(content + decoration);
+            mStage.setMinHeight(0);
+            mStage.setMaxHeight(Double.MAX_VALUE);
+            mStage.setHeight(height);
+            mStage.setMinHeight(height);
+            mStage.setMaxHeight(height);
+        });
     }
 
     private HBox createSpectralHiddenBar()
@@ -343,29 +534,14 @@ public class MainWindow
                 mPlaylistManager.getRadioReference().getFrequencyIndex() : null,
             new RadioReferencePlaylistActions(mPlaylistManager), true);
 
-        Tab nowPlaying = new Tab("Now Playing", mNowPlayingView);
+        mNowPlayingTab = new Tab("Now Playing", mNowPlayingView);
         Tab map = new Tab("Map", mapView);
-        Tab tuners = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
+        mTunersTab = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
             mSettings));
 
-        //The playlist editor tab opens the playlist editor window and stays on the current tab
-        IconNode playIcon = new IconNode(FontAwesome.PLAY_CIRCLE_O);
-        playIcon.setIconSize(15);
-        playIcon.getStyleClass().add("main-playlist-tab-icon");
-        Tab playlist = new Tab("Playlist Editor");
-        playlist.setGraphic(playIcon);
-        playlist.setContent(new Region());
-
-        mTabPane.getTabs().addAll(nowPlaying, map, tuners, playlist);
+        mTabPane.getTabs().addAll(mNowPlayingTab, map, mTunersTab);
         mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         mTabPane.getStyleClass().add("main-tab-pane");
-        mTabPane.getSelectionModel().selectedItemProperty().addListener((observable, oldTab, newTab) -> {
-            if(newTab == playlist)
-            {
-                MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest());
-                Platform.runLater(() -> mTabPane.getSelectionModel().select(oldTab != null ? oldTab : nowPlaying));
-            }
-        });
     }
 
     /**
@@ -465,100 +641,354 @@ public class MainWindow
         return Double.isNaN(value) ? 0.3 : Math.max(0.05, Math.min(0.6, value));
     }
 
+    /**
+     * Shows or removes the status bar to match the View menu choice.  The compact view shows its status dots only.
+     */
     private void updateStatusBar()
     {
-        if(mResourceMenuItem.isSelected())
+        if(mStatusBarMenuItem.isSelected())
         {
-            if(mStatusBox == null)
+            if(mStatusBar == null)
             {
-                mStatusBox = new StatusBox(mResourceMonitor);
+                mStatusBar = createStatusBar();
             }
 
-            mRoot.setBottom(mStatusBox);
+            mStatusBar.setMode(true, isCompact());
+            mRoot.setBottom(mStatusBar);
         }
         else
         {
+            if(mStatusBar != null)
+            {
+                mStatusBar.setMode(false, isCompact());
+            }
+
             mRoot.setBottom(null);
         }
+    }
+
+    private StatusBar createStatusBar()
+    {
+        StreamingStatusItem streaming = new StreamingStatusItem(mPlaylistManager.getBroadcastModel());
+        streaming.setAction(() -> {
+            if(isCompact())
+            {
+                MyEventBus.getGlobalEventBus().post(new ViewStreamingRequest());
+            }
+            else
+            {
+                mBroadcastMenuItem.setSelected(!mBroadcastMenuItem.isSelected());
+            }
+        }, "Click to show or hide the streaming status.  In the compact view, click to edit the streams.");
+
+        TunerStatusItem tuners = new TunerStatusItem(mTunerManager.getDiscoveredTunerModel());
+        tuners.setOpenTunersAction(() -> showTab(mTunersTab));
+
+        ChannelStatusItem channels = new ChannelStatusItem(mPlaylistManager.getChannelProcessingManager());
+        channels.setAction(() -> showTab(mNowPlayingTab), "Click to open the Now Playing tab.");
+
+        CpuStatusItem cpu = new CpuStatusItem(mResourceMonitor);
+        MemoryStatusItem memory = new MemoryStatusItem(mResourceMonitor);
+        StorageStatusItem recordings = new StorageStatusItem("Recordings", "Rec",
+            Setting.MAIN_WINDOW_STATUS_ITEM_RECORDINGS, mResourceMonitor.recordingsUsageProperty());
+        recordings.setAction(() -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryRecording()));
+        StorageStatusItem eventLogs = new StorageStatusItem("Event Logs", "Logs",
+            Setting.MAIN_WINDOW_STATUS_ITEM_EVENT_LOGS, mResourceMonitor.eventLogsUsageProperty());
+        eventLogs.setAction(() -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryEventLog()));
+
+        StatusBar statusBar = new StatusBar(mResourceMonitor, List.of(streaming, tuners, channels),
+            List.of(cpu, memory, recordings, eventLogs));
+        statusBar.setHideAction(() -> mStatusBarMenuItem.setSelected(false));
+        return statusBar;
+    }
+
+    /**
+     * Selects the tab, leaving the compact view first since it doesn't show the tabs.
+     */
+    private void showTab(Tab tab)
+    {
+        if(isCompact())
+        {
+            mCompactMenuItem.setSelected(false);
+        }
+
+        mTabPane.getSelectionModel().select(tab);
     }
 
     private MenuBar createMenuBar()
     {
         //File
+        MenuItem screenCapture = new MenuItem("Screen Capture", icon(FontAwesome.CAMERA));
+        screenCapture.setAccelerator(SCREEN_CAPTURE_SHORTCUT);
+        screenCapture.setOnAction(event -> captureScreen());
+
+        Menu folders = new Menu("Open Folder", icon(FontAwesome.FOLDER_OPEN_O),
+            folderItem("Application Logs", () -> mSettings.getDirectorySettings().getDirectoryApplicationLog()),
+            folderItem("Audio Recordings", () -> mSettings.getDirectorySettings().getDirectoryRecording()),
+            folderItem("Channel Event Logs", () -> mSettings.getDirectorySettings().getDirectoryEventLog()),
+            folderItem("Screen Captures", () -> mSettings.getDirectorySettings().getDirectoryScreenCapture()));
+
+        MenuItem settings = new MenuItem("Settings...", icon(FontAwesome.COG));
+        settings.setAccelerator(SETTINGS_SHORTCUT);
+        settings.setOnAction(event -> showSettings());
+
+        MenuItem exit = new MenuItem("Exit", icon(FontAwesome.SIGN_OUT));
+        exit.setAccelerator(new KeyCodeCombination(KeyCode.Q, KeyCombination.SHORTCUT_DOWN));
+        exit.setOnAction(event -> exit());
+
+        Menu file = new Menu("File", null, screenCapture, folders, new SeparatorMenuItem(), settings,
+            new SeparatorMenuItem(), exit);
+
+        //View: only what this window shows
+        mSpectralMenuItem.setAccelerator(SPECTRAL_TOGGLE_SHORTCUT);
+        Menu spectrumTuner = new Menu("Spectrum Tuner");
+        spectrumTuner.getItems().add(new MenuItem("(none)"));
+        spectrumTuner.setOnShowing(event -> updateSpectrumTunerMenu(spectrumTuner));
+
+        mCompactMenuItem.setAccelerator(COMPACT_VIEW_SHORTCUT);
+        Menu view = new Menu("View", null, mCompactMenuItem, new SeparatorMenuItem(), mToolbarMenuItem,
+            mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem, mStatusBarMenuItem,
+            new SeparatorMenuItem(), spectrumTuner);
+
+        if(isAutoHideSupported())
+        {
+            view.getItems().add(3, mAutoHideMenuItem);
+        }
+
+        //These only apply to the normal view
+        for(MenuItem item: List.of(mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem,
+            spectrumTuner))
+        {
+            item.disableProperty().bind(mCompactMenuItem.selectedProperty());
+        }
+
+        //Tools: the other windows
+        MenuItem playlistEditor = new MenuItem("Playlist Editor", icon(FontAwesome.PLAY_CIRCLE_O));
+        playlistEditor.setOnAction(event -> showPlaylistEditor());
+        MenuItem iconManager = new MenuItem("Icon Manager", icon(FontAwesome.PICTURE_O));
+        iconManager.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
+        MenuItem recordingViewer = new MenuItem("Message Recording Viewer (.bits)", icon(FontAwesome.BRAILLE));
+        recordingViewer.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewRecordingViewerRequest()));
+
         MenuItem processingReport = new MenuItem("Processing Diagnostic Report");
         processingReport.setOnAction(event -> createReport("Processing Status Report",
             () -> mDiagnosticMonitor.generateProcessingDiagnosticReport("User initiated diagnostic report")));
         MenuItem threadDumpReport = new MenuItem("Thread Dump Report");
         threadDumpReport.setOnAction(event -> createReport("Thread Dump Report",
             mDiagnosticMonitor::generateThreadDumpReport));
-        Menu reports = new Menu("Reports", null, processingReport, threadDumpReport);
+        Menu reports = new Menu("Reports", icon(FontAwesome.LIST_ALT), processingReport, threadDumpReport);
 
-        MenuItem screenCapture = new MenuItem("Screen Capture", icon(FontAwesome.CAMERA));
-        screenCapture.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.ALT_DOWN));
-        screenCapture.setOnAction(event -> captureScreen());
+        Menu tools = new Menu("Tools", null, playlistEditor, iconManager, recordingViewer, new SeparatorMenuItem(),
+            reports);
 
-        MenuItem exit = new MenuItem("Exit");
-        exit.setOnAction(event -> exit());
+        //Help
+        MenuItem userGuide = new MenuItem("User Guide", icon(FontAwesome.BOOK));
+        userGuide.setOnAction(event -> browse(USER_GUIDE_URL));
+        MenuItem reportIssue = new MenuItem("Report an Issue", icon(FontAwesome.BUG));
+        reportIssue.setOnAction(event -> browse(ISSUES_URL));
+        MenuItem about = new MenuItem("About sdrtrunk", icon(FontAwesome.INFO_CIRCLE));
+        about.setOnAction(event -> showAbout());
+        Menu help = new Menu("Help", null, userGuide, reportIssue, new SeparatorMenuItem(), about);
 
-        Menu file = new Menu("File", null, reports, screenCapture, new SeparatorMenuItem(), exit);
-
-        //View
-        MenuItem playlistEditor = new MenuItem("Playlist Editor", icon(FontAwesome.PLAY_CIRCLE_O));
-        playlistEditor.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
-
-        MenuItem logs = folderItem("Application Log Files",
-            () -> mSettings.getDirectorySettings().getDirectoryApplicationLog());
-        MenuItem recordings = folderItem("Audio Recordings",
-            () -> mSettings.getDirectorySettings().getDirectoryRecording());
-        MenuItem eventLogs = folderItem("Channel Event Log Files",
-            () -> mSettings.getDirectorySettings().getDirectoryEventLog());
-        MenuItem screenCaptures = folderItem("Screen Captures",
-            () -> mSettings.getDirectorySettings().getDirectoryScreenCapture());
-
-        MenuItem iconManager = new MenuItem("Icon Manager", icon(FontAwesome.PICTURE_O));
-        iconManager.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
-        MenuItem recordingViewer = new MenuItem("Message Recording Viewer (.bits)", icon(FontAwesome.BRAILLE));
-        recordingViewer.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewRecordingViewerRequest()));
-        MenuItem settings = new MenuItem("Settings", icon(FontAwesome.COG));
-        settings.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest()));
-        settings.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.SHORTCUT_DOWN));
-
-        Menu tuners = new Menu("Tuners");
-        tuners.getItems().add(new MenuItem("(none)"));
-        tuners.setOnShowing(event -> updateTunersMenu(tuners));
-
-        mSpectralMenuItem.setAccelerator(SPECTRAL_TOGGLE_SHORTCUT);
-        mSpectralMenuItem.setOnAction(event -> setSpectralDisplayVisible(mSpectralMenuItem.isSelected()));
-        mNowPlayingDetailsMenuItem.setOnAction(event -> {
-            mNowPlayingView.setDetailTabsVisible(mNowPlayingDetailsMenuItem.isSelected());
-            Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.putBoolean(mNowPlayingDetailsMenuItem.isSelected());
-        });
-        mBroadcastMenuItem.setOnAction(event -> {
-            Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.putBoolean(mBroadcastMenuItem.isSelected());
-            updateSplitPaneItems();
-            applyDividers();
-        });
-        mResourceMenuItem.setOnAction(event -> {
-            Setting.MAIN_WINDOW_RESOURCE_STATUS_VISIBLE.putBoolean(mResourceMenuItem.isSelected());
-            updateStatusBar();
-        });
-
-        Menu view = new Menu("View", null, playlistEditor, new SeparatorMenuItem(), logs, recordings, eventLogs,
-            iconManager, recordingViewer, screenCaptures, settings, new SeparatorMenuItem(), tuners,
-            new SeparatorMenuItem(), mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem,
-            mResourceMenuItem);
-
-        MenuBar menuBar = new MenuBar(file, view);
+        MenuBar menuBar = new MenuBar(file, view, tools, help);
         menuBar.setUseSystemMenuBar(true);
         return menuBar;
     }
 
     /**
-     * Lists the available tuners, each of which shows the tuner in the main spectral display.
+     * Optional toolbar with the most used actions.  Hidden from the View menu or its own context menu.
      */
-    private void updateTunersMenu(Menu menu)
+    private ToolBar createToolBar()
+    {
+        Button playlistEditor = toolbarButton(FontAwesome.PLAY_CIRCLE_O, "Playlist",
+            "Create and edit channels, aliases and streaming", null);
+        playlistEditor.getStyleClass().add("main-toolbar-playlist");
+        playlistEditor.setOnAction(event -> showPlaylistEditor());
+
+        Button settings = toolbarButton(FontAwesome.COG, "Settings", "Settings", SETTINGS_SHORTCUT);
+        settings.setOnAction(event -> showSettings());
+
+        ToggleButton spectrum = toolbarToggle(FontAwesome.AREA_CHART, "Spectrum", "Show spectrum & waterfall",
+            SPECTRAL_TOGGLE_SHORTCUT, mSpectralMenuItem);
+        ToggleButton streaming = toolbarToggle(FontAwesome.RSS, "Streaming", "Show streaming status", null,
+            mBroadcastMenuItem);
+
+        Button capture = toolbarButton(FontAwesome.CAMERA, "Capture", "Screen capture", SCREEN_CAPTURE_SHORTCUT);
+        capture.setOnAction(event -> captureScreen());
+        Button recordings = toolbarButton(FontAwesome.FOLDER_OPEN_O, "Recordings",
+            "Open the audio recordings folder", null);
+        recordings.setOnAction(event -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryRecording()));
+
+        ToggleButton compact = toolbarToggle(FontAwesome.COMPRESS, "Compact",
+            "Compact view: toolbar and audio only", COMPACT_VIEW_SHORTCUT, mCompactMenuItem);
+        //Show the action that a click takes, so the button isn't styled as selected
+        compact.getStyleClass().add("main-toolbar-action");
+        compact.selectedProperty().addListener((observable, oldValue, selected) -> updateCompactButton(compact));
+        updateCompactButton(compact);
+        spectrum.disableProperty().bind(mCompactMenuItem.selectedProperty());
+        streaming.disableProperty().bind(mCompactMenuItem.selectedProperty());
+
+        mToolbarButtons.addAll(List.of(playlistEditor, settings, spectrum, streaming, capture, recordings, compact));
+
+        ToolBar toolBar = new ToolBar(playlistEditor, settings, new Separator(), spectrum, streaming,
+            new Separator(), capture, recordings, new Separator(), compact);
+        toolBar.getStyleClass().add("main-toolbar");
+
+        CheckMenuItem labels = new CheckMenuItem("Show Labels");
+        labels.setSelected(Setting.MAIN_WINDOW_TOOLBAR_LABELS.getBoolean(true));
+        labels.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_TOOLBAR_LABELS.putBoolean(selected);
+            updateToolbarLabels(selected);
+        });
+        updateToolbarLabels(labels.isSelected());
+        MenuItem hide = new MenuItem("Hide Toolbar");
+        hide.setOnAction(event -> mToolbarMenuItem.setSelected(false));
+        ContextMenu contextMenu = new ContextMenu(labels, hide);
+
+        if(isAutoHideSupported())
+        {
+            CheckMenuItem autoHide = new CheckMenuItem(mAutoHideMenuItem.getText());
+            autoHide.selectedProperty().bindBidirectional(mAutoHideMenuItem.selectedProperty());
+            contextMenu.getItems().add(1, autoHide);
+        }
+
+        toolBar.setContextMenu(contextMenu);
+        return toolBar;
+    }
+
+    /**
+     * Shows the compact view button as the action a click takes: Compact in the normal view, Expand in the
+     * compact view.
+     */
+    private static void updateCompactButton(ToggleButton button)
+    {
+        boolean compact = button.isSelected();
+        ((IconNode)button.getGraphic()).setIconCode(compact ? FontAwesome.EXPAND : FontAwesome.COMPRESS);
+        button.setText(compact ? "Expand" : "Compact");
+        String description = compact ? "Normal view: show the spectrum and tabs" :
+            "Compact view: toolbar and audio only";
+        button.setTooltip(new Tooltip(description + " (" + COMPACT_VIEW_SHORTCUT.getDisplayText() + ")"));
+        button.setAccessibleText(description);
+    }
+
+    /**
+     * Shows the toolbar buttons with labels, or as icons only.  The tooltips and accessible text stay the same.
+     */
+    private void updateToolbarLabels(boolean labels)
+    {
+        for(ButtonBase button: mToolbarButtons)
+        {
+            button.setContentDisplay(labels ? ContentDisplay.LEFT : ContentDisplay.GRAPHIC_ONLY);
+        }
+    }
+
+    private static IconNode toolbarIcon(FontAwesome code)
+    {
+        IconNode icon = new IconNode(code);
+        icon.setIconSize(15);
+        icon.getStyleClass().add("main-toolbar-icon");
+        return icon;
+    }
+
+    /**
+     * Applies the label, the tooltip with the keyboard shortcut, if any, and the accessible text.
+     */
+    private static <T extends ButtonBase> T configure(T button, String label, String description,
+                                                      KeyCombination shortcut)
+    {
+        button.setText(label);
+        button.setTooltip(new Tooltip(shortcut != null ? description + " (" + shortcut.getDisplayText() + ")" :
+            description));
+        button.setAccessibleText(description);
+        return button;
+    }
+
+    private static Button toolbarButton(FontAwesome code, String label, String description, KeyCombination shortcut)
+    {
+        return configure(new Button(null, toolbarIcon(code)), label, description, shortcut);
+    }
+
+    /**
+     * Toggle button that shares its selected state with the menu item, so either one changes the other.
+     */
+    private static ToggleButton toolbarToggle(FontAwesome code, String label, String description,
+                                              KeyCombination shortcut, CheckMenuItem menuItem)
+    {
+        ToggleButton button = configure(new ToggleButton(null, toolbarIcon(code)), label, description, shortcut);
+        button.selectedProperty().bindBidirectional(menuItem.selectedProperty());
+        return button;
+    }
+
+    /**
+     * Acts on the View menu toggles.  Attached after the stored states are applied, so that startup doesn't
+     * re-store them.  The toolbar toggle buttons share these selected properties.
+     */
+    private void installViewToggles()
+    {
+        mToolbarMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_TOOLBAR_VISIBLE.putBoolean(selected);
+            updateToolBar();
+        });
+        mSpectralMenuItem.selectedProperty().addListener((observable, oldValue, selected) ->
+            setSpectralDisplayVisible(selected));
+        mNowPlayingDetailsMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            mNowPlayingView.setDetailTabsVisible(selected);
+            Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.putBoolean(selected);
+        });
+        mBroadcastMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.putBoolean(selected);
+
+            if(!isCompact())
+            {
+                updateSplitPaneItems();
+                applyDividers();
+            }
+        });
+        mStatusBarMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.putBoolean(selected);
+            updateStatusBar();
+            fitCompactWindow();
+        });
+        mCompactMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
+            Setting.MAIN_WINDOW_COMPACT_VIEW.putBoolean(selected);
+            updateLayout();
+            applyWindowForView();
+        });
+    }
+
+    /**
+     * Indicates if the menu bar can auto-hide.  Not on macOS, where the menu bar is the system menu bar and isn't
+     * part of the window.
+     */
+    private static boolean isAutoHideSupported()
+    {
+        return !System.getProperty("os.name", "").toLowerCase().startsWith("mac");
+    }
+
+    private void updateToolBar()
+    {
+        mToolBar.setVisible(mToolbarMenuItem.isSelected());
+        mToolBar.setManaged(mToolbarMenuItem.isSelected());
+    }
+
+    private static void showPlaylistEditor()
+    {
+        MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest());
+    }
+
+    private static void showSettings()
+    {
+        MyEventBus.getGlobalEventBus().post(new ViewSettingsEditorRequest());
+    }
+
+    /**
+     * Lists the available tuners as choices for the main spectral display, with the current tuner checked.
+     */
+    private void updateSpectrumTunerMenu(Menu menu)
     {
         menu.getItems().clear();
+        ToggleGroup group = new ToggleGroup();
+        Tuner current = mSpectralDisplay.displayVisibleProperty().get() ? mSpectralDisplay.getTuner() : null;
 
         for(DiscoveredTuner discoveredTuner: mTunerManager.getAvailableTuners())
         {
@@ -566,9 +996,11 @@ public class MainWindow
 
             if(tuner != null)
             {
-                MenuItem item = new MenuItem("Show: " + tuner.getPreferredName());
+                RadioMenuItem item = new RadioMenuItem(tuner.getPreferredName());
+                item.setToggleGroup(group);
+                item.setSelected(tuner.equals(current));
                 item.setOnAction(event -> ThreadPool.CACHED.submit(() -> {
-                    SystemProperties.getInstance().set(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true);
+                    MainSpectralDisplay.setTunerEnabled(true);
                     mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
                         TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                 }));
@@ -602,14 +1034,23 @@ public class MainWindow
 
     private MenuItem folderItem(String title, PathSupplier folder)
     {
-        MenuItem item = new MenuItem(title, icon(FontAwesome.FOLDER_OPEN_O));
-        item.setOnAction(event -> ThreadPool.CACHED.submit(() -> {
+        MenuItem item = new MenuItem(title);
+        item.setOnAction(event -> openFolder(folder));
+        return item;
+    }
+
+    /**
+     * Opens the folder in the desktop file explorer, or shows where it is when the explorer can't be launched.
+     */
+    private void openFolder(PathSupplier folder)
+    {
+        ThreadPool.CACHED.submit(() -> {
             File directory = null;
 
             try
             {
                 directory = folder.get().toFile();
-                Desktop.getDesktop().open(directory);
+                DesktopLauncher.open(directory);
             }
             catch(Exception e)
             {
@@ -618,8 +1059,77 @@ public class MainWindow
                 Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Can't launch file explorer",
                     "Can't launch the file explorer.  The files are located at:\n\n" + location));
             }
-        }));
-        return item;
+        });
+    }
+
+    /**
+     * Opens the web page in the desktop browser, or shows the address when the browser can't be launched.
+     */
+    private void browse(String url)
+    {
+        ThreadPool.CACHED.submit(() -> {
+            try
+            {
+                DesktopLauncher.browse(url);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Couldn't open web browser for [" + url + "]", e);
+                Platform.runLater(() -> showAlert(Alert.AlertType.ERROR, "Can't launch web browser",
+                    "Can't launch the web browser.  Please visit:\n\n" + url));
+            }
+        });
+    }
+
+    /**
+     * Shows the version and environment details, which can be copied into a bug report.
+     */
+    private void showAbout()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(mTitle).append("\n\n");
+        sb.append("Java: ").append(System.getProperty("java.version")).append(" (")
+            .append(System.getProperty("java.vendor")).append(")\n");
+        sb.append("JavaFX: ").append(System.getProperty("javafx.runtime.version", "unknown")).append("\n");
+        sb.append("OS: ").append(System.getProperty("os.name")).append(" ").append(System.getProperty("os.version"))
+            .append(" (").append(System.getProperty("os.arch")).append(")\n");
+        sb.append("Processors: ").append(Runtime.getRuntime().availableProcessors()).append("  Max memory: ")
+            .append(Runtime.getRuntime().maxMemory() / (1024 * 1024)).append(" MB\n");
+        String jmbe = Setting.JMBE_LIBRARY_PATH.get(null);
+        sb.append("JMBE library: ").append(jmbe != null && !jmbe.isBlank() ? jmbe : "not configured").append("\n");
+
+        sb.append("Application folder: ").append(mSettings.getDirectorySettings().getDirectoryApplicationRoot())
+            .append("\n");
+
+        String details = sb.toString();
+        TextArea text = new TextArea(details);
+        text.setEditable(false);
+        text.setWrapText(true);
+        text.setPrefRowCount(9);
+        text.setPrefColumnCount(60);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("About sdrtrunk");
+        alert.setHeaderText(mTitle);
+        ApplicationIcons.getFxImages().stream().filter(image -> image.getWidth() >= 64).findFirst()
+            .ifPresent(image -> {
+                ImageView logo = new ImageView(image);
+                logo.setFitWidth(64);
+                logo.setPreserveRatio(true);
+                alert.setGraphic(logo);
+            });
+        Hyperlink website = new Hyperlink(WEBSITE_URL);
+        website.setOnAction(event -> browse(WEBSITE_URL));
+        Label license = new Label("Copyright (C) 2014-2026 Dennis Sheirer.  Licensed under the GNU GPL v3.");
+        alert.getDialogPane().setContent(new VBox(8, text, new HBox(4, new Label("Website:"), website), license));
+        ButtonType copy = new ButtonType("Copy Details", ButtonBar.ButtonData.LEFT);
+        alert.getButtonTypes().add(copy);
+        alert.initOwner(mStage);
+        alert.showAndWait().filter(copy::equals).ifPresent(type -> {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(details);
+            Clipboard.getSystemClipboard().setContent(content);
+        });
     }
 
     private void createReport(String title, PathSupplier report)

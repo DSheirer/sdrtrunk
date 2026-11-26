@@ -58,7 +58,7 @@ public class PlaylistUpdater
     private static final String FLEETSYNC_TALKGROUP = "(\\d{3})-(\\d{4})";
     private static final String LTR_TALKGROUP = "([\\d\\*]{1})-([\\d\\*]{2})-([\\d\\*]{3})";
     private static final String LTR_TALKGROUP_WILDCARD = "\\*-\\*{2}-([\\d]{3})";
-    private static final String MDC1200_TALKGROUP = "[A-Fa-f\\d\\*]{4}";
+    private static final Pattern MDC1200_RADIO_ID = Pattern.compile("[A-Fa-f0-9]{4}");
     private static final String MOBILE_ID_NUMBER = "[A-Fa-f\\d\\*]{6}";
     private static final String MPT1327_TALKGROUP = "(\\d{3})-(\\d{4})";
     private static final String PASSPORT_TALKGROUP = "[\\d\\*]{5}";
@@ -97,6 +97,76 @@ public class PlaylistUpdater
                 convertP25TalkgroupsToRadioIdentifiers(playlist);
                 updated = true;
                 break;
+        }
+
+        // Imported playlists can contain legacy MDC identifiers even when their version is current.
+        if(convertMdcIdentifiers(playlist))
+        {
+            updated = true;
+        }
+
+        return updated;
+    }
+
+    /**
+     * Converts MDC-1200 alias identifiers to radio IDs without changing their values or aliases.
+     */
+    private static boolean convertMdcIdentifiers(PlaylistV2 playlist)
+    {
+        boolean updated = false;
+        int notConverted = 0;
+
+        for(Alias alias: playlist.getAliases())
+        {
+            List<AliasID> identifiers = new ArrayList<>(alias.getAliasIdentifiers());
+            boolean aliasUpdated = false;
+
+            for(int x = 0; x < identifiers.size(); x++)
+            {
+                AliasID id = identifiers.get(x);
+                AliasID replacement;
+
+                if(id instanceof Talkgroup talkgroup && id.getClass() == Talkgroup.class &&
+                    talkgroup.getProtocol() == Protocol.MDC1200)
+                {
+                    replacement = new Radio(Protocol.MDC1200, talkgroup.getValue());
+                }
+                else if(id instanceof TalkgroupRange range && id.getClass() == TalkgroupRange.class &&
+                    range.getProtocol() == Protocol.MDC1200)
+                {
+                    replacement = new RadioRange(Protocol.MDC1200, range.getMinTalkgroup(), range.getMaxTalkgroup());
+                }
+                else if(id instanceof MDC1200ID legacy && legacy.getIdent() != null &&
+                    MDC1200_RADIO_ID.matcher(legacy.getIdent()).matches())
+                {
+                    replacement = new Radio(Protocol.MDC1200, Integer.parseInt(legacy.getIdent(), 16));
+                }
+                else
+                {
+                    if(id instanceof MDC1200ID)
+                    {
+                        notConverted++;
+                    }
+
+                    continue;
+                }
+
+                replacement.updateValueProperty();
+                identifiers.set(x, replacement);
+                aliasUpdated = true;
+            }
+
+            if(aliasUpdated)
+            {
+                alias.setAliasIdentifiers(identifiers);
+                updated = true;
+            }
+        }
+
+        if(notConverted > 0)
+        {
+            mLog.warn("Unable to convert [" + notConverted + "] legacy MDC-1200 identifiers to radio identifiers - " +
+                "please edit and convert these alias identifiers manually");
         }
 
         return updated;
@@ -460,29 +530,6 @@ public class PlaylistUpdater
                         {
                             notUpdated++;
                         }
-                        break;
-                    case MDC1200:
-                        String mdc = ((MDC1200ID)next).getIdent();
-
-                        if(mdc != null && mdc.matches(MDC1200_TALKGROUP))
-                        {
-                            try
-                            {
-                                int mdcValue = Integer.parseInt(mdc, 16);
-                                toAdd.add(new Talkgroup(Protocol.MDC1200, mdcValue));
-                                it.remove();
-                                updated++;
-                            }
-                            catch(Exception e)
-                            {
-                                notUpdated++;
-                            }
-                        }
-                        else
-                        {
-                            notUpdated++;
-                        }
-
                         break;
                     case MPT1327:
                         String mpt = ((MPT1327ID)next).getIdent();

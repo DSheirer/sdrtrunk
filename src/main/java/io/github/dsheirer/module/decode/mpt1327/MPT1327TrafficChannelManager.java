@@ -69,6 +69,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     private ChannelMap mChannelMap;
     private final Channel mParentChannel;
     private CallOutcomes mCallOutcomes;
+    private String mPreferredTuner;
 
     /**
      * Constructs an MPT1327 traffic channel manage.
@@ -80,6 +81,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
         createTrafficChannels(parentChannel);
         mChannelMap = channelMap;
         mParentChannel = parentChannel;
+        mPreferredTuner = getPreferredTuner(parentChannel);
         calls(); //This control channel's calls are counted (node health reports)
     }
 
@@ -180,6 +182,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
                 SourceConfigTuner sourceConfig = new SourceConfigTuner();
                 sourceConfig.setFrequency(mpt1327Channel.getDownlinkFrequency());
+                sourceConfig.setPreferredTuner(mPreferredTuner);
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelMap.put(mpt1327Channel, trafficChannel);
 

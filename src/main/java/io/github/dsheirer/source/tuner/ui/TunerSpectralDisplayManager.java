@@ -19,14 +19,12 @@
 package io.github.dsheirer.source.tuner.ui;
 
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.gui.spectrum.MainSpectralDisplay;
 import io.github.dsheirer.gui.spectrum.SpectralDisplayWindow;
-import io.github.dsheirer.gui.spectrum.TunerSpectralDisplay;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -64,8 +62,7 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
     public Tuner showFirstTuner()
     {
         //Ensure spectral display is enabled before selecting first tuner
-        if(mMainSpectralDisplay != null &&
-                SystemProperties.getInstance().get(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true))
+        if(mMainSpectralDisplay != null && MainSpectralDisplay.isTunerEnabled())
         {
             List<DiscoveredTuner> availableTuners = mDiscoveredTunerModel.getAvailableTuners();
 
@@ -96,9 +93,15 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                 mMainSpectralDisplay.clearTuner();
                 break;
             case REQUEST_MAIN_SPECTRAL_DISPLAY:
-                if(SystemProperties.getInstance().get(TunerSpectralDisplay.SPECTRAL_DISPLAY_ENABLED, true))
+                if(MainSpectralDisplay.isTunerEnabled())
                 {
                     mMainSpectralDisplay.showTuner(event.getTuner());
+
+                    if(event.hasCenterFrequency())
+                    {
+                        //Zoom to level 4 (16x) centred on the channel frequency
+                        mMainSpectralDisplay.zoomTo(4, event.getCenterFrequency());
+                    }
                 }
                 break;
             case REQUEST_NEW_SPECTRAL_DISPLAY:

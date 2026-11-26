@@ -58,7 +58,7 @@ public class FormatSettingsPage extends SettingsPage
 
         SettingsSection section = addSection("Talkgroup & Radio ID");
 
-        for(Protocol protocol : Protocol.TALKGROUP_PROTOCOLS)
+        for(Protocol protocol : Protocol.IDENTIFIER_FORMAT_PROTOCOLS)
         {
             IntegerFormatEditor formatEditor = new IntegerFormatEditor(mTalkgroupFormatSettings, protocol,
                 TalkgroupFormatSettings.getFormats(protocol));

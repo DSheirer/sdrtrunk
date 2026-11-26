@@ -87,7 +87,7 @@ public class JavaFxSettings
         {
             StageMonitor next = it.next();
 
-            if(next.equals(stage))
+            if(next.mStage == stage)
             {
                 it.remove();
                 next.dispose();

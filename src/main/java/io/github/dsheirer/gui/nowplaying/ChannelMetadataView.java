@@ -40,6 +40,7 @@ import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.identifier.TalkgroupFormatSettings;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -61,6 +62,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -103,17 +105,20 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     private final Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
     private final TableColumnMonitor<Row> mTableColumnMonitor;
     private Channel mUserSelectedChannel;
+    private final ShowInWaterfallAction mShowInWaterfallAction;
 
     /**
      * Constructs an instance.  Construct on the JavaFX application thread.
      * @param channelProcessingManager for the channel metadata and processing chains
      * @param iconModel for alias icons
      * @param settings for talkgroup formatting and column settings
+     * @param tunerManager for showing a channel in the waterfall, or null
      */
     public ChannelMetadataView(ChannelProcessingManager channelProcessingManager, IconModel iconModel,
-                               Settings settings)
+                               Settings settings, TunerManager tunerManager)
     {
         mChannelProcessingManager = channelProcessingManager;
+        mShowInWaterfallAction = new ShowInWaterfallAction(channelProcessingManager, tunerManager);
         mChannelMetadataModel = mChannelProcessingManager.getChannelMetadataModel();
         mIconModel = iconModel;
         mTalkgroupFormatSettings = settings.getTalkgroupFormatSettings();
@@ -255,7 +260,10 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
     {
         TableRow<Row> tableRow = new TableRow<>();
         ContextMenu contextMenu = new ContextMenu();
-        contextMenu.setOnShowing(event -> {
+        //The menu items are built when the row is right-clicked, before the row shows the menu.  Building them in the
+        //menu's onShowing handler doesn't work: ContextMenu.show() returns without showing (and without firing
+        //onShowing) while the menu has no items, so the menu never opened.
+        tableRow.addEventFilter(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
             contextMenu.getItems().clear();
             Row row = tableRow.getItem();
             Channel channel = row != null ? mChannelMetadataModel.getChannelFromMetadata(row.getChannelMetadata()) : null;
@@ -265,6 +273,13 @@ public class ChannelMetadataView extends VBox implements ChannelMetadataModel.Li
                 MenuItem viewChannel = new MenuItem("View/Edit: " + channel.getShortTitle());
                 viewChannel.setOnAction(e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
                 contextMenu.getItems().add(viewChannel);
+
+                if(ShowInWaterfallAction.isSupported(channel))
+                {
+                    MenuItem waterfallItem = new MenuItem("Show in Waterfall");
+                    waterfallItem.setOnAction(e -> mShowInWaterfallAction.showChannelInWaterfall(channel));
+                    contextMenu.getItems().add(waterfallItem);
+                }
             }
             else
             {
