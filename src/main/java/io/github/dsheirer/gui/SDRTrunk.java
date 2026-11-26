@@ -174,7 +174,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         if(!headless)
         {
-            //The main window's status bar starts the resource monitor while it shows resource usage
+            mResourceMonitor.start();
             mMainWindow = FxToolkit.callAndWait(() -> new MainWindow(mSettings, mPlaylistManager,
                 mTunerManager, audioPlaybackManager, aliasModel, mIconModel, mapService, mResourceMonitor,
                 mDiagnosticMonitor, this::processShutdown));

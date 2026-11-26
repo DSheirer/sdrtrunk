@@ -22,7 +22,6 @@ import io.github.dsheirer.gui.channel.ChannelSpectrumView;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.Settings;
-import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.geometry.Orientation;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
@@ -50,16 +49,14 @@ public class NowPlayingView extends SplitPane
      * @param playlistManager for the channels
      * @param iconModel for alias icons
      * @param settings for display formats and column settings
-     * @param tunerManager for showing a channel in the waterfall
      * @param detailTabsVisible to show the detail tabs
      */
     public NowPlayingView(PlaylistManager playlistManager, IconModel iconModel, Settings settings,
-                          TunerManager tunerManager, boolean detailTabsVisible)
+                          boolean detailTabsVisible)
     {
         setOrientation(Orientation.VERTICAL);
 
-        mChannelMetadataView = new ChannelMetadataView(playlistManager.getChannelProcessingManager(), iconModel,
-            settings, tunerManager);
+        mChannelMetadataView = new ChannelMetadataView(playlistManager.getChannelProcessingManager(), iconModel, settings);
         mChannelDetailView = new ChannelDetailView(playlistManager.getChannelProcessingManager());
         mDecodeEventView = new DecodeEventView(iconModel, settings, playlistManager.getAliasModel());
         mMessageActivityView = new MessageActivityView(settings);

@@ -129,7 +129,7 @@ public class LCMessageFactory
             residual = RS_12_9_DMR.correct(message, 0);
         }
 
-        boolean valid = (residual == 0);
+        boolean valid = (residual != 0);
 
         if(!valid)
         {

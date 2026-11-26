@@ -22,6 +22,7 @@ package io.github.dsheirer.audio.broadcast;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.dsp.oscillator.ScalarRealOscillator;
@@ -38,11 +39,14 @@ import io.github.dsheirer.sample.Listener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -127,6 +131,132 @@ public class AudioStreamingManagerTest
     }
 
     /**
+     * Verifies that broadcast channels are compiled from the CURRENT identifiers: when a TO talkgroup is replaced by a
+     * later TO talkgroup, the previous talkgroup's broadcast channel is no longer reported.  This is the source-level
+     * fix for the "call streamed to the previous talkgroup's stream, tagged with the current talkgroup" defect - it
+     * covers both the stale-seed and missed-terminator triggers, since either way the current TO replaces the prior.
+     */
+    @Test
+    public void getBroadcastChannelsReflectsCurrentTalkgroupNotPrevious()
+    {
+        AliasList aliasList = new AliasList("test");
+
+        //Previous talkgroup 300 routes to Stream C.
+        Alias previousTalkgroup = new Alias("previous-talkgroup");
+        previousTalkgroup.addAliasID(new Talkgroup(Protocol.APCO25, TALKGROUP_3));
+        previousTalkgroup.addAliasID(new BroadcastChannel("Stream C"));
+        aliasList.addAlias(previousTalkgroup);
+
+        //Current talkgroup 200 routes to Stream B.
+        Alias currentTalkgroup = new Alias("current-talkgroup");
+        currentTalkgroup.addAliasID(new Talkgroup(Protocol.APCO25, TALKGROUP_2));
+        currentTalkgroup.addAliasID(new BroadcastChannel("Stream B"));
+        aliasList.addAlias(currentTalkgroup);
+
+        AudioSegment audioSegment = new AudioSegment(aliasList, TimeslotMessage.TIMESLOT_0);
+
+        //A previous talkgroup 300 (Stream C) is resident in the segment - e.g. a stale seed or a missed terminator.
+        audioSegment.addIdentifier(APCO25Talkgroup.create(TALKGROUP_3));
+        assertEquals(Set.of(new BroadcastChannel("Stream C")), audioSegment.getBroadcastChannels(),
+                "segment should route to the seeded talkgroup's stream before the current talkgroup arrives");
+
+        //The current talkgroup 200 (Stream B) replaces the previous TO talkgroup.
+        audioSegment.addIdentifier(APCO25Talkgroup.create(TALKGROUP_2));
+
+        assertEquals(Set.of(new BroadcastChannel("Stream B")), audioSegment.getBroadcastChannels(),
+                "segment must route only to the current talkgroup's stream once the TO identifier is replaced");
+        assertFalse(audioSegment.getBroadcastChannels().contains(new BroadcastChannel("Stream C")),
+                "previous talkgroup's broadcast channel must not be carried forward under the current talkgroup");
+    }
+
+    /**
+     * Verifies that both the current TO talkgroup route AND a source-radio (FROM) route are reported together: an
+     * operator can attach a broadcast channel to a radio alias ("stream everything unit N transmits"), and that stream
+     * is legitimate alongside the current talkgroup's stream.
+     */
+    @Test
+    public void getBroadcastChannelsKeepsCurrentTalkgroupAndSourceRadioRoutes()
+    {
+        AliasList aliasList = new AliasList("test");
+
+        Alias currentTalkgroup = new Alias("current-talkgroup");
+        currentTalkgroup.addAliasID(new Talkgroup(Protocol.APCO25, TALKGROUP_2));
+        currentTalkgroup.addAliasID(new BroadcastChannel("Stream B"));
+        aliasList.addAlias(currentTalkgroup);
+
+        Alias sourceRadio = new Alias("source-radio");
+        sourceRadio.addAliasID(new Radio(Protocol.APCO25, RADIO_1));
+        sourceRadio.addAliasID(new BroadcastChannel("Radio Stream"));
+        aliasList.addAlias(sourceRadio);
+
+        AudioSegment audioSegment = new AudioSegment(aliasList, TimeslotMessage.TIMESLOT_0);
+        audioSegment.addIdentifier(APCO25Talkgroup.create(TALKGROUP_2));
+        audioSegment.addIdentifier(APCO25RadioIdentifier.createFrom(RADIO_1));
+
+        assertEquals(Set.of(new BroadcastChannel("Stream B"), new BroadcastChannel("Radio Stream")),
+                audioSegment.getBroadcastChannels(),
+                "segment must route to both the current talkgroup (TO) and the source radio (FROM) streams");
+    }
+
+    /**
+     * Verifies that a segment whose current identifiers route to no broadcast channel reports an empty set, so the
+     * streaming manager's empty-check skips it rather than streaming to a stale channel.
+     */
+    @Test
+    public void getBroadcastChannelsEmptyWhenNoCurrentIdentifierRoutes()
+    {
+        AliasList aliasList = new AliasList("test");
+
+        Alias talkgroupNoStream = new Alias("talkgroup-no-stream");
+        talkgroupNoStream.addAliasID(new Talkgroup(Protocol.APCO25, TALKGROUP_2));
+        aliasList.addAlias(talkgroupNoStream);
+
+        AudioSegment audioSegment = new AudioSegment(aliasList, TimeslotMessage.TIMESLOT_0);
+        audioSegment.addIdentifier(APCO25Talkgroup.create(TALKGROUP_2));
+
+        assertTrue(audioSegment.getBroadcastChannels().isEmpty(),
+                "segment with no streamable current identifier must report no broadcast channels");
+    }
+
+    /**
+     * End-to-end check of the non-patch streaming path through the manager: a completed, non-patch talkgroup segment
+     * whose current identifier routes to a broadcast channel produces exactly one streaming recording.  Exercises the
+     * rewritten {@code !broadcastChannels.isEmpty()} guard and the non-patch branch that the stale-channel defect lives
+     * on.
+     */
+    @Test
+    public void testNonPatchTalkgroupStreamsToItsChannel()
+    {
+        int expectedRecordingsCount = 1;
+
+        CountDownLatch latch = new CountDownLatch(expectedRecordingsCount);
+        Listener<AudioRecording> listener = audioRecording -> {
+            latch.countDown();
+        };
+
+        Settings settings = new Settings();
+        AudioStreamingManager manager = new AudioStreamingManager(listener, BroadcastFormat.MP3, settings);
+        manager.start();
+        manager.receive(getNonPatchAudioSegment());
+
+        boolean success = false;
+
+        try
+        {
+            success = latch.await(5, TimeUnit.SECONDS);
+        }
+        catch(InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        cleanupStreamingDirectory(settings.getDirectorySettings().getDirectoryStreaming());
+
+        assertTrue(success, "Stream non-patch talkgroup audio failed to produce [" +
+                latch.getCount() + "/" + expectedRecordingsCount + "] streaming recording");
+    }
+
+    /**
      * Cleanup any generated streaming recordings.
      * @param streamingDirectory
      */
@@ -170,6 +300,30 @@ public class AudioStreamingManagerTest
         }
         audioSegment.addIdentifier(getPatchGroup());
         audioSegment.addIdentifier(getRadio());
+        audioSegment.completeProperty().set(true);
+        return audioSegment;
+    }
+
+    /**
+     * Creates a completed, non-patch audio segment for a single talkgroup that routes to a broadcast channel.
+     * @return audio segment
+     */
+    private static AudioSegment getNonPatchAudioSegment()
+    {
+        AliasList aliasList = new AliasList("test");
+
+        Alias talkgroupAlias = new Alias("talkgroup");
+        talkgroupAlias.addAliasID(new Talkgroup(Protocol.APCO25, TALKGROUP_2));
+        talkgroupAlias.addAliasID(new BroadcastChannel("Stream B"));
+        aliasList.addAlias(talkgroupAlias);
+
+        AudioSegment audioSegment = new AudioSegment(aliasList, TimeslotMessage.TIMESLOT_0);
+        ScalarRealOscillator oscillator = new ScalarRealOscillator(1000, 8000);
+        for(int x = 0; x < 100; x++)
+        {
+            audioSegment.addAudio(oscillator.generate(500));
+        }
+        audioSegment.addIdentifier(APCO25Talkgroup.create(TALKGROUP_2));
         audioSegment.completeProperty().set(true);
         return audioSegment;
     }

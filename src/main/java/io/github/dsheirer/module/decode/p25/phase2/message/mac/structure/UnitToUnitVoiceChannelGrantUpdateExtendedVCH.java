@@ -42,7 +42,7 @@ public class UnitToUnitVoiceChannelGrantUpdateExtendedVCH extends MacStructure i
     private static final IntField TRANSMIT_CHANNEL_NUMBER = IntField.range(12, 23);
     private static final IntField RECEIVE_FREQUENCY_BAND = IntField.length4(OCTET_4_BIT_24);
     private static final IntField RECEIVE_CHANNEL_NUMBER = IntField.range(28, 39);
-    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 19);
+    private static final IntField SOURCE_SUID_WACN = IntField.range(OCTET_6_BIT_40, OCTET_6_BIT_40 + 20);
     private static final IntField SOURCE_SUID_SYSTEM = IntField.range(60, 71);
     private static final IntField SOURCE_SUID_ID = IntField.length24(OCTET_10_BIT_72);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_13_BIT_96);

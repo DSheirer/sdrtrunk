@@ -37,7 +37,7 @@ public class AcknowledgeResponseFNEAbbreviated extends MacStructure
     private static final int EXTENDED_ADDRESS = 9;
     private static final IntField SERVICE_TYPE = IntField.range(10, 15);
     private static final IntField TARGET_WACN = IntField.range(16, 35);
-    private static final IntField TARGET_SYSTEM = IntField.range(36, 47);
+    private static final IntField TARGET_SYSTEM = IntField.range(36, 48);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_7_BIT_48);
     private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_4_BIT_24);
     

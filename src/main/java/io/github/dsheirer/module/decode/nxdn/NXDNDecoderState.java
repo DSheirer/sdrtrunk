@@ -26,7 +26,6 @@ import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -39,8 +38,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.nxdn.identifier.NXDNTalkerAliasIdentifier;
-import io.github.dsheirer.module.decode.nxdn.layer2.LICH;
-import io.github.dsheirer.module.decode.nxdn.layer2.SACCHFragment;
 import io.github.dsheirer.module.decode.nxdn.layer3.NXDNLayer3Message;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.ControlChannelInformation;
 import io.github.dsheirer.module.decode.nxdn.layer3.broadcast.SiteInformation;
@@ -102,8 +99,6 @@ public class NXDNDecoderState extends DecoderState
     private boolean mEncryptedCall = false;
     private int mDisconnectResponseCount = 0;
     private int mIdleDuringCallCount = IDLE_DURING_CALL_MAX_COUNT;
-    private int mCallStartAudioCount = 0;
-    private int mCallStartAudioRAN = -1;
 
     /**
      * Constructs an instance
@@ -218,19 +213,10 @@ public class NXDNDecoderState extends DecoderState
     /**
      * Processes a talker alias: stores it for the talking radio and adds it to the call that it belongs to.
      * @param talkerAlias that was received
-     * @param lich of the frame that completed the talker alias
      * @param timestamp of the message
      */
-    private void processTalkerAlias(NXDNTalkerAliasIdentifier talkerAlias, LICH lich, long timestamp)
+    private void processTalkerAlias(NXDNTalkerAliasIdentifier talkerAlias, long timestamp)
     {
-        //A talker alias in a voice transmission super frame, between calls, starts the next call.  The radio can send
-        //the alias before the audio and the first call message, so it belongs to this transmission's talker and not to
-        //the previous talker.
-        if(!mTalkerAliasTracker.isCallActive() && lich.isVoiceTransmission())
-        {
-            mTalkerAliasTracker.callActivity(timestamp);
-        }
-
         TalkerAliasTracker.Assignment assignment = mTalkerAliasTracker.received(talkerAlias, null, timestamp);
 
         if(hasTrafficChannelManager() && (assignment == TalkerAliasTracker.Assignment.CURRENT_CALL ||
@@ -312,11 +298,7 @@ public class NXDNDecoderState extends DecoderState
                             vcr.isTypeD() ? "CALL RESPONSE" : "VOICE CALL REQUEST - RESPONSE:" + vcr.getCause());
                 }
                 break;
-            //Inbound (radio to repeater) messages are only seen when monitoring a repeater input, a simplex channel, or
-            //a hotspot.  There's no outbound message to start or end the call, so handle inbound the same as outbound.
-            case TRAFFIC_IN_01_CC_VOICE_CALL:
             case TRAFFIC_OUT_01_CC_VOICE_CALL:
-            case TYPE_D_IN_01_CC_VOICE_CALL:
             case TYPE_D_OUT_01_CC_VOICE_CALL:
                 if(layer3 instanceof VoiceCall vc)
                 {
@@ -379,9 +361,7 @@ public class NXDNDecoderState extends DecoderState
                 }
                 break;
             case TRAFFIC_OUT_07_CC_TRANSMISSION_RELEASE_EXTENSION:
-            case TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE:
             case TRAFFIC_OUT_08_CC_TRANSMISSION_RELEASE:
-            case TYPE_D_IN_08_CC_TRANSMISSION_RELEASE:
             case TYPE_D_OUT_08_CC_TRANSMISSION_RELEASE:
                 mTrafficChannelManager.processEndCall(getCurrentChannel(), layer3.getTimestamp());
                 mEncryptedCallStateDetermined = false;
@@ -441,9 +421,7 @@ public class NXDNDecoderState extends DecoderState
                 break;
             case CONTROL_OUT_16_CC_IDLE:
                 break;
-            case TRAFFIC_IN_16_CC_IDLE:
             case TRAFFIC_OUT_16_CC_IDLE:
-            case TYPE_D_IN_16_CC_IDLE:
             case TYPE_D_OUT_16_CC_IDLE:
                 //Hack: on both 4800 and 9600 systems there can be instances during a call where they send IDLE frames
                 //We'll track when we're in a call and continue a call state until the sequence of IDLE messages
@@ -712,14 +690,18 @@ public class NXDNDecoderState extends DecoderState
                 {
                     state = State.CALL;
                     event = DecoderStateEvent.Event.CONTINUATION;
-                    processTalkerAlias(tac.getTalkerAlias(), tac.getLICH(), tac.getTimestamp());
+                    processTalkerAlias(tac.getTalkerAlias(), tac.getTimestamp());
                 }
                 break;
 
+            case TRAFFIC_IN_01_CC_VOICE_CALL:
+                state = State.CALL;
+                break;
             case TRAFFIC_IN_02_CC_VOICE_CALL_RECEPTION_RESPONSE:
             case TRAFFIC_IN_03_CC_VOICE_CALL_INITIALIZATION_VECTOR:
                 state = State.CALL;
                 break;
+            case TRAFFIC_IN_08_CC_TRANSMISSION_RELEASE:
             case TRAFFIC_IN_09_CC_DATA_CALL_HEADER:
                 state = State.DATA;
                 break;
@@ -728,6 +710,7 @@ public class NXDNDecoderState extends DecoderState
                 break;
             case TRAFFIC_IN_12_CC_DATA_CALL_ACKNOWLEDGE:
             case TRAFFIC_IN_15_CC_HEADER_DELAY:
+            case TRAFFIC_IN_16_CC_IDLE:
             case TRAFFIC_IN_17_CC_DISCONNECT_REQUEST:
             case TRAFFIC_IN_42_MM_AUTHENTICATION_INQUIRY_REQUEST_MULTI_SYSTEM:
             case TRAFFIC_IN_43_MM_AUTHORIZATION_INQUIRY_RESPONSE_MULTI_SYSTEM:
@@ -784,52 +767,9 @@ public class NXDNDecoderState extends DecoderState
             state = State.ENCRYPTED;
         }
 
-        //Audio can arrive before the first call message, e.g. on conventional channels, so the audio can start the call.
-        boolean canStartCall = isCallStartAudio(audio);
-
-        if(canStartCall && !mTalkerAliasTracker.isCallActive())
-        {
-            mTalkerAliasTracker.callActivity(audio.getTimestamp());
-        }
-
-        NXDNTalkerAliasIdentifier talkerAlias = getIdentifierCollection().getIdentifier(IdentifierClass.USER,
-                Form.TALKER_ALIAS, Role.FROM) instanceof NXDNTalkerAliasIdentifier ta ? ta : null;
-        mTrafficChannelManager.processAudio(getCurrentChannel(), talkerAlias,
-                mEncryptedCallStateDetermined && mEncryptedCall, canStartCall, audio.getTimestamp());
+        mTrafficChannelManager.processCallProgressUpdate(getCurrentChannel(), audio.getTimestamp());
 
         broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.CONTINUATION, state));
-    }
-
-    /**
-     * Indicates if the audio is reliable enough to start a call event: this and the previous voice frame both have a
-     * SACCH that passes the CRC check, with the same RAN.  The voice frame error check passes for nearly all noise
-     * (Golay(23) is a perfect code) and the 6-bit SACCH CRC passes for 1 in 64 noise frames, so a single frame isn't
-     * enough.  Type-D voice frames don't have a SACCH, so Type-D audio doesn't start a call.  Type-D sends the VOICE CALL
-     * at the start of the call.
-     * @param audio to check
-     * @return true if the audio can start a call
-     */
-    private boolean isCallStartAudio(Audio audio)
-    {
-        SACCHFragment sacch = audio.getSACCHFragment();
-
-        if(sacch == null || !sacch.isValid())
-        {
-            mCallStartAudioCount = 0;
-            return false;
-        }
-
-        if(mCallStartAudioCount > 0 && sacch.getRAN() == mCallStartAudioRAN)
-        {
-            mCallStartAudioCount++;
-        }
-        else
-        {
-            mCallStartAudioCount = 1;
-            mCallStartAudioRAN = sacch.getRAN();
-        }
-
-        return mCallStartAudioCount >= 2;
     }
 
     /**

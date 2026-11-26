@@ -31,8 +31,8 @@ import io.github.dsheirer.settings.identifier.talkgroup.AnalogTalkgroupFormatter
 import io.github.dsheirer.settings.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.LTRTalkgroupFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
-import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
@@ -112,7 +112,7 @@ public class TalkgroupFormatSettings extends AbstractSettings
      */
     private void loadProperties()
     {
-        for(Protocol protocol : Protocol.IDENTIFIER_FORMAT_PROTOCOLS)
+        for(Protocol protocol : Protocol.TALKGROUP_PROTOCOLS)
         {
             mTalkgroupFixedWidthProtocolMap.put(protocol, Setting.TALKGROUP_FIXED_WIDTH.with(protocol.name()).getBoolean(getDefaultFixedWidth(protocol)));
 
@@ -317,6 +317,9 @@ public class TalkgroupFormatSettings extends AbstractSettings
             case LTR:
                 return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR),
                     isTalkgroupFixedWidth(Protocol.LTR));
+            case MDC1200:
+                return MDC1200TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MDC1200),
+                    isTalkgroupFixedWidth(Protocol.MDC1200));
             case MPT1327:
                 return MPT1327TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MPT1327),
                     isTalkgroupFixedWidth(Protocol.MPT1327));
@@ -368,9 +371,6 @@ public class TalkgroupFormatSettings extends AbstractSettings
             case DMR:
                 return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
                     isTalkgroupFixedWidth(Protocol.DMR));
-            case MDC1200:
-                return MDC1200RadioFormatter.format(radioIdentifier.getValue(), getTalkgroupFormat(Protocol.MDC1200),
-                    isTalkgroupFixedWidth(Protocol.MDC1200));
             case NXDN:
                 return NXDNTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.NXDN),
                         isTalkgroupFixedWidth(Protocol.NXDN));

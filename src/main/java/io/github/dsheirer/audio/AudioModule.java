@@ -32,7 +32,6 @@ import io.github.dsheirer.sample.real.IRealBufferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -105,11 +104,6 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
             // apply audio filters if any (i.e. deemphasis, high pass, etc.)
             if(!mAudioFilters.isEmpty())
             {
-                //The filters work in place, and the demodulated audio buffer is shared with the auxiliary decoders
-                //(MDC-1200, Fleetsync, DCS, etc.) that receive it after this module, so filter a copy.  Otherwise the
-                //auxiliary decoders get de-emphasized, high-pass filtered and clipped audio while the squelch is open.
-                audioBuffer = Arrays.copyOf(audioBuffer, audioBuffer.length);
-
                 for(AbstractAudioFilter filter : mAudioFilters)
                 {
                     audioBuffer = filter.filter(audioBuffer);

@@ -42,8 +42,6 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +70,6 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private BooleanProperty mEncrypted = new SimpleBooleanProperty(false);
     private BooleanProperty mRecordAudio = new SimpleBooleanProperty(false);
     private IntegerProperty mMonitorPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
-    private ObservableSet<BroadcastChannel> mBroadcastChannels = FXCollections.observableSet(new HashSet<>());
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private List<float[]> mAudioBuffers = new CopyOnWriteArrayList();
@@ -180,32 +177,24 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     }
 
     /**
-     * An observable list of broadcast channels for this audio segment.  Broadcast channels are added to this segment
-     * across the life-cycle of the segment.  As each new alias identifier is added to the segment, any broadcast
-     * channels assigned to the alias are added to this list.  The audio segment producer can also add broadcast
-     * channels to this list.
+     * Set of streaming broadcast channels for this audio segment, compiled dynamically from the aliases of the
+     * identifiers currently resident in this segment.
      *
-     * @return observable set of broadcast channels
-     */
-    public ObservableSet<BroadcastChannel> broadcastChannelsProperty()
-    {
-        return mBroadcastChannels;
-    }
-
-    /**
-     * Set of broadcast channels from identifier associated aliases for this segment.
+     * Broadcast channels are discovered on demand rather than accumulated as identifiers are added across the segment's
+     * life-cycle.  This ensures that a broadcast channel belonging to an identifier that has since been replaced (for
+     * example a previous talkgroup whose TO identifier was superseded) is not carried forward and streamed under the
+     * current talkgroup.
+     *
+     * @return set of broadcast channels, or an empty set when this segment has no alias list or no routed identifier.
      */
     public Set<BroadcastChannel> getBroadcastChannels()
     {
-        return Collections.unmodifiableSet(mBroadcastChannels);
-    }
+        if(mAliasList == null)
+        {
+            return Collections.emptySet();
+        }
 
-    /**
-     * Indicates if this segment has audio streaming broadcast channels specified.
-     */
-    public boolean hasBroadcastChannels()
-    {
-        return !mBroadcastChannels.isEmpty();
+        return new HashSet<>(mAliasList.getBroadcastChannels(mIdentifierCollection));
     }
 
     /**
@@ -457,9 +446,6 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
             {
                 mRecordAudio.set(true);
             }
-
-            //Add all broadcast channels for the alias ... let the set handle duplication.
-            mBroadcastChannels.addAll(alias.getBroadcastChannels());
 
             //Only assign a playback priority if it is lower priority than the current setting.
             int playbackPriority = alias.getPlaybackPriority();

@@ -129,14 +129,14 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
                 mRadioIdField.setTooltip(new Tooltip(radioDetail.getTooltip()));
                 mIntegerTextFormatter.setValue(value);
                 mIntegerTextFormatter.valueProperty().addListener(mRadioValueChangeListener);
-                getFormatLabel().setText(radioDetail.getTooltip());
             }
             else
             {
-                getFormatLabel().setText(" ");
                 mLog.warn("Couldn't find radio detail for protocol [" + getItem().getProtocol() +
                     "] and format [" + format + "]");
             }
+
+            getFormatLabel().setText(radioDetail.getTooltip());
         }
         else
         {
@@ -244,10 +244,6 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
             "Format: 0 - 16777215"));
         mRadioDetails.add(new RadioDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFFFF),
             "Format: 0 - FFFFFF"));
-        mRadioDetails.add(new RadioDetail(Protocol.MDC1200, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
-                "Format: 1 - 65535"));
-        mRadioDetails.add(new RadioDetail(Protocol.MDC1200, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
-                "Format: 1 - FFFF"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 "Format: 1 - 65,535"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),

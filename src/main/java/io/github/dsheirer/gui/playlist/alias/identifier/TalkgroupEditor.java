@@ -254,6 +254,10 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
                 new PrefixIdentFormatter(0,0xFFFFF), "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.LTR, IntegerFormat.FORMATTED, new LtrFormatter(0,0x3FFF),
                 "Format: A-HH-TTT = Area (0-1), Home (1-31), Talkgroup (1-255)"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.MDC1200, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
+                "Format: 0 - 65535"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.MDC1200, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
+                "Format: 0 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.MPT1327, IntegerFormat.FORMATTED,
                 new PrefixIdentFormatter(0,0xFFFFF), "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),

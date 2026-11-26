@@ -52,6 +52,10 @@ public class TunerSpectralDisplay extends DftSpectralDisplay implements ISourceE
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TunerSpectralDisplay.class);
 
+    /**
+     * Indicates if the main window spectral display shows a tuner.  Cleared when the user turns the display off.
+     */
+    public static final String SPECTRAL_DISPLAY_ENABLED = "spectral.display.enabled";
     public static final String SETTINGS_PREFIX = "spectral.display";
     private static final String CHANNEL_DISPLAY = "channel.display";
     private static final String CHANNEL_HOVER_DETAILS = "channel.hover.details";

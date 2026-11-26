@@ -326,17 +326,6 @@ public class SystemProperties
     }
 
     /**
-     * Removes the property, if present.
-     */
-    public void remove(String key)
-    {
-        if(mProperties.remove(key) != null)
-        {
-            save();
-        }
-    }
-
-    /**
      * Sets (overrides) the property key with the new value
      */
     public void set(String key, String value)
