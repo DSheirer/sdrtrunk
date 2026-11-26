@@ -26,6 +26,7 @@ public class TunerEvent
 {
     private Tuner mTuner;
     private Event mEvent;
+    private long mCenterFrequency;
 
     /**
      * Constructs an instance
@@ -36,6 +37,19 @@ public class TunerEvent
     {
         mTuner = tuner;
         mEvent = event;
+    }
+
+    /**
+     * Constructs an instance with an optional center frequency for the spectral display to focus on
+     * @param tuner that is generating the event
+     * @param event from the tuner
+     * @param centerFrequency in hertz that the spectral display should center on
+     */
+    public TunerEvent(Tuner tuner, Event event, long centerFrequency)
+    {
+        mTuner = tuner;
+        mEvent = event;
+        mCenterFrequency = centerFrequency;
     }
 
     /**
@@ -52,6 +66,24 @@ public class TunerEvent
     public boolean hasTuner()
     {
         return mTuner != null;
+    }
+
+    /**
+     * Center frequency hint for the spectral display.  When non-zero, the spectral display should
+     * center/zoom on this frequency after processing the event.
+     * @return center frequency in hertz, or 0 if not specified
+     */
+    public long getCenterFrequency()
+    {
+        return mCenterFrequency;
+    }
+
+    /**
+     * Indicates if a center frequency hint is specified.
+     */
+    public boolean hasCenterFrequency()
+    {
+        return mCenterFrequency != 0;
     }
 
     @Override

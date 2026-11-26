@@ -96,6 +96,12 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                 if(MainSpectralDisplay.isTunerEnabled())
                 {
                     mMainSpectralDisplay.showTuner(event.getTuner());
+
+                    if(event.hasCenterFrequency())
+                    {
+                        //Zoom to level 4 (16x) centred on the channel frequency
+                        mMainSpectralDisplay.zoomTo(4, event.getCenterFrequency());
+                    }
                 }
                 break;
             case REQUEST_NEW_SPECTRAL_DISPLAY:
