@@ -225,6 +225,7 @@ public class P25P1MessageFramerPDUTest
         assertEquals(blockCount, sequence.getHeader().getBlocksToFollowCount());
         assertEquals(receivedCount, sequence.getDataBlocks().size(), pduMessage.toString());
         assertFalse(sequence.isComplete(), pduMessage.toString());
+        assertFalse(pduMessage.isValid(), pduMessage.toString());
 
         for(int x = 0; x < receivedCount; x++)
         {
@@ -276,6 +277,7 @@ public class P25P1MessageFramerPDUTest
         System.arraycopy(ipPacket, 0, pduPayload, 2, ipPacket.length);
         int padOctets = pduPayload.length - 4 - 2 - ipPacket.length; //Last four octets are the packet CRC
         assertTrue(padOctets >= 0, "Packet does not fit in " + blockCount + " blocks");
+        setPacketCRC(pduPayload);
 
         List<BinaryMessage> blocks = new ArrayList<>();
         for(int x = 0; x < blockCount; x++)
@@ -318,6 +320,8 @@ public class P25P1MessageFramerPDUTest
         assertEquals(blockCount, sequence.getHeader().getBlocksToFollowCount());
         assertEquals(blockCount, sequence.getDataBlocks().size(), pduMessage.toString());
         assertTrue(sequence.isComplete(), pduMessage.toString());
+        assertTrue(sequence.isPacketCRCValid(), pduMessage.toString());
+        assertTrue(pduMessage.isValid(), pduMessage.toString());
 
         for(int x = 0; x < blockCount; x++)
         {
@@ -377,7 +381,7 @@ public class P25P1MessageFramerPDUTest
     /**
      * Runs the dibits through a message framer with hard sync detection and collects the dispatched messages.
      */
-    private static List<IMessage> frame(List<Dibit> dibits)
+    static List<IMessage> frame(List<Dibit> dibits)
     {
         List<IMessage> messages = new ArrayList<>();
         P25P1MessageFramer framer = new P25P1MessageFramer();
@@ -403,7 +407,7 @@ public class P25P1MessageFramerPDUTest
      * Transmitted bits of a frame: sync pattern, BCH encoded NID for the NAC and DUID, and the message bits.  The
      * message must include the trailing null bits that pad the frame to a multiple of the 70-bit status symbol interval.
      */
-    private static BinaryMessage frame(P25P1DataUnitID duid, BinaryMessage message)
+    static BinaryMessage frame(P25P1DataUnitID duid, BinaryMessage message)
     {
         BinaryMessage frame = new BinaryMessage(SYNC_AND_NID_BITS + message.size());
         frame.load(0, 48, P25P1SyncDetector.SYNC_PATTERN);
@@ -416,7 +420,7 @@ public class P25P1MessageFramerPDUTest
     /**
      * Converts the frame bits to dibits with a status dibit inserted after every 35 dibits.
      */
-    private static List<Dibit> toDibits(BinaryMessage frame)
+    static List<Dibit> toDibits(BinaryMessage frame)
     {
         List<Dibit> dibits = new ArrayList<>();
         int count = 0;
@@ -439,7 +443,7 @@ public class P25P1MessageFramerPDUTest
      * PDU message bits: interleaved header, interleaved data blocks and trailing null bits that pad the transmitted
      * frame (sync + NID + message) to a multiple of the status symbol interval.
      */
-    private static BinaryMessage pduMessage(BinaryMessage header, List<BinaryMessage> blocks)
+    static BinaryMessage pduMessage(BinaryMessage header, List<BinaryMessage> blocks)
     {
         int bits = BLOCK_BITS * (1 + blocks.size());
         int transmitted = SYNC_AND_NID_BITS + bits;
@@ -453,6 +457,51 @@ public class P25P1MessageFramerPDUTest
         }
 
         return message;
+    }
+
+    /**
+     * Sets the packet CRC (TIA-102.BAAA-B 5.3.3) in the last four octets, calculated over all of the preceding data
+     * octets: generator 0x04C11DB7, no preset, remainder inverted, most significant bit first.
+     */
+    static void setPacketCRC(byte[] octets)
+    {
+        int crc = 0;
+
+        for(int x = 0; x < octets.length - 4; x++)
+        {
+            for(int bit = 7; bit >= 0; bit--)
+            {
+                boolean feedback = ((crc >>> 31) ^ ((octets[x] >> bit) & 1)) == 1;
+                crc <<= 1;
+
+                if(feedback)
+                {
+                    crc ^= 0x04C11DB7;
+                }
+            }
+        }
+
+        crc = ~crc;
+
+        for(int x = 0; x < 4; x++)
+        {
+            octets[octets.length - 4 + x] = (byte)(crc >>> (24 - x * 8));
+        }
+    }
+
+    /**
+     * CRC-CCITT for the first 80 bits of a 96-bit PDU header, placed in the last 16 bits.
+     */
+    static void setHeaderCRC(BinaryMessage header)
+    {
+        int crc = 0xFFFF;
+
+        for(int x = header.nextSetBit(0); x >= 0 && x < 80; x = header.nextSetBit(x + 1))
+        {
+            crc ^= CRCP25.CCITT_80_CHECKSUMS[x];
+        }
+
+        header.setInt(crc, PDUHeader.PDU_CRC);
     }
 
     /**
@@ -477,15 +526,7 @@ public class P25P1MessageFramerPDUTest
         header.setInt(blocksToFollow, PDUHeader.BLOCKS_TO_FOLLOW);
         header.setInt(padOctets, PacketHeader.PAD_OCTET_COUNT);
         header.setInt(2, PacketHeader.DATA_HEADER_OFFSET);
-
-        int crc = 0xFFFF;
-
-        for(int x = header.nextSetBit(0); x >= 0 && x < 80; x = header.nextSetBit(x + 1))
-        {
-            crc ^= CRCP25.CCITT_80_CHECKSUMS[x];
-        }
-
-        header.setInt(crc, PDUHeader.PDU_CRC);
+        setHeaderCRC(header);
         return header;
     }
 
@@ -523,7 +564,7 @@ public class P25P1MessageFramerPDUTest
     /**
      * Unconfirmed data block (96 bits): 12 data octets.
      */
-    private static BinaryMessage unconfirmedDataBlock(byte[] octets)
+    static BinaryMessage unconfirmedDataBlock(byte[] octets)
     {
         BinaryMessage block = new BinaryMessage(96);
 
@@ -538,7 +579,7 @@ public class P25P1MessageFramerPDUTest
     /**
      * 1/2 rate trellis encodes 96 data bits (48 dibits plus a flushing dibit) into 49 four-bit symbols (196 bits).
      */
-    private static BinaryMessage encodeHalfRate(BinaryMessage data)
+    static BinaryMessage encodeHalfRate(BinaryMessage data)
     {
         assertEquals(96, data.size());
         BinaryMessage encoded = new BinaryMessage(BLOCK_BITS);
@@ -578,7 +619,7 @@ public class P25P1MessageFramerPDUTest
     /**
      * Interleaves a 196-bit encoded block, the inverse of P25P1Interleave.deinterleaveChunk().
      */
-    private static BinaryMessage interleave(BinaryMessage encoded)
+    static BinaryMessage interleave(BinaryMessage encoded)
     {
         BinaryMessage interleaved = new BinaryMessage(BLOCK_BITS);
 

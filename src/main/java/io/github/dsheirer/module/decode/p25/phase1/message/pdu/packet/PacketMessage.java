@@ -65,6 +65,16 @@ public class PacketMessage extends P25P1Message
     }
 
     /**
+     * Indicates if the message is valid: the header passed its CRC, all of the data blocks were received and the
+     * packet CRC matches the data blocks.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return super.isValid() && getPDUSequence().isValid();
+    }
+
+    /**
      * Packet header from the packet sequence.
      */
     public PacketHeader getHeader()
@@ -101,6 +111,10 @@ public class PacketMessage extends P25P1Message
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
+        if(getPDUSequence().isComplete() && !isValid())
+        {
+            sb.append(" **CRC-FAILED**");
+        }
         if(!getPDUSequence().isComplete())
         {
             sb.append(" *INCOMPLETE - RECEIVED ").append(getPDUSequence().getDataBlocks().size()).append("/")

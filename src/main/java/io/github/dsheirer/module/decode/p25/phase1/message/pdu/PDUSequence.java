@@ -18,6 +18,8 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu;
 
+import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.DataBlock;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class PDUSequence implements IBitErrorProvider
     private int mNAC;
     private PDUHeader mHeader;
     private List<DataBlock> mDataBlocks = new ArrayList<>();
+    private Boolean mPacketCRCValid;
 
     public PDUSequence(PDUHeader pduHeader, long timestamp, int nac)
     {
@@ -75,7 +78,57 @@ public class PDUSequence implements IBitErrorProvider
         if(dataBlock != null)
         {
             mDataBlocks.add(dataBlock);
+            mPacketCRCValid = null;
         }
+    }
+
+    /**
+     * Indicates if the header passed its CRC and, when the header specifies data blocks, all of the data blocks were
+     * received and pass the packet CRC.
+     */
+    public boolean isValid()
+    {
+        return getHeader().isValid() && isComplete() && (mDataBlocks.isEmpty() || isPacketCRCValid());
+    }
+
+    /**
+     * Indicates if the packet CRC-32 in the last four octets of the last data block matches the data octets of all
+     * of the data blocks (TIA-102.BAAA-B 5.3.3).  The CRC covers the user data and pad octets of each block, without
+     * the serial number and CRC-9 of confirmed data blocks.
+     *
+     * @return true if the sequence is complete and the packet CRC matches.
+     */
+    public boolean isPacketCRCValid()
+    {
+        if(mPacketCRCValid == null)
+        {
+            if(mDataBlocks.isEmpty() || !isComplete())
+            {
+                mPacketCRCValid = false;
+            }
+            else
+            {
+                int length = 0;
+
+                for(DataBlock dataBlock : mDataBlocks)
+                {
+                    length += dataBlock.getMessage().size();
+                }
+
+                BinaryMessage packet = new BinaryMessage(length);
+                int offset = 0;
+
+                for(DataBlock dataBlock : mDataBlocks)
+                {
+                    packet.load(offset, dataBlock.getMessage());
+                    offset += dataBlock.getMessage().size();
+                }
+
+                mPacketCRCValid = CRCP25.checkPacketCRC32(packet);
+            }
+        }
+
+        return mPacketCRCValid;
     }
 
     public boolean hasDataBlock(int index)
@@ -150,6 +203,11 @@ public class PDUSequence implements IBitErrorProvider
         sb.append(" ").append(getHeader().toString());
 
         sb.append(" DATA BLOCKS:").append(mDataBlocks.size());
+
+        if(isComplete() && !mDataBlocks.isEmpty() && !isPacketCRCValid())
+        {
+            sb.append(" **PACKET CRC-FAILED**");
+        }
 
         if(!mDataBlocks.isEmpty())
         {

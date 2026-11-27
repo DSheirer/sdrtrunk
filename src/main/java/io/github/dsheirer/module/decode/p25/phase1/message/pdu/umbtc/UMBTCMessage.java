@@ -49,10 +49,24 @@ public abstract class UMBTCMessage extends P25P1Message implements IBitErrorProv
     {
         StringBuilder sb = new StringBuilder();
         sb.append(super.getMessageStub());
+        if(!isValid())
+        {
+            sb.append(" **CRC-FAILED**");
+        }
         sb.append(" ").append(getOpcode());
         P25Utils.pad(sb, 30);
 
         return sb.toString();
+    }
+
+    /**
+     * Indicates if the message is valid: the header passed its CRC, all of the data blocks were received and the
+     * packet CRC matches the data blocks.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return super.isValid() && getPDUSequence().isValid();
     }
 
     public UMBTCHeader getHeader()

@@ -1063,7 +1063,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         {
             processSNDCP(sndcp);
         }
-        else if(message instanceof PacketMessage packetMessage)
+        else if(message.isValid() && message instanceof PacketMessage packetMessage)
         {
             IPacket packet = packetMessage.getPacket();
 
