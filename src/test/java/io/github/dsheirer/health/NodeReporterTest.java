@@ -221,15 +221,44 @@ public class NodeReporterTest
         HealthSnapshot now = snapshot(SINCE + 1_000_000, 0);
         history.add(now);
         reporter.isDue(now);
+        long aimed = reporter.getNextAt();
         reporter.window(history);
         reporter.delivered(1200.0);
-        assertEquals(now.timeMs() + 1_200_000, reporter.getNextAt(), NodeReporter.JITTER_MS + 1);
+        assertEquals(aimed + 1_200_000, reporter.getNextAt(), 2 * NodeReporter.JITTER_MS + 1,
+            "1200 s on from the node's point in the interval");
 
+        aimed = reporter.getNextAt();
         history.add(snapshot(now.timeMs() + 10_000, 0));
         reporter.window(history);
         reporter.delivered(5.0);
-        assertEquals(now.timeMs() + 10_000 + NodeReporter.MIN_INTERVAL_MS, reporter.getNextAt(),
-            NodeReporter.JITTER_MS + 1);
+        assertEquals(aimed + NodeReporter.MIN_INTERVAL_MS, reporter.getNextAt(), 2 * NodeReporter.JITTER_MS + 1,
+            "no less than 60 s");
+    }
+
+    /**
+     * Reports go every 300 s on average, though each waits for a snapshot (every 10 s) to end its window at.
+     */
+    @Test
+    void reports_are_300_seconds_apart_on_average_whatever_they_wait_for()
+    {
+        NodeReporter reporter = new NodeReporter(17);
+        HealthHistory history = new HealthHistory();
+        List<Long> ends = new ArrayList<>();
+
+        for(long t = SINCE; ends.size() < 200; t += 10_000)
+        {
+            HealthSnapshot now = snapshot(t, 0);
+            history.add(now);
+
+            if(reporter.isDue(now) && reporter.window(history) != null)
+            {
+                reporter.delivered(300.0);
+                ends.add(t);
+            }
+        }
+
+        double mean = (ends.getLast() - ends.getFirst()) / (double)(ends.size() - 1);
+        assertEquals(NodeReporter.INTERVAL_MS, mean, 1000, "300 s apart on average");
     }
 
     @Test

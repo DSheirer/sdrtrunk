@@ -156,6 +156,14 @@ public class HealthRegistry
     }
 
     /**
+     * Takes a snapshot now, between the regular ones: for a report due now to end its window at.
+     */
+    public void snapshotNow()
+    {
+        snapshot();
+    }
+
+    /**
      * Takes a snapshot of every channel's and tuner's totals into the history.
      */
     synchronized void snapshot()

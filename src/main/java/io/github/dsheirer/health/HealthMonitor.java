@@ -188,7 +188,7 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
 
         if(message instanceof TSBKMessage tsbk)
         {
-            mHealth.control("p25", tsbk.isValid(), tsbk.getTimestamp());
+            mHealth.control("p25", tsbk.isValid(), tsbk.getTimestamp(), System.currentTimeMillis());
 
             if(tsbk.isValid())
             {
@@ -211,7 +211,7 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         else if(message instanceof MacMessage mac)
         {
             //A standard Phase 2 channel is a TDMA control channel.  A failed PDU is one bad message.
-            mHealth.control("p25", mac.isValid(), mac.getTimestamp());
+            mHealth.control("p25", mac.isValid(), mac.getTimestamp(), System.currentTimeMillis());
 
             if(mac.isValid())
             {
@@ -220,13 +220,13 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         }
         else if(message instanceof CSBKMessage csbk)
         {
-            mHealth.control("dmr", csbk.isValid(), csbk.getTimestamp());
+            mHealth.control("dmr", csbk.isValid(), csbk.getTimestamp(), System.currentTimeMillis());
         }
         else if(message instanceof NXDNMessage nxdn && nxdn.getLICH() != null &&
             nxdn.getLICH().getRFChannel() == RFChannel.RCCH && nxdn.getLICH().getDirection() == Direction.OUTBOUND)
         {
             //A control channel (CAC) frame carries one message, checked by its CRC.
-            mHealth.control("nxdn", nxdn.isValid(), nxdn.getTimestamp());
+            mHealth.control("nxdn", nxdn.isValid(), nxdn.getTimestamp(), System.currentTimeMillis());
 
             //This site's own information (not an adjacent site's): its location and radio access number.
             if(nxdn.isValid() && nxdn instanceof SiteInformation site)
@@ -246,7 +246,7 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         else if(message instanceof MPT1327Message mpt)
         {
             //One message per address codeword framed, checked by its CRC.
-            mHealth.control("mpt1327", mpt.isValid(), mpt.getTimestamp());
+            mHealth.control("mpt1327", mpt.isValid(), mpt.getTimestamp(), System.currentTimeMillis());
 
             //Its system identity code, from the system parameters broadcast (in the codeword the CRC checked).
             if(mpt.isValid() && mpt.getMessageType() == MPT1327Message.MPTMessageType.BCAST && mpt.getSiteID() != null)
@@ -263,15 +263,15 @@ public class HealthMonitor extends Module implements IMessageListener, ISquelchS
         }
         else if(message instanceof LTRMessage ltr)
         {
-            mHealth.decoded("ltr", ltr.getTimestamp());
+            mHealth.decoded("ltr", ltr.getTimestamp(), System.currentTimeMillis());
         }
         else if(message instanceof LtrNetMessage ltrNet)
         {
-            mHealth.decoded("ltrnet", ltrNet.getTimestamp());
+            mHealth.decoded("ltrnet", ltrNet.getTimestamp(), System.currentTimeMillis());
         }
         else if(message instanceof PassportMessage passport)
         {
-            mHealth.decoded("passport", passport.getTimestamp());
+            mHealth.decoded("passport", passport.getTimestamp(), System.currentTimeMillis());
         }
     }
 

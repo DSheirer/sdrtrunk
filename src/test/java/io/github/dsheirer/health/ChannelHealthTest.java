@@ -32,6 +32,36 @@ public class ChannelHealthTest
         return new ChannelHealth.ChannelInfo(id, "Channel " + id, "System", "Site " + id, "List", mode);
     }
 
+    /**
+     * Messages carry the time their samples were received, which runs behind the time they're decoded on a busy
+     * node: a site is still locked at the end of a window when every message it decoded was good, however far behind.
+     * It isn't when its decoder goes on without a good message, or gives none at all.
+     */
+    @Test
+    void locked_now_is_judged_on_the_decoders_own_clock()
+    {
+        ChannelHealth health = new ChannelHealth(info(5, "p25"));
+        long t = 1_000_000;
+        long behind = 5_000;
+
+        for(int i = 0; i <= 100; i++)
+        {
+            health.control("p25", true, t + i * 100L, t + behind + i * 100L);
+        }
+
+        assertTrue(health.totals(t + behind + 10_000).locked(), "5 s behind, every message good: locked");
+
+        //Hunting: bad messages, nothing good for 3 s of its clock.
+        health.control("p25", false, t + 11_000, t + behind + 11_000);
+        health.control("p25", false, t + 13_000, t + behind + 13_000);
+        assertFalse(health.totals(t + behind + 13_000).locked(), "no good message for 3 s: hunting");
+
+        health.control("p25", true, t + 13_100, t + behind + 13_100);
+        assertTrue(health.totals(t + behind + 13_100).locked());
+        assertFalse(health.totals(t + behind + 13_100 + ChannelHealth.SILENT_MS + 1).locked(),
+            "a decoder that gives nothing isn't locked");
+    }
+
     @Test
     void locked_seconds_count_a_good_message_within_the_last_two_seconds()
     {

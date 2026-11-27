@@ -37,6 +37,8 @@ public class ChannelHealth
 {
     /** A control channel counts as locked until this long after its last good message. */
     public static final long LOCK_HOLD_MS = 2000;
+    /** A decoder that has given no control message for this long isn't locked. */
+    public static final long SILENT_MS = 10_000;
 
     private final ChannelInfo mInfo;
     private final Supplier<ChannelInfo> mCurrentInfo;
@@ -52,6 +54,8 @@ public class ChannelHealth
     private boolean mBadCounted;
     private long mLockedMs;
     private long mLastGood;
+    private long mLastHeard;
+    private long mLastHeardAt;
 
     private int mRunning;
     private long mRunningMs;
@@ -187,15 +191,26 @@ public class ChannelHealth
     }
 
     /**
-     * A control message was framed.
-     * @param protocol of the site, as a node health report names it (p25, dmr, ...)
-     * @param valid true when it decoded, false when it failed its CRC or FEC
-     * @param timestamp of the message
+     * A control message was framed, as it arrives (a message's timestamp in a test).
      */
     public synchronized void control(String protocol, boolean valid, long timestamp)
     {
+        control(protocol, valid, timestamp, timestamp);
+    }
+
+    /**
+     * A control message was framed.
+     * @param protocol of the site, as a node health report names it (p25, dmr, ...)
+     * @param valid true when it decoded, false when it failed its CRC or FEC
+     * @param timestamp of the message: when its samples were received, which falls behind the time it's decoded by
+     *                  however long the samples waited to be processed
+     * @param arrivedAt when the decoder gave it, Unix milliseconds
+     */
+    public synchronized void control(String protocol, boolean valid, long timestamp, long arrivedAt)
+    {
         mProtocol = protocol;
         mBadCounted = true;
+        heard(timestamp, arrivedAt);
 
         if(valid)
         {
@@ -215,8 +230,29 @@ public class ChannelHealth
      */
     public synchronized void decoded(String protocol, long timestamp)
     {
+        decoded(protocol, timestamp, timestamp);
+    }
+
+    /**
+     * A control message was decoded, from a decoder that passes on only those that decode.
+     * @param protocol of the site, as a node health report names it
+     * @param timestamp of the message
+     * @param arrivedAt when the decoder gave it, Unix milliseconds
+     */
+    public synchronized void decoded(String protocol, long timestamp, long arrivedAt)
+    {
         mProtocol = protocol;
+        heard(timestamp, arrivedAt);
         good(timestamp);
+    }
+
+    /**
+     * The decoder gave a control message, at a time on its messages' clock.
+     */
+    private void heard(long timestamp, long arrivedAt)
+    {
+        mLastHeard = Math.max(mLastHeard, timestamp);
+        mLastHeardAt = Math.max(mLastHeardAt, arrivedAt);
     }
 
     private void good(long timestamp)
@@ -278,7 +314,10 @@ public class ChannelHealth
             locked += Math.min(now - mLastGood, LOCK_HOLD_MS);
         }
 
-        boolean lockedNow = mLastGood > 0 && now - mLastGood <= LOCK_HOLD_MS;
+        //Locked now: the decoder's latest message was within 2 s of a good one, on its messages' own clock (they run
+        //behind this one by however long samples wait to be processed), and it's still giving them.
+        boolean lockedNow = mLastGood > 0 && mLastHeard - mLastGood <= LOCK_HOLD_MS &&
+            now - mLastHeardAt <= SILENT_MS;
         long running = mRunningMs + (mRunning > 0 ? Math.max(0, now - mRunningSince) : 0);
         long open = mOpenMs + (mOpenedAt > 0 ? Math.max(0, now - mOpenedAt) : 0);
 
@@ -316,7 +355,8 @@ public class ChannelHealth
      * @param bad control messages framed but not decoded
      * @param badCounted true when the decoder says which messages it couldn't decode (bad is measured)
      * @param lockedMs milliseconds with a good control message within the last 2 s
-     * @param locked true when it was locked at this moment: a good control message within the last 2 s
+     * @param locked true when it was locked at this moment: the decoder's latest control message came within 2 s of a
+     *               good one, and it gave one within the last 10 s
      * @param calls announced, and their outcomes, or null when nothing counts them
      * @param runningMs milliseconds the channel was processing
      * @param opens squelch openings

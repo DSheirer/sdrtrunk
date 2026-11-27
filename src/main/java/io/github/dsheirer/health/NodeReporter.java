@@ -25,7 +25,8 @@ import java.util.Random;
  * When one node's health reports go, and what window each covers, as the node health report format sets it:
  *
  * - every 300 seconds (or what the service asks for), at a random point of the interval drawn once per node, each
- *   send moved by up to 15 seconds either way, the first at least 60 seconds after the start;
+ *   send moved by up to 15 seconds either way, the first at least 60 seconds after the start (an interval the
+ *   service sets is counted from the node's point in the last, so the phase moves with it);
  * - no retry: a report that fails is carried by the next (its window starts where the last delivered one ended), up
  *   to 900 seconds, after which the window starts later and says so (gap);
  * - busy (429 or 503): wait Retry-After, or double the interval up to an hour (also for a service that doesn't take
@@ -284,15 +285,14 @@ public class NodeReporter
         mBackoff = null;
         long end = mDeliveredTo[0];
 
+        //The next slot is this one's plus the interval, not this report's end plus the interval: sends are moved
+        //by jitter and made late by the time they wait for, and counting from the end would add both to every one.
         if(nextS != null && Double.isFinite(nextS))
         {
             mInterval = Math.max(MIN_INTERVAL_MS, Math.min(MAX_INTERVAL_MS, (long)(nextS * 1000)));
-            aim(end + mInterval, end + 1000);
         }
-        else
-        {
-            advance(end + 1000);
-        }
+
+        advance(end + 1000);
     }
 
     /**
