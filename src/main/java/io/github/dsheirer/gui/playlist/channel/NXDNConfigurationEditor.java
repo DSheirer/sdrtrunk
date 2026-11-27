@@ -63,6 +63,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
@@ -376,6 +377,8 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
                         //Only set modified if the toggle changed from one to the other
                         modifiedProperty().set(true);
                     }
+
+                    updateRanFilterAvailability();
                 });
         }
 
@@ -529,7 +532,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     }
 
     /**
-     * Toggle switch for ignore data calls.
+     * RAN filter editor.  The RAN filter isn't available in Type-D mode, where the RAN isn't decoded.
      */
     private AccessCodeFilterEditor getRanFilterEditor()
     {
@@ -542,6 +545,19 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         return mRanFilterEditor;
     }
 
+    /**
+     * Updates the RAN filter editor for the selected transmission mode.
+     */
+    private void updateRanFilterAvailability()
+    {
+        Toggle selected = getTransmissionModeButton().getToggleGroup().getSelectedToggle();
+        boolean typeD = selected != null && selected.getUserData() == TransmissionMode.TYPE_D;
+        getRanFilterEditor().setUnavailable(typeD ? "RAN filter isn't available in Type-D mode" : null);
+    }
+
+    /**
+     * Toggle switch for ignore data calls.
+     */
     private ToggleSwitch getIgnoreDataCallsToggle()
     {
         if(mIgnoreDataCallsToggle == null)
@@ -702,6 +718,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
                 }
             }
 
+            updateRanFilterAvailability();
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(configNXDN.getTrafficChannelPoolSize());
 
             for(ChannelFrequency channelFrequency: configNXDN.getChannelMap())

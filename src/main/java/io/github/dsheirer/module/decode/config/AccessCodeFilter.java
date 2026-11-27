@@ -354,6 +354,8 @@ public class AccessCodeFilter
             return "Access Code Filter: disabled";
         }
 
-        return "Access Code Filter: " + mMode + " [" + format(mFormat, 1) + "]";
+        //Mark hex values so that a log line can't be read as decimal (0x100 vs 100)
+        String values = mFormat == Format.HEX ? "0x" + format(mFormat, 1).replace(", ", ", 0x") : format(mFormat, 1);
+        return "Access Code Filter: " + mMode + " [" + values + "]";
     }
 }

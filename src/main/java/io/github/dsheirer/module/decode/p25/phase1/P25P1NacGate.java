@@ -27,6 +27,12 @@ import io.github.dsheirer.module.decode.p25.phase1.message.P25P1Message;
 /**
  * Applies a Network Access Code (NAC) filter to a P25 Phase 1 message stream.  Every P25 Phase 1 message carries the
  * NAC from its BCH error-corrected Network Identifier (NID).
+ *
+ * The NAC is trusted only when it was decoded from the message's own NID.  A NID that failed hard decoding can be
+ * recovered with the help of the tracked (most often seen) NAC, either by a second BCH attempt with the tracked NAC
+ * written into the NAC field or by soft decoding against the tracked NAC's codewords.  Either way the result carries
+ * the tracked NAC even when a weak co-channel transmitter sent a different one, so those messages (and placeholder
+ * messages, whose NAC carries over from the previous NID) follow the most recent trusted decision.
  */
 public class P25P1NacGate extends AccessCodeGate
 {
@@ -42,7 +48,7 @@ public class P25P1NacGate extends AccessCodeGate
     @Override
     protected Integer getTrustedAccessCode(IMessage message)
     {
-        if(message instanceof P25P1Message p25 && p25.getNAC() instanceof APCO25Nac nac)
+        if(message instanceof P25P1Message p25 && !p25.isNACAssisted() && p25.getNAC() instanceof APCO25Nac nac)
         {
             return nac.getValue();
         }

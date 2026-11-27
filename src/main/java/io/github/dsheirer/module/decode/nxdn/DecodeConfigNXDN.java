@@ -158,6 +158,16 @@ public class DecodeConfigNXDN extends DecodeConfigJMBE
     }
 
     /**
+     * RAN filter to apply when decoding, or null when the filter doesn't apply: the RAN isn't decoded in Type-D mode,
+     * so a filter would have no effect there.
+     */
+    @JsonIgnore
+    public AccessCodeFilter getEffectiveRanFilter()
+    {
+        return getTransmissionMode() == TransmissionMode.TYPE_D ? null : getRanFilter();
+    }
+
+    /**
      * Traffic channel pool size.
      * @return
      */

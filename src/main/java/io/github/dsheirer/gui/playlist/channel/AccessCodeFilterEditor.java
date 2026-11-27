@@ -58,6 +58,9 @@ public class AccessCodeFilterEditor extends HBox
     private final TextField mValuesField = new TextField();
     private final Label mStatusLabel = new Label();
     private boolean mLoading = false;
+    private boolean mRevertingFormat = false;
+    private boolean mEditorDisabled = false;
+    private String mUnavailableReason = null;
 
     /**
      * Constructs an instance
@@ -130,10 +133,22 @@ public class AccessCodeFilterEditor extends HBox
                 //Ensure that one toggle is always selected
                 oldValue.setSelected(true);
             }
-            else if(oldValue != null)
+            else if(oldValue != null && !mRevertingFormat)
             {
-                reformatValues((Format)oldValue.getUserData(), (Format)newValue.getUserData());
-                modified();
+                if(reformatValues((Format)oldValue.getUserData(), (Format)newValue.getUserData()))
+                {
+                    modified();
+                }
+                else
+                {
+                    //The values can't be converted: keep the current format so that the values aren't saved in the
+                    //other format
+                    mRevertingFormat = true;
+                    oldValue.setSelected(true);
+                    mRevertingFormat = false;
+                    mStatusLabel.setStyle("-fx-text-fill: red;");
+                    mStatusLabel.setText("Correct the invalid " + mName + " values before changing the format");
+                }
             }
         });
 
@@ -189,8 +204,20 @@ public class AccessCodeFilterEditor extends HBox
      */
     public void setEditorDisabled(boolean disabled)
     {
-        mEnabledSwitch.setDisable(disabled);
+        mEditorDisabled = disabled;
+        mEnabledSwitch.setDisable(mEditorDisabled || mUnavailableReason != null);
         updateControlStates();
+    }
+
+    /**
+     * Marks the filter as unavailable for the current configuration (e.g. a mode where the access code isn't
+     * decoded), disabling the controls and showing the reason in place of the filter status.
+     * @param reason to show, or null when the filter is available
+     */
+    public void setUnavailable(String reason)
+    {
+        mUnavailableReason = reason;
+        setEditorDisabled(mEditorDisabled);
     }
 
     private void updateControlStates()
@@ -205,6 +232,12 @@ public class AccessCodeFilterEditor extends HBox
     private void updateStatus()
     {
         mStatusLabel.setStyle(null);
+
+        if(mUnavailableReason != null && !mEditorDisabled)
+        {
+            mStatusLabel.setText(mUnavailableReason);
+            return;
+        }
 
         if(mEnabledSwitch.isDisabled() || !mEnabledSwitch.isSelected())
         {
@@ -238,21 +271,21 @@ public class AccessCodeFilterEditor extends HBox
     }
 
     /**
-     * Converts the entered values from one format to the other.  When the current text has invalid values, the text
-     * is left unchanged so that the user can correct it.
+     * Converts the entered values from one format to the other.
+     * @return true if converted, or false when the current text has invalid values and is left unchanged so that the
+     * user can correct it
      */
-    private void reformatValues(Format from, Format to)
+    private boolean reformatValues(Format from, Format to)
     {
         AccessCodeFilter.ParseResult result = AccessCodeFilter.parse(mValuesField.getText(), from, mMaximum);
 
         if(result.isValid())
         {
             mValuesField.setText(AccessCodeFilter.format(result.values(), to, mHexDigits));
+            return true;
         }
-        else
-        {
-            updateStatus();
-        }
+
+        return false;
     }
 
     private Mode getSelectedMode()

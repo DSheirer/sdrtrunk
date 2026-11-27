@@ -76,6 +76,14 @@ public class SlotType
     }
 
     /**
+     * Number of bits corrected by the Golay(24) decoder.
+     */
+    public int getCorrectedBitCount()
+    {
+        return getMessage().getCorrectedBitCount();
+    }
+
+    /**
      * SlotType message extracted from the transmitted message and Golay(24) error detection and correction complete.
      *
      * Note: this message is extracted with 4 leading/padding bits plus the 20 message bits for an overall length of

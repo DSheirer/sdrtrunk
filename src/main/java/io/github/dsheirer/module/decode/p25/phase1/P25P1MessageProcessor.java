@@ -124,6 +124,7 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 //when it passes error correction.
                 LinkControlWord lcw = ldu1.getLinkControlWord();
                 boolean lcwValid = lcw.isValid();
+                LCHarrisTalkerAliasComplete harrisTalkerAliasComplete = null;
 
                 if(lcwValid && lcw instanceof IExtendedSourceMessage esm)
                 {
@@ -141,13 +142,20 @@ public class P25P1MessageProcessor implements Listener<IMessage>
                 else if(lcwValid && lcw instanceof LCHarrisTalkerAliasBase harrisTalkerAlias)
                 {
                     //Send the LCW to the harris talker alias assembler
-                    dispatch(mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, ldu1.getTimestamp()));
+                    harrisTalkerAliasComplete = mHarrisTalkerAliasAssembler.process(harrisTalkerAlias, ldu1.getTimestamp());
                 }
 
                 //Flush any held messages
                 processSourceIDExtension(null);
 
                 dispatch(ldu1);
+
+                //Dispatch the assembled talker alias after the LDU1 it was assembled from, so that consumers that key
+                //off the preceding message (e.g. the NAC filter) use this LDU1's decision
+                if(harrisTalkerAliasComplete != null)
+                {
+                    dispatch(harrisTalkerAliasComplete);
+                }
 
                 //Process Harris Talker GPS messages
                 if(lcwValid && lcw instanceof LCHarrisTalkerGPSBlock1 block1)

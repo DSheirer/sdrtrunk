@@ -116,7 +116,7 @@ public class NXDNDecoderState extends DecoderState
         mChannel = channel;
         mTrafficChannelManager = trafficChannelManager;
         mRanGate = new NXDNRanGate(channel.getDecodeConfiguration() instanceof DecodeConfigNXDN config ?
-            config.getRanFilter() : null);
+            config.getEffectiveRanFilter() : null);
     }
 
     /**

@@ -29,10 +29,20 @@ import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
  *
  * The color code is carried in the Slot Type field of data/control bursts and in the EMB field of voice bursts B-F.
  * Voice burst A (voice sync) has no EMB, and assembled messages (link control, packets) don't carry the color code;
- * those follow the decision for the most recent burst with a valid Slot Type or EMB.
+ * those follow the decision for the most recent trusted color code.
+ *
+ * A color code is only trusted when its field decoded with at most one corrected bit error.  The EMB's QR(16,7,6)
+ * code corrects 2 bit errors and accepts about 27% of random words at that distance (and the soft decoder always picks
+ * the nearest word), so on a weak wanted signal a noisy burst can decode to another color code.  Within one bit error
+ * the chance of a random word passing is about 3%.  The Slot Type's Golay(24) decode is limited the same way.
  */
 public class DMRColorCodeGate extends AccessCodeGate
 {
+    /**
+     * Maximum corrected bit errors for a color code to change the gate decision.
+     */
+    static final int MAX_TRUSTED_BIT_ERRORS = 1;
+
     /**
      * Constructs an instance
      * @param filter to apply, or null to pass all messages
@@ -45,11 +55,13 @@ public class DMRColorCodeGate extends AccessCodeGate
     @Override
     protected Integer getTrustedAccessCode(IMessage message)
     {
-        if(message instanceof VoiceEMBMessage voice && voice.getEMB().isValid())
+        if(message instanceof VoiceEMBMessage voice && voice.getEMB().isValid() &&
+            voice.getEMB().getCorrectedBitCount() <= MAX_TRUSTED_BIT_ERRORS)
         {
             return voice.getEMB().getColorCode();
         }
-        else if(message instanceof DataMessage data && data.getSlotType().isValid())
+        else if(message instanceof DataMessage data && data.getSlotType().isValid() &&
+            data.getSlotType().getCorrectedBitCount() <= MAX_TRUSTED_BIT_ERRORS)
         {
             return data.getSlotType().getColorCode();
         }

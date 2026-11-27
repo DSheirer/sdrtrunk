@@ -343,8 +343,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
             }
         }
-        //SLCO messages on timeslot 0 to catch capacity plus rest channel events
-        else if(isValid(message) && message.getTimeslot() == 0 && message instanceof LCMessage lcMessage)
+        //SLCO messages on timeslot 0 to catch capacity plus rest channel events.  The CACH carries no color code, so
+        //apply the color code filter's decision for this timeslot's most recent bursts: a rest channel SLCO from a
+        //co-channel site with a different color code shouldn't retune the channel.
+        else if(isValid(message) && message.getTimeslot() == 0 && message instanceof LCMessage lcMessage &&
+                mColorCodeGate.passes(message))
         {
             processLinkControl(lcMessage, false);
         }

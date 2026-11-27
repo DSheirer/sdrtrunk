@@ -136,10 +136,6 @@ public class DecodeConfigDMR extends DecodeConfigJMBE
     }
 
     /**
-     * Traffic channel pool size.
-     * @return
-     */
-    /**
      * Color code (CC) filter for the channel.
      */
     @JacksonXmlProperty(isAttribute = false, localName = "color_code_filter")
@@ -158,6 +154,10 @@ public class DecodeConfigDMR extends DecodeConfigJMBE
             new AccessCodeFilter(AccessCodeFilter.Format.DECIMAL);
     }
 
+    /**
+     * Traffic channel pool size.
+     * @return
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
     public int getTrafficChannelPoolSize()
     {
