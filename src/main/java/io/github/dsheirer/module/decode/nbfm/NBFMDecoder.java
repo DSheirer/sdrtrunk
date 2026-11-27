@@ -49,6 +49,7 @@ import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.sample.real.IRealBufferProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,11 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     private final NoiseSquelch mNoiseSquelch;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
+    /**
+     * The source has applied the channel filter (getChannelFilter()) and there's no decimation, so the configured
+     * channel filter isn't applied.  A null filter still means the decoder isn't configured.
+     */
+    private boolean mBasebandFilterSkipped;
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
     private Listener<float[]> mResampledBufferListener;
@@ -338,8 +344,8 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
         float[] decimatedQ = mQDecimationFilter.decimateReal(samples.q());
 
-        float[] filteredI = mIBasebandFilter.filter(decimatedI);
-        float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
+        float[] filteredI = mBasebandFilterSkipped ? decimatedI : mIBasebandFilter.filter(decimatedI);
+        float[] filteredQ = mBasebandFilterSkipped ? decimatedQ : mQBasebandFilter.filter(decimatedQ);
 
         float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
         /**
@@ -421,11 +427,35 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     }
 
     /**
+     * Channel filter that this decoder applies ahead of demodulation for the channel bandwidth (see
+     * ChannelFilterDesigner), for a source that can apply it instead.  At the filter's sample rate the decoder doesn't
+     * decimate.
+     * @param bandwidth of the channel in hertz
+     */
+    public static ChannelSpecification.ChannelFilter getChannelFilter(int bandwidth)
+    {
+        return new ChannelSpecification.ChannelFilter(bandwidth > 12500 ? 50000.0 : 25000.0, bandwidth * .4,
+            bandwidth * .5, sampleRate -> ChannelFilterDesigner.design(sampleRate, bandwidth));
+    }
+
+    /**
      * Updates the decoder to process complex sample buffers at the specified sample rate.
      * @param sampleRate of the incoming complex sample buffer stream.
      */
     private void setSampleRate(double sampleRate)
     {
+        setSampleRate(sampleRate, false);
+    }
+
+    /**
+     * Updates the decoder to process complex sample buffers at the specified sample rate.
+     * @param sampleRate of the incoming complex sample buffer stream.
+     * @param channelFiltered true if the source has already applied this decoder's channel filter
+     * (getChannelFilter()) at this sample rate, so that the channel filter is skipped when there's no decimation.
+     */
+    private void setSampleRate(double sampleRate, boolean channelFiltered)
+    {
+        mBasebandFilterSkipped = false;
         int decimationRate = 0;
         double decimatedSampleRate = sampleRate;
 
@@ -458,6 +488,10 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
 
         mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
         mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
+
+        //Skip the channel filter when the source has applied it (getChannelFilter()) and there's no decimation.  The
+        //noise squelch is normalized to the decoder's own channel filter, which a source's channel filter matches.
+        mBasebandFilterSkipped = channelFiltered && decimationRate == 0;
 
         mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
 
@@ -551,7 +585,7 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
         {
             if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
             {
-                setSampleRate(sourceEvent.getValue().doubleValue());
+                setSampleRate(sourceEvent.getValue().doubleValue(), sourceEvent.isChannelFiltered());
             }
         }
     }

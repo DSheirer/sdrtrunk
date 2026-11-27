@@ -39,8 +39,10 @@ public class DecodeConfigNXDN extends DecodeConfigJMBE
     private boolean mIgnoreDataCalls = false;
     private boolean mIgnoreEncryptedCalls = false;
 
-    private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(12000.0, 6250, 3000.0, 3125.0);
-    private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(24000.0, 12500, 5200.0, 6250.0);
+    private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(12000.0, 6250, 3000.0, 3125.0,
+        NXDNDecoder.getChannelFilter(12000.0, 3000.0, 3125.0));
+    private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(24000.0, 12500, 5200.0, 6250.0,
+        NXDNDecoder.getChannelFilter(24000.0, 5200.0, 6250.0));
     private TransmissionMode mTransmissionMode = TransmissionMode.M4800;
     private List<ChannelFrequency> mChannelMap = new ArrayList<>();
     private Encoding mEncoding = Encoding.UTF8;

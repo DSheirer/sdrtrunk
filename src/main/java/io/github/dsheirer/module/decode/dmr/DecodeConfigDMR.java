@@ -162,7 +162,7 @@ public class DecodeConfigDMR extends DecodeConfigJMBE
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(24000.0, 12500, 6500.0, 7200.0);
+        return new ChannelSpecification(24000.0, 12500, 6500.0, 7200.0, DMRDecoder.getChannelFilter());
     }
 
     /**

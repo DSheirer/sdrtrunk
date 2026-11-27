@@ -37,6 +37,7 @@ import io.github.dsheirer.sample.real.IRealBufferProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,17 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
+    /**
+     * Channel bandwidth of the FM demodulator for the LTR, LTR-Net, MPT1327 and Passport decoders.
+     */
+    public static final double DEFAULT_CHANNEL_BANDWIDTH = 12500.0;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
+    /**
+     * The source has applied the channel filter (getChannelFilter()) and there's no decimation, so the configured
+     * channel filter isn't applied.  A null filter still means the demodulator isn't configured.
+     */
+    private boolean mBasebandFilterSkipped;
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
     private IDemodulator mDemodulator = FmDemodulatorFactory.getFmDemodulator();
@@ -71,6 +81,79 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     public FMDemodulatorModule(double channelBandwidth)
     {
         mChannelBandwidth = channelBandwidth;
+    }
+
+    /**
+     * Channel filter that this demodulator applies ahead of demodulation, for a source that can apply it instead.  The
+     * filter's sample rate is twice the channel bandwidth, the lowest that the demodulator supports, where it doesn't
+     * decimate.  The filter is designed for twice the sample rate (see designChannelFilter()), so its pass and stop
+     * frequencies are half of the design frequencies.
+     * @param channelBandwidth of the demodulator
+     */
+    public static ChannelSpecification.ChannelFilter getChannelFilter(double channelBandwidth)
+    {
+        return new ChannelSpecification.ChannelFilter(channelBandwidth * 2.0, (int)(channelBandwidth * .8) / 2.0,
+            (int)channelBandwidth / 2.0, sampleRate -> designChannelFilter(sampleRate, channelBandwidth));
+    }
+
+    /**
+     * Designs the channel filter for the (decimated) sample rate.
+     * @param sampleRate of the channel at the demodulator
+     * @param channelBandwidth of the demodulator
+     * @return taps
+     */
+    public static float[] designChannelFilter(double sampleRate, double channelBandwidth)
+    {
+        return designChannelFilter(sampleRate, channelBandwidth, sampleRate);
+    }
+
+    /**
+     * Designs the channel filter for the (decimated) sample rate.
+     * @param sampleRate of the channel at the demodulator
+     * @param channelBandwidth of the demodulator
+     * @param inputSampleRate of the channel ahead of decimation, for logging
+     * @return taps
+     */
+    private static float[] designChannelFilter(double sampleRate, double channelBandwidth, double inputSampleRate)
+    {
+        int passBandStop = (int) (channelBandwidth * .8);
+        int stopBandStart = (int) channelBandwidth;
+
+        float[] coefficients = null;
+
+        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+                .sampleRate(sampleRate * 2)
+                .gridDensity(16)
+                .oddLength(true)
+                .passBandCutoff(passBandStop)
+                .passBandAmplitude(1.0)
+                .passBandRipple(0.01)
+                .stopBandStart(stopBandStart)
+                .stopBandAmplitude(0.0)
+                .stopBandRipple(0.005) //Approximately 90 dB attenuation
+                .build();
+
+        try
+        {
+            coefficients = FilterFactory.getTaps(specification);
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Couldn't design demodulator remez filter for sample rate [" + inputSampleRate +
+                    "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
+                    "] - will proceed using sinc (low-pass) filter");
+        }
+
+        if(coefficients == null)
+        {
+            mLog.info("Unable to use remez filter designer for sample rate [" + sampleRate +
+                    "] pass band stop [" + passBandStop +
+                    "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
+            coefficients = FilterFactory.getLowPass(sampleRate, passBandStop, stopBandStart, 60,
+                    WindowType.HAMMING, true);
+        }
+
+        return coefficients;
     }
 
     /**
@@ -133,8 +216,8 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 
         float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
         float[] decimatedQ = mQDecimationFilter.decimateReal(samples.q());
-        float[] filteredI = mIBasebandFilter.filter(decimatedI);
-        float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
+        float[] filteredI = mBasebandFilterSkipped ? decimatedI : mIBasebandFilter.filter(decimatedI);
+        float[] filteredQ = mBasebandFilterSkipped ? decimatedQ : mQBasebandFilter.filter(decimatedQ);
         float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
         mPowerMonitor.process(filteredI, filteredQ);
 
@@ -166,6 +249,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         {
             if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
             {
+                mBasebandFilterSkipped = false;
                 double sampleRate = sourceEvent.getValue().doubleValue();
 
                 int decimationRate = 0;
@@ -196,45 +280,13 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                             "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
                 }
 
-                int passBandStop = (int) (mChannelBandwidth * .8);
-                int stopBandStart = (int) mChannelBandwidth;
-
-                float[] coefficients = null;
-
-                FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                        .sampleRate(decimatedSampleRate * 2)
-                        .gridDensity(16)
-                        .oddLength(true)
-                        .passBandCutoff(passBandStop)
-                        .passBandAmplitude(1.0)
-                        .passBandRipple(0.01)
-                        .stopBandStart(stopBandStart)
-                        .stopBandAmplitude(0.0)
-                        .stopBandRipple(0.005) //Approximately 90 dB attenuation
-                        .build();
-
-                try
-                {
-                    coefficients = FilterFactory.getTaps(specification);
-                }
-                catch(FilterDesignException fde)
-                {
-                    mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate +
-                            "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
-                            "] - will proceed using sinc (low-pass) filter");
-                }
-
-                if(coefficients == null)
-                {
-                    mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate +
-                            "] pass band stop [" + passBandStop +
-                            "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
-                    coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60,
-                            WindowType.HAMMING, true);
-                }
+                float[] coefficients = designChannelFilter(decimatedSampleRate, mChannelBandwidth, sampleRate);
 
                 mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
                 mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
+
+                //Skip the channel filter when the source has applied it (getChannelFilter()) and there's no decimation
+                mBasebandFilterSkipped = sourceEvent.isChannelFiltered() && decimationRate == 0;
 
                 mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
                 mResampler.setListener(resampled -> broadcast(resampled));

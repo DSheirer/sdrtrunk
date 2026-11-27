@@ -66,6 +66,7 @@ public class DecodeConfigP25Phase1 extends DecodeConfigP25
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0);
+        return new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, getModulation() == Modulation.CQPSK ?
+            P25P1DecoderLSM.getChannelFilter() : P25P1DecoderC4FM.getChannelFilter());
     }
 }

@@ -18,6 +18,8 @@
  */
 package io.github.dsheirer.source.tuner.channel;
 
+import java.util.function.DoubleFunction;
+
 /**
  * Channel source specification
  */
@@ -27,6 +29,7 @@ public class ChannelSpecification
     private int mBandwidth;
     private double mPassFrequency;
     private double mStopFrequency;
+    private ChannelFilter mChannelFilter;
 
     /**
      * Constructs a channel specification instance.
@@ -41,6 +44,62 @@ public class ChannelSpecification
         mBandwidth = bandwidth;
         mPassFrequency = passFrequency;
         mStopFrequency = stopFrequency;
+    }
+
+    /**
+     * Constructs a channel specification instance with a decoder channel filter.
+     * @param minimumSampleRate requested for the channel
+     * @param bandwidth of the channel
+     * @param passFrequency for the pass band of the channel
+     * @param stopFrequency for the stop band of the channel
+     * @param channelFilter that the decoder applies ahead of demodulation, which a source may apply instead
+     */
+    public ChannelSpecification(double minimumSampleRate, int bandwidth, double passFrequency, double stopFrequency,
+                                ChannelFilter channelFilter)
+    {
+        this(minimumSampleRate, bandwidth, passFrequency, stopFrequency);
+        mChannelFilter = channelFilter;
+    }
+
+    /**
+     * Low-pass channel filter that the decoder applies to the complex samples ahead of demodulation, when the decoder
+     * receives the channel at the filter's sample rate.  A tuner channel source that applies this filter itself (at
+     * least as well) and delivers the channel at a sample rate that the decoder uses without decimation signals it
+     * with SourceEvent.isChannelFiltered() so that the decoder can skip its own filter.
+     * @return filter or null if the decoder doesn't support a pre-filtered channel
+     */
+    public ChannelFilter getChannelFilter()
+    {
+        return mChannelFilter;
+    }
+
+    /**
+     * Indicates if this specification has a decoder channel filter.
+     */
+    public boolean hasChannelFilter()
+    {
+        return mChannelFilter != null;
+    }
+
+    /**
+     * Decoder channel filter.
+     * @param sampleRate a sample rate at which the decoder doesn't decimate, and at which a source applies the filter
+     * @param passFrequency end of the pass band in hertz
+     * @param stopFrequency start of the stop band in hertz
+     * @param design of the decoder's own filter taps for a sample rate, exactly as the decoder designs them, so that a
+     * source can reproduce the decoder's filter response (the decoder's demodulator, symbol recovery and squelch are
+     * tuned to it) and may add further stop band attenuation.
+     */
+    public record ChannelFilter(double sampleRate, double passFrequency, double stopFrequency,
+                                DoubleFunction<float[]> design)
+    {
+        /**
+         * Decoder's own filter taps for the sample rate.
+         */
+        public float[] getTaps(double sampleRate)
+        {
+            return design.apply(sampleRate);
+        }
     }
 
     /**
@@ -83,6 +142,11 @@ public class ChannelSpecification
         sb.append(" bandwidth: ").append(mBandwidth);
         sb.append(" pass: ").append(mPassFrequency);
         sb.append(" stop: ").append(mStopFrequency);
+
+        if(mChannelFilter != null)
+        {
+            sb.append(" channel filter: ").append(mChannelFilter);
+        }
         return sb.toString();
     }
 }
