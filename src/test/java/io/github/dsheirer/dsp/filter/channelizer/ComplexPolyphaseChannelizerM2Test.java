@@ -19,8 +19,12 @@
 
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.dsp.fft.MixedRadixComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFTFactory;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.vector.calibrate.CalibrationType;
+import io.github.dsheirer.vector.calibrate.Implementation;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -97,6 +101,28 @@ public class ComplexPolyphaseChannelizerM2Test
     @Test
     void slidingWindowMatchesShiftingReference() throws Exception
     {
+        CalibrationManager manager = CalibrationManager.getInstance();
+
+        for(Implementation implementation : new Implementation[]{Implementation.SCALAR,
+            Implementation.VECTOR_SIMD_PREFERRED})
+        {
+            try
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, implementation);
+                slidingWindowMatchesShiftingReference(implementation);
+            }
+            finally
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, null);
+            }
+        }
+    }
+
+    /**
+     * Runs the sliding window test with the channelizer's IFFT using the implementation.
+     */
+    private static void slidingWindowMatchesShiftingReference(Implementation implementation) throws Exception
+    {
         Random rng = new Random(0xC0FFEEL);
 
         for(int channelCount : new int[]{2, 8, 96, 100, 400})
@@ -142,11 +168,13 @@ public class ComplexPolyphaseChannelizerM2Test
             channelizer.stop();
             assertEquals(batchCount, batches.size(), "Batches (channelCount=" + channelCount + ")");
 
-            //Use the same IFFT as the channelizer so the comparison remains bit-exact.  Equivalence of this IFFT with
-            //JTransforms is verified separately in MixedRadixComplexFFTTest.
-            MixedRadixComplexFFT fft = new MixedRadixComplexFFT(channelCount);
+            //Use the same IFFT implementation and batch transform as the channelizer so the comparison remains
+            //bit-exact.  Equivalence of the IFFT with a reference DFT and JTransforms is verified separately in
+            //ComplexFFTTest and MixedRadixComplexFFTTest.
+            ComplexFFT fft = ComplexFFTFactory.getComplexFFT(implementation, channelCount);
             int blockLength = channelCount * 2;
             boolean topBlock = TAPS_PER_CHANNEL % 2 == 0;
+            float[] expectedBatch = new float[blocksPerBatch * blockLength];
 
             for(int block = 0; block < batchCount * blocksPerBatch; block++)
             {
@@ -154,11 +182,21 @@ public class ComplexPolyphaseChannelizerM2Test
                 float[] expected = harness.processFused(topBlock);
                 topBlock = !topBlock;
                 harness.shift(channelCount);
-                fft.inverse(expected, true);
+                System.arraycopy(expected, 0, expectedBatch, (block % blocksPerBatch) * blockLength, blockLength);
 
-                float[] batch = batches.get(block / blocksPerBatch);
-                int offset = (block % blocksPerBatch) * blockLength;
-                assertBitIdentical(expected, Arrays.copyOfRange(batch, offset, offset + blockLength), channelCount, 0, block);
+                if(block % blocksPerBatch == blocksPerBatch - 1)
+                {
+                    fft.inverse(expectedBatch, 0, blocksPerBatch, true);
+                    float[] batch = batches.get(block / blocksPerBatch);
+
+                    for(int x = 0; x < blocksPerBatch; x++)
+                    {
+                        int offset = x * blockLength;
+                        assertBitIdentical(Arrays.copyOfRange(expectedBatch, offset, offset + blockLength),
+                            Arrays.copyOfRange(batch, offset, offset + blockLength), channelCount, 0,
+                            block - blocksPerBatch + 1 + x);
+                    }
+                }
             }
         }
     }

@@ -21,6 +21,9 @@ package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.ComplexSamplesNativeBufferAdapter;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.vector.calibrate.CalibrationType;
+import io.github.dsheirer.vector.calibrate.Implementation;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
@@ -110,8 +113,35 @@ public class TunerNoiseFloorEstimatorTest
     /**
      * Test: noise density matches the injected noise at several tuner sample rates.
      */
+    /**
+     * Runs the test with the estimator's FFT using each implementation, independent of this computer's calibration.
+     */
+    private static void forEachImplementation(Runnable test)
+    {
+        CalibrationManager manager = CalibrationManager.getInstance();
+
+        for(Implementation implementation: new Implementation[]{Implementation.SCALAR,
+            Implementation.VECTOR_SIMD_PREFERRED})
+        {
+            try
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, implementation);
+                test.run();
+            }
+            finally
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, null);
+            }
+        }
+    }
+
     @Test
     void noiseDensity()
+    {
+        forEachImplementation(TunerNoiseFloorEstimatorTest::noiseDensityTest);
+    }
+
+    private static void noiseDensityTest()
     {
         for(double sampleRate: new double[]{2_400_000.0, 10_000_000.0, 6_000_000.0, 250_000.0})
         {
@@ -140,6 +170,11 @@ public class TunerNoiseFloorEstimatorTest
      */
     @Test
     void channelNearBandEdge()
+    {
+        forEachImplementation(TunerNoiseFloorEstimatorTest::channelNearBandEdgeTest);
+    }
+
+    private static void channelNearBandEdgeTest()
     {
         for(double sampleRate: new double[]{2_400_000.0, 10_000_000.0})
         {

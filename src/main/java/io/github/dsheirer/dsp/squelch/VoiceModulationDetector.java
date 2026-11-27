@@ -18,7 +18,7 @@
  */
 package io.github.dsheirer.dsp.squelch;
 
-import org.jtransforms.fft.FloatFFT_1D;
+import io.github.dsheirer.dsp.fft.RealFFT;
 
 /**
  * Detects voice modulation on the envelope of a steady AM carrier.  The noise on a carrier's envelope is spectrally flat
@@ -38,7 +38,7 @@ public class VoiceModulationDetector
     private static final double DETECTION_THRESHOLD_DB = 5.0;
 
     private final double mBandwidth;
-    private FloatFFT_1D mFFT;
+    private RealFFT mFFT;
     private float[] mEnvelope;
     private float[] mWindow;
     private int mLowStartBin;
@@ -66,8 +66,8 @@ public class VoiceModulationDetector
      */
     public final void configure(double sampleRate, int analysisSamples)
     {
-        int length = Integer.highestOneBit(analysisSamples);
-        mFFT = new FloatFFT_1D(length);
+        int length = Math.max(2, Integer.highestOneBit(analysisSamples));
+        mFFT = new RealFFT(length);
         mEnvelope = new float[length];
         mWindow = new float[length];
 
@@ -133,7 +133,7 @@ public class VoiceModulationDetector
             mEnvelope[x] = (mEnvelope[x] - mean) * mWindow[x];
         }
 
-        mFFT.realForward(mEnvelope);
+        mFFT.forward(mEnvelope);
         double low = getBandPower(mLowStartBin, mLowStopBin);
         double high = getBandPower(mHighStartBin, mHighStopBin);
         return high > 0.0 && 10.0 * Math.log10(low / high) >= DETECTION_THRESHOLD_DB;
