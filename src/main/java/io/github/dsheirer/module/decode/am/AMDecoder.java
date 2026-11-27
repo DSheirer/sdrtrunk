@@ -38,6 +38,7 @@ import io.github.dsheirer.sample.real.IRealBufferProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,11 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
+    /**
+     * The source has applied the channel filter (getChannelFilter()) and there's no decimation, so the configured
+     * channel filter isn't applied.  A null filter still means the decoder isn't configured.
+     */
+    private boolean mBasebandFilterSkipped;
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
     private final ISquelchingDemodulator mDemodulator;
@@ -79,6 +85,44 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
     public DecoderType getDecoderType()
     {
         return DecoderType.AM;
+    }
+
+    /**
+     * Decimation that this decoder applies to a channel at the sample rate.
+     * @param sampleRate of the channel
+     * @param channelBandwidth of the decoder
+     * @return decimation, or 0 for none
+     */
+    public static int getDecimation(double sampleRate, double channelBandwidth)
+    {
+        int decimationRate = 0;
+
+        if(sampleRate / 2 >= (channelBandwidth * 2))
+        {
+            decimationRate = 2;
+
+            while(sampleRate / decimationRate / 2 >= (channelBandwidth * 2))
+            {
+                decimationRate *= 2;
+            }
+        }
+
+        return decimationRate;
+    }
+
+    /**
+     * Channel filter that this decoder applies ahead of demodulation for the channel bandwidth (see
+     * ChannelFilterDesigner), for a source that can apply it instead.  The filter's sample rate is the rate that the
+     * decoder decimates the minimum sample rate to, at which the decoder doesn't decimate.
+     * @param channelBandwidth of the decoder
+     * @param minimumSampleRate of the channel specification
+     */
+    public static ChannelSpecification.ChannelFilter getChannelFilter(double channelBandwidth, double minimumSampleRate)
+    {
+        int decimation = getDecimation(minimumSampleRate, channelBandwidth);
+        double sampleRate = decimation > 0 ? minimumSampleRate / decimation : minimumSampleRate;
+        return new ChannelSpecification.ChannelFilter(sampleRate, (int)(channelBandwidth * .4),
+            (int)(channelBandwidth * .5), rate -> ChannelFilterDesigner.design(rate, channelBandwidth));
     }
 
     /**
@@ -164,8 +208,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
         float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
         float[] decimatedQ = mQDecimationFilter.decimateReal(samples.q());
 
-        float[] filteredI = mIBasebandFilter.filter(decimatedI);
-        float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
+        float[] filteredI = mBasebandFilterSkipped ? decimatedI : mIBasebandFilter.filter(decimatedI);
+        float[] filteredQ = mBasebandFilterSkipped ? decimatedQ : mQBasebandFilter.filter(decimatedQ);
 
         float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
 
@@ -329,6 +373,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
                     mDemodulator.receive(sourceEvent);
                     break;
                 case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                    mBasebandFilterSkipped = false;
+
                     if(mIBasebandFilter != null)
                     {
                         mIBasebandFilter = null;
@@ -336,19 +382,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
                     }
 
                     double sampleRate = sourceEvent.getValue().doubleValue();
-
-                    int decimationRate = 0;
+                    int decimationRate = getDecimation(sampleRate, mChannelBandwidth);
                     double decimatedSampleRate = sampleRate;
-
-                    if(sampleRate / 2 >= (mChannelBandwidth * 2))
-                    {
-                        decimationRate = 2;
-
-                        while(sampleRate / decimationRate / 2 >= (mChannelBandwidth * 2))
-                        {
-                            decimationRate *= 2;
-                        }
-                    }
 
                     if(decimationRate > 0)
                     {
@@ -372,6 +407,10 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
 
                     mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
                     mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
+
+                    //Skip the channel filter when the source has applied it (getChannelFilter()) and there's no
+                    //decimation
+                    mBasebandFilterSkipped = sourceEvent.isChannelFiltered() && decimationRate == 0;
 
                     mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
                     mResampler.setListener(resampled -> broadcast(resampled));

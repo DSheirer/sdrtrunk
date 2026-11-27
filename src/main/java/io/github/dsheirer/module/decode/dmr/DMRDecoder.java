@@ -46,6 +46,7 @@ import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import java.io.File;
 import java.io.IOException;
@@ -86,12 +87,18 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     private static final int RECEIVE_FILTER_SYMBOL_SPAN = 12;
     private static final double BASEBAND_FILTER_PASS_BAND = 5100.0; //Hertz
     private static final double BASEBAND_FILTER_STOP_BAND = 6500.0; //Hertz
+    private static final double CHANNEL_FILTER_SAMPLE_RATE = 25000.0; //Hertz
     private IDemodulator mDemodulator;
     private final DMRMessageFramer mMessageFramer;
     private final DMRSymbolProcessor mSymbolProcessor;
     private final DMRMessageProcessor mMessageProcessor;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
+    /**
+     * The source has applied the baseband filter (getChannelFilter()) and there's no decimation, so the configured
+     * baseband filter isn't applied.  A null filter still means the decoder isn't configured.
+     */
+    private boolean mBasebandFilterSkipped;
     private IRealDecimationFilter mDecimationFilterI;
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mReceiveFilter;
@@ -122,11 +129,36 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     }
 
     /**
+     * Channel filter that this decoder applies ahead of demodulation, for a source that can apply it instead.  At the
+     * filter's sample rate the decoder doesn't decimate.  The taps are designed at the sample rate as a float, as the
+     * decoder designs them.
+     */
+    public static ChannelSpecification.ChannelFilter getChannelFilter()
+    {
+        return new ChannelSpecification.ChannelFilter(CHANNEL_FILTER_SAMPLE_RATE, BASEBAND_FILTER_PASS_BAND,
+            BASEBAND_FILTER_STOP_BAND, sampleRate -> FilterFactory.getRemezLowPass((float)sampleRate,
+            BASEBAND_FILTER_PASS_BAND, BASEBAND_FILTER_STOP_BAND));
+    }
+
+    /**
      * Sets the sample rate and configures internal decoder components.
      * @param sampleRate of the channel to decode
      */
     public void setSampleRate(double sampleRate)
     {
+        setSampleRate(sampleRate, false);
+    }
+
+    /**
+     * Sets the sample rate and configures internal decoder components.
+     * @param sampleRate of the channel to decode
+     * @param channelFiltered true if the source has already applied this decoder's channel filter
+     * (getChannelFilter()) at this sample rate, so that the baseband filter is skipped when there's no decimation.
+     */
+    public void setSampleRate(double sampleRate, boolean channelFiltered)
+    {
+        mBasebandFilterSkipped = false;
+
         float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
 
         if(samplesPerSymbol <= 4.0f)
@@ -160,6 +192,9 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
 
+        //Skip the baseband filter when the source has applied it (getChannelFilter()) and there's no decimation
+        mBasebandFilterSkipped = channelFiltered && decimation == 1;
+
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
         mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
         mMessageFramer.setListener(mMessageProcessor);
@@ -180,8 +215,11 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
         float[] i = mDecimationFilterI.decimateReal(samples.i());
         float[] q = mDecimationFilterQ.decimateReal(samples.q());
 
-        i = mBasebandFilterI.filter(i);
-        q = mBasebandFilterQ.filter(q);
+        if(!mBasebandFilterSkipped)
+        {
+            i = mBasebandFilterI.filter(i);
+            q = mBasebandFilterQ.filter(q);
+        }
 
         float[] demodulated = mDemodulator.demodulate(i, q);
         demodulated = mReceiveFilter.filter(demodulated);
@@ -263,7 +301,7 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
                     //(ie P25 voice).
                     break;
                 case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                    setSampleRate(sourceEvent.getValue().doubleValue());
+                    setSampleRate(sourceEvent.getValue().doubleValue(), sourceEvent.isChannelFiltered());
                     break;
             }
         }

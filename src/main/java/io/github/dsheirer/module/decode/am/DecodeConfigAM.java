@@ -60,17 +60,23 @@ public class DecodeConfigAM extends DecodeConfigAnalog implements ISquelchConfig
         switch(getBandwidth())
         {
             case BW_3_0:
-                return new ChannelSpecification(25000.0, 3000, 1500.0, 1700.0);
+                return new ChannelSpecification(25000.0, 3000, 1500.0, 1700.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 25000.0));
             case BW_5_0:
-                return new ChannelSpecification(25000.0, 5000, 2500.0, 2700.0);
+                return new ChannelSpecification(25000.0, 5000, 2500.0, 2700.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 25000.0));
             case BW_6_0:
-                return new ChannelSpecification(25000.0, 6000, 3000.0, 3200.0);
+                return new ChannelSpecification(25000.0, 6000, 3000.0, 3200.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 25000.0));
             case BW_8_33:
-                return new ChannelSpecification(25000.0, 10000, 5000.0, 7000.0);
+                return new ChannelSpecification(25000.0, 10000, 5000.0, 7000.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 25000.0));
             case BW_15_0:
-                return new ChannelSpecification(30000.0, 15000, 7500.0, 9500.0);
+                return new ChannelSpecification(30000.0, 15000, 7500.0, 9500.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 30000.0));
             case BW_25_0:
-                return new ChannelSpecification(50000.0, 25000, 12500.0, 14500.0);
+                return new ChannelSpecification(50000.0, 25000, 12500.0, 14500.0,
+                    AMDecoder.getChannelFilter(getBandwidth().getValue(), 50000.0));
             default:
                 throw new IllegalArgumentException("Unrecognized AM bandwidth value: " + getBandwidth());
         }
