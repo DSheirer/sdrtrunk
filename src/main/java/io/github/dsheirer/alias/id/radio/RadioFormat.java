@@ -35,10 +35,14 @@ public enum RadioFormat
         "<html>APCO25 valid range is 0 to 16,777,215"),
     DMR("********", 0, 0xFFFFFF, "0 to 16,777,215",
         "<html>DMR unit id valid range is 0 to 16,777,215"),
+    FLEX("**********", 1, Integer.MAX_VALUE, "1 to 2,147,483,647",
+        "<html>FLEX capcode valid range is 1 to 2,147,483,647", Labels.CAPCODE),
     MDC1200("*****", 1, 0xFFFF, "1 to 65,535", "MDC-1200 valid range is 1 to 65,535"),
     NXDN("*****", 1, 0xFFFF, "1 to 65,535", "NXDN valid range is 1 to 65,535"),
     PASSPORT("********", 0, 0x7FFFFF, "0 to 8,388,607",
         "<html>PASSPORT valid range is 0 to 8,388,607"),
+    POCSAG("*******", 0, 0x1FFFFF, "0 to 2,097,151",
+        "<html>POCSAG capcode valid range is 0 to 2,097,151", Labels.CAPCODE),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
         "<html>Unknown protocol valid value range is 1-16,777,215");
 
@@ -47,14 +51,38 @@ public enum RadioFormat
     private int mMaximumValue;
     private String mValidRangeDescription;
     private String mValidRangeHelpText;
+    private String mIdentifierLabel;
 
     RadioFormat(String mask, int minimumValue, int maximumValue, String validRangeDescription, String validRangeHelpText)
     {
+        this(mask, minimumValue, maximumValue, validRangeDescription, validRangeHelpText, Labels.RADIO_ID);
+    }
+
+    RadioFormat(String mask, int minimumValue, int maximumValue, String validRangeDescription, String validRangeHelpText,
+                String identifierLabel)
+    {
+        mIdentifierLabel = identifierLabel;
         mMask = mask;
         mMinimumValue = minimumValue;
         mMaximumValue = maximumValue;
         mValidRangeDescription = validRangeDescription;
         mValidRangeHelpText = validRangeHelpText;
+    }
+
+    /**
+     * Label for the radio identifier for this protocol, for example 'Radio ID', or 'Capcode' for pagers.
+     */
+    public String getIdentifierLabel()
+    {
+        return mIdentifierLabel;
+    }
+
+    /**
+     * Label for the radio identifier for the protocol, for example 'Radio ID', or 'Capcode' for pagers.
+     */
+    public static String getIdentifierLabel(Protocol protocol)
+    {
+        return get(protocol).getIdentifierLabel();
     }
 
     public String getMask()
@@ -115,14 +143,27 @@ public enum RadioFormat
                 return APCO25;
             case DMR:
                 return DMR;
+            case FLEX:
+                return FLEX;
             case MDC1200:
                 return MDC1200;
             case NXDN:
                 return NXDN;
             case PASSPORT:
                 return PASSPORT;
+            case POCSAG:
+                return POCSAG;
             default:
                 return UNKNOWN;
         }
+    }
+
+    /**
+     * Identifier labels.  These are in a nested class so that they can be referenced by the enum constructors.
+     */
+    private static class Labels
+    {
+        private static final String RADIO_ID = "Radio ID";
+        private static final String CAPCODE = "Capcode";
     }
 }

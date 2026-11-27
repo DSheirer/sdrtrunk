@@ -33,6 +33,7 @@ import io.github.dsheirer.settings.identifier.talkgroup.FleetsyncTalkgroupFormat
 import io.github.dsheirer.settings.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.PagerCapcodeFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.NXDNTalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
@@ -144,10 +145,12 @@ public class TalkgroupFormatSettings extends AbstractSettings
             case AM:
             case APCO25:
             case DMR:
+            case FLEX:
             case MDC1200:
             case NBFM:
             case NXDN:
             case PASSPORT:
+            case POCSAG:
             case UNKNOWN:
                 return IntegerFormat.DECIMAL;
             default:
@@ -168,10 +171,12 @@ public class TalkgroupFormatSettings extends AbstractSettings
             case AM:
             case APCO25:
             case DMR:
+            case FLEX:
             case MDC1200:
             case NBFM:
             case NXDN:
             case PASSPORT:
+            case POCSAG:
             case UNKNOWN:
                 return IntegerFormat.DECIMAL_HEXADECIMAL;
             default:
@@ -184,8 +189,10 @@ public class TalkgroupFormatSettings extends AbstractSettings
     {
         switch(protocol)
         {
+            case FLEX:
             case MDC1200:
             case PASSPORT:
+            case POCSAG:
                 return false;
             case AM:
             case APCO25:
@@ -374,6 +381,10 @@ public class TalkgroupFormatSettings extends AbstractSettings
             case NXDN:
                 return NXDNTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.NXDN),
                         isTalkgroupFixedWidth(Protocol.NXDN));
+            case FLEX:
+            case POCSAG:
+                return PagerCapcodeFormatter.format(radioIdentifier.getValue(),
+                    getTalkgroupFormat(radioIdentifier.getProtocol()), isTalkgroupFixedWidth(radioIdentifier.getProtocol()));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));

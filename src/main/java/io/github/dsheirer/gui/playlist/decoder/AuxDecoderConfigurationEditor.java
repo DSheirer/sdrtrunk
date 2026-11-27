@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -48,9 +49,16 @@ public class AuxDecoderConfigurationEditor extends Editor<AuxDecodeConfiguration
 
     private List<AuxDecoderControl> mControls = new ArrayList<>();
 
+    /**
+     * Constructs an instance
+     * @param types of auxiliary decoders to list, which are shown in alphabetical order by display name.
+     */
     public AuxDecoderConfigurationEditor(Collection<DecoderType> types)
     {
-        for(DecoderType type: types)
+        List<DecoderType> sorted = new ArrayList<>(types);
+        sorted.sort(Comparator.comparing(DecoderType::getDisplayString, String.CASE_INSENSITIVE_ORDER));
+
+        for(DecoderType type: sorted)
         {
             AuxDecoderControl control = new AuxDecoderControl(type);
             mControls.add(control);

@@ -43,6 +43,7 @@ import io.github.dsheirer.alias.id.radio.NXDNTypeDRadio;
 import io.github.dsheirer.alias.id.radio.NXDNTypeDRadioRange;
 import io.github.dsheirer.alias.id.radio.P25FullyQualifiedRadio;
 import io.github.dsheirer.alias.id.radio.Radio;
+import io.github.dsheirer.alias.id.radio.RadioFormat;
 import io.github.dsheirer.alias.id.radio.RadioFormatter;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
@@ -754,6 +755,10 @@ public class AliasItemEditor extends Editor<Alias>
             dmrMenu.getItems().add(new AddRadioIdRangeItem(Protocol.DMR));
             dmrMenu.getItems().add(new AddTonesItem("AMBE Audio Tones"));
 
+            Menu flexMenu = new ProtocolMenu(Protocol.FLEX);
+            flexMenu.getItems().add(new AddRadioIdItem(Protocol.FLEX));
+            flexMenu.getItems().add(new AddRadioIdRangeItem(Protocol.FLEX));
+
             Menu fleetsyncMenu = new ProtocolMenu(Protocol.FLEETSYNC);
             fleetsyncMenu.getItems().add(new AddTalkgroupItem(Protocol.FLEETSYNC));
             fleetsyncMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.FLEETSYNC));
@@ -794,14 +799,18 @@ public class AliasItemEditor extends Editor<Alias>
             passportMenu.getItems().add(new AddRadioIdItem(Protocol.PASSPORT));
             passportMenu.getItems().add(new AddRadioIdRangeItem(Protocol.PASSPORT));
 
+            Menu pocsagMenu = new ProtocolMenu(Protocol.POCSAG);
+            pocsagMenu.getItems().add(new AddRadioIdItem(Protocol.POCSAG));
+            pocsagMenu.getItems().add(new AddRadioIdRangeItem(Protocol.POCSAG));
+
             Menu taitMenu = new ProtocolMenu(Protocol.TAIT1200);
             taitMenu.setDisable(true);  //tbd
 
             Menu lojackMenu = new ProtocolMenu(Protocol.LOJACK);
             lojackMenu.getItems().add(new AddLojackItem());
 
-            mAddIdentifierButton.getItems().addAll(amMenu, p25Menu, dmrMenu, fleetsyncMenu, ltrMenu, mdcMenu, mptMenu,
-                nbfmMenu, nxdnMenu, passportMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
+            mAddIdentifierButton.getItems().addAll(amMenu, p25Menu, dmrMenu, fleetsyncMenu, flexMenu, ltrMenu, mdcMenu,
+                mptMenu, nbfmMenu, nxdnMenu, passportMenu, pocsagMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
         }
 
         return mAddIdentifierButton;
@@ -1415,7 +1424,7 @@ public class AliasItemEditor extends Editor<Alias>
 
         public AddRadioIdItem(Protocol protocol)
         {
-            super("Radio ID");
+            super(RadioFormat.getIdentifierLabel(protocol));
             mProtocol = protocol;
             setOnAction(event -> {
                 Radio radioId = new Radio();
@@ -1475,7 +1484,7 @@ public class AliasItemEditor extends Editor<Alias>
 
         public AddRadioIdRangeItem(Protocol protocol)
         {
-            super("Radio ID Range");
+            super(RadioFormat.getIdentifierLabel(protocol) + " Range");
             mProtocol = protocol;
             setOnAction(event -> {
                 RadioRange radioRange = new RadioRange();
