@@ -74,6 +74,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
     private ToggleSwitch mIgnoreEncryptedCallsButton;
+    private ToggleSwitch mIgnoreUnaliasedTalkgroupsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private SegmentedButton mModulationSegmentedButton;
     private ToggleButton mC4FMToggleButton;
@@ -172,6 +173,15 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             Label modulationHelpLabel = new Label("C4FM: repeaters and non-simulcast trunked systems.  LSM: simulcast trunked systems.");
             GridPane.setConstraints(modulationHelpLabel, 0, row, 6, 1);
             gridPane.getChildren().add(modulationHelpLabel);
+
+            GridPane.setConstraints(getIgnoreUnaliasedTalkgroupsButton(), 6, row);
+            gridPane.getChildren().add(getIgnoreUnaliasedTalkgroupsButton());
+
+            Label ignoreUnaliasedLabel = new Label("Ignore Unaliased Talkgroups");
+            ignoreUnaliasedLabel.setLabelFor(getIgnoreUnaliasedTalkgroupsButton());
+            GridPane.setHalignment(ignoreUnaliasedLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreUnaliasedLabel, 7, row);
+            gridPane.getChildren().add(ignoreUnaliasedLabel);
 
             row++;
 
@@ -368,6 +378,21 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         return mIgnoreEncryptedCallsButton;
     }
 
+    private ToggleSwitch getIgnoreUnaliasedTalkgroupsButton()
+    {
+        if(mIgnoreUnaliasedTalkgroupsButton == null)
+        {
+            mIgnoreUnaliasedTalkgroupsButton = new AccessibleToggleSwitch();
+            mIgnoreUnaliasedTalkgroupsButton.setDisable(true);
+            mIgnoreUnaliasedTalkgroupsButton.setTooltip(new Tooltip("Don't tune a traffic channel for a talkgroup " +
+                "that has no alias in this channel's alias list.  Ignored calls still appear in the channel events."));
+            mIgnoreUnaliasedTalkgroupsButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreUnaliasedTalkgroupsButton;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -424,12 +449,14 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     {
         getIgnoreDataCallsButton().setDisable(config == null);
         getIgnoreEncryptedCallsButton().setDisable(config == null);
+        getIgnoreUnaliasedTalkgroupsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
 
         if(config instanceof DecodeConfigP25Phase1 decodeConfig)
         {
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getIgnoreEncryptedCallsButton().setSelected(decodeConfig.getIgnoreEncryptedCalls());
+            getIgnoreUnaliasedTalkgroupsButton().setSelected(decodeConfig.getIgnoreUnaliasedTalkgroups());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             if(decodeConfig.getModulation() == Modulation.C4FM)
             {
@@ -455,6 +482,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         {
             getIgnoreDataCallsButton().setSelected(false);
             getIgnoreEncryptedCallsButton().setSelected(false);
+            getIgnoreUnaliasedTalkgroupsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getJmbeAGCButton().setDisable(true);
             getJmbeNoiseGainSlider().setDisable(true);
@@ -483,6 +511,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
 
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setIgnoreEncryptedCalls(getIgnoreEncryptedCallsButton().isSelected());
+        config.setIgnoreUnaliasedTalkgroups(getIgnoreUnaliasedTalkgroupsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setModulation(getC4FMToggleButton().isSelected() ? Modulation.C4FM : Modulation.CQPSK);
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());

@@ -72,6 +72,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     private IntegerTextField mNacTextField;
     private ToggleSwitch mIgnoreDataCallsButton;
     private ToggleSwitch mIgnoreEncryptedCallsButton;
+    private ToggleSwitch mIgnoreUnaliasedTalkgroupsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private ToggleSwitch mJmbeAGCButton;
     private Slider mJmbeToneGainSlider;
@@ -151,6 +152,15 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setHalignment(ignoreEncryptedLabel, HPos.LEFT);
             GridPane.setConstraints(ignoreEncryptedLabel, 5, row);
             gridPane.getChildren().add(ignoreEncryptedLabel);
+
+            GridPane.setConstraints(getIgnoreUnaliasedTalkgroupsButton(), 6, row);
+            gridPane.getChildren().add(getIgnoreUnaliasedTalkgroupsButton());
+
+            Label ignoreUnaliasedLabel = new Label("Ignore Unaliased Talkgroups");
+            ignoreUnaliasedLabel.setLabelFor(getIgnoreUnaliasedTalkgroupsButton());
+            GridPane.setHalignment(ignoreUnaliasedLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreUnaliasedLabel, 7, row);
+            gridPane.getChildren().add(ignoreUnaliasedLabel);
 
             Label wacnLabel = new Label("WACN");
             wacnLabel.setLabelFor(getWacnTextField());
@@ -325,6 +335,21 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         return mIgnoreEncryptedCallsButton;
     }
 
+    private ToggleSwitch getIgnoreUnaliasedTalkgroupsButton()
+    {
+        if(mIgnoreUnaliasedTalkgroupsButton == null)
+        {
+            mIgnoreUnaliasedTalkgroupsButton = new AccessibleToggleSwitch();
+            mIgnoreUnaliasedTalkgroupsButton.setDisable(true);
+            mIgnoreUnaliasedTalkgroupsButton.setTooltip(new Tooltip("Don't tune a traffic channel for a talkgroup " +
+                "that has no alias in this channel's alias list.  Ignored calls still appear in the channel events."));
+            mIgnoreUnaliasedTalkgroupsButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreUnaliasedTalkgroupsButton;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -444,6 +469,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getIgnoreEncryptedCallsButton().setDisable(false);
             getIgnoreEncryptedCallsButton().setSelected(decodeConfig.getIgnoreEncryptedCalls());
+            getIgnoreUnaliasedTalkgroupsButton().setDisable(false);
+            getIgnoreUnaliasedTalkgroupsButton().setSelected(decodeConfig.getIgnoreUnaliasedTalkgroups());
             getTrafficChannelPoolSizeSpinner().setDisable(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
             getJmbeAGCButton().setSelected(decodeConfig.isAGC());
@@ -462,6 +489,8 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getIgnoreDataCallsButton().setDisable(true);
             getIgnoreEncryptedCallsButton().setDisable(true);
             getIgnoreEncryptedCallsButton().setSelected(false);
+            getIgnoreUnaliasedTalkgroupsButton().setDisable(true);
+            getIgnoreUnaliasedTalkgroupsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().setDisable(true);
             getJmbeAGCButton().setDisable(true);
             getJmbeNoiseGainSlider().setDisable(true);
@@ -495,6 +524,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setIgnoreEncryptedCalls(getIgnoreEncryptedCallsButton().isSelected());
+        config.setIgnoreUnaliasedTalkgroups(getIgnoreUnaliasedTalkgroupsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setAGC(getJmbeAGCButton().selectedProperty().getValue());
         config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
