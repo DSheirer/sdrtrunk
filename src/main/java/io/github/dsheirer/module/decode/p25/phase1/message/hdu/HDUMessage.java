@@ -114,6 +114,8 @@ public class HDUMessage extends P25P1Message
      */
     private void extractHeaderData()
     {
+        //Golay(18,6,8) error detection and correction.  An uncorrectable word is left as received rather than replaced
+        //with a miscorrection, and the Reed-Solomon decode below corrects its hex bits or marks the message invalid.
         for(int index : GOLAY_WORD_STARTS)
         {
             Golay18.checkAndCorrect(getMessage(), index);

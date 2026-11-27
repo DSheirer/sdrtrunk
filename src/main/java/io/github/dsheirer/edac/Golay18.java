@@ -26,31 +26,58 @@ import org.slf4j.LoggerFactory;
  ******************************************************************************/
 
 /**
- * Golay 18/6/8 decoder.  Uses the Golay24 edac class to perform edac on Golay
- * 18 messages by treating the Golay 18 message as a Golay 24 message with the
- * left-most 6 bits set to zero.
+ * Golay(18,6,8) shortened code decoder (TIA-102.BAAA-B 4.7).  The code is the (24,12,8) extended Golay code with the
+ * left-most 6 bits deleted, so the word is decoded as a Golay(24,12) word with those 6 bits set to zero.
  */
 public class Golay18
 {
     private final static Logger mLog = LoggerFactory.getLogger(Golay18.class);
 
     /**
-     * Performs error detection and correction.
+     * Performs error detection and correction of the 18-bit word that starts at the start index.  Corrects up to three
+     * bit errors and detects four.  An uncorrectable word is left unchanged.
+     *
+     * @param message containing the word
+     * @param startIndex of the 18-bit word
+     * @return 0 = no errors, 1 = corrected, 2 = uncorrectable
      */
-    public static void checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
+    public static int checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
     {
         int value = message.getInt(startIndex, startIndex + 17);
 
-        CorrectedBinaryMessage temp = new CorrectedBinaryMessage(24);
-        temp.load(6, 18, value);
+        CorrectedBinaryMessage word = new CorrectedBinaryMessage(24);
+        word.load(6, 18, value);
 
-        int errorsCorrected = Golay24.checkAndCorrect(temp, 0);
+        //The 6 deleted bits are zero in every codeword, so a correction that sets any of them is a miscorrection.
+        if(Golay24.checkAndCorrect(word, 0) == 2 || word.getInt(0, 5) != 0)
+        {
+            return 2;
+        }
 
-        int correctedValue = temp.getInt(6, 23);
+        int corrected = word.getInt(6, 23);
+        int bitsCorrected = Integer.bitCount(value ^ corrected);
 
-        message.load(startIndex, 18, correctedValue);
+        //Every codeword has even weight.  Golay24 doesn't check the overall parity bit after it corrects the other
+        //bits, so odd weight here means the parity bit is also in error.  Correct it, unless that is a fourth error,
+        //which the (18,6,8) code detects but can't correct.
+        if(Integer.bitCount(corrected) % 2 != 0)
+        {
+            if(bitsCorrected >= 3)
+            {
+                return 2;
+            }
 
-        int correctedBitCount = Integer.bitCount(value ^ correctedValue);
-        message.incrementCorrectedBitCount(correctedBitCount);
+            corrected ^= 1;
+            bitsCorrected++;
+        }
+
+        if(bitsCorrected == 0)
+        {
+            return 0;
+        }
+
+        message.load(startIndex, 18, corrected);
+        message.incrementCorrectedBitCount(bitsCorrected);
+        return 1;
     }
 }
