@@ -34,6 +34,7 @@ public enum CalibrationType
 
     CHANNEL_DFT("Polyphase Channel DFT", 1),
     DMR_SOFT_SYNC_DETECTOR("DMR Soft Sync Detector", 2),
+    FFT_COMPLEX("Complex FFT", 1),
     FILTER_FIR("FIR Filter", 1),
     FILTER_HALF_BAND_REAL_11_TAP("Real Half-Band Decimation Filter - 11 Tap", 1),
     FILTER_HALF_BAND_REAL_15_TAP("Real Half-Band Decimation Filter - 15 Tap", 1),

@@ -24,6 +24,7 @@ import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.settings.calibration.VectorCalibrationSettings;
 import io.github.dsheirer.vector.calibrate.channelizer.ChannelDFTCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
+import io.github.dsheirer.vector.calibrate.fft.ComplexFFTCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
 import io.github.dsheirer.vector.calibrate.filter.RealHalfBandFilterCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainCalibration;
@@ -260,6 +261,7 @@ public class CalibrationManager
             new ComplexOscillatorCalibration(),
             new ComplexMixerCalibration(),
             new DMRSoftSyncCalibration(),
+            new ComplexFFTCalibration(),
             new FirFilterCalibration(),
             new FmDemodulatorCalibration(),
             new NXDNSoftSyncCalibration(),
