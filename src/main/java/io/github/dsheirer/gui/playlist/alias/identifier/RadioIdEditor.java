@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.playlist.alias.identifier;
 
+import io.github.dsheirer.alias.id.radio.RadioFormat;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
@@ -57,6 +58,8 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
      * Constructs an instance
      * @param settings for determining user preferred talkgroup formats
      */
+    private Label mValueLabel;
+
     public RadioIdEditor(Settings settings)
     {
         mSettings = settings;
@@ -70,11 +73,11 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
         GridPane.setConstraints(getProtocolLabel(), 0, 0);
         gridPane.getChildren().add(getProtocolLabel());
 
-        Label valueLabel = new Label("Radio ID");
-        valueLabel.setLabelFor(getRadioIdField());
-        GridPane.setHalignment(valueLabel, HPos.RIGHT);
-        GridPane.setConstraints(valueLabel, 1, 0);
-        gridPane.getChildren().add(valueLabel);
+        mValueLabel = new Label("Radio ID");
+        mValueLabel.setLabelFor(getRadioIdField());
+        GridPane.setHalignment(mValueLabel, HPos.RIGHT);
+        GridPane.setConstraints(mValueLabel, 1, 0);
+        gridPane.getChildren().add(mValueLabel);
 
         GridPane.setConstraints(getRadioIdField(), 2, 0);
         gridPane.getChildren().add(getRadioIdField());
@@ -98,6 +101,7 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
         if(radioId != null)
         {
             getProtocolLabel().setText(radioId.getProtocol().toString());
+            mValueLabel.setText(RadioFormat.getIdentifierLabel(radioId.getProtocol()));
             updateTextFormatter();
         }
         else
@@ -248,6 +252,14 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
                 "Format: 1 - 65535"));
         mRadioDetails.add(new RadioDetail(Protocol.MDC1200, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
                 "Format: 1 - FFFF"));
+        mRadioDetails.add(new RadioDetail(Protocol.FLEX, IntegerFormat.DECIMAL, new IntegerFormatter(1,Integer.MAX_VALUE),
+            "Format: 1 - 2147483647"));
+        mRadioDetails.add(new RadioDetail(Protocol.FLEX, IntegerFormat.HEXADECIMAL, new HexFormatter(1,Integer.MAX_VALUE),
+            "Format: 1 - 7FFFFFFF"));
+        mRadioDetails.add(new RadioDetail(Protocol.POCSAG, IntegerFormat.DECIMAL, new IntegerFormatter(0,0x1FFFFF),
+            "Format: 0 - 2097151"));
+        mRadioDetails.add(new RadioDetail(Protocol.POCSAG, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0x1FFFFF),
+            "Format: 0 - 1FFFFF"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 "Format: 1 - 65,535"));
         mRadioDetails.add(new RadioDetail(Protocol.NXDN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),

@@ -31,9 +31,11 @@ public enum Protocol
     ARS("ARS", "ARS", 0),
     CELLOCATOR("CELLOCATOR", "CELLOCATOR", 0),
     CTCSS("CTCSS", "CTCSS", 0),
+    CW("CW", "CW", 0),
     DCS("DCS", "DCS", 134),
     DMR("DMR", "DMR", 9600),
     FLEETSYNC("Fleetsync", "FLEETSYNC", 1200),
+    FLEX("FLEX", "FLEX", 1600),
     IPV4("IPV4", "IPV4", 0),
     LOJACK("LoJack", "LOJACK", 1200),
     LRRP("LRRP", "LRRP", 0),
@@ -44,6 +46,7 @@ public enum Protocol
     MPT1327("MPT-1327", "MPT1327", 1200),
     NXDN("NXDN", "NXDN", 9600),
     PASSPORT("Passport", "PASSPORT", 300),
+    POCSAG("POCSAG", "POCSAG", 1200),
     TAIT1200("Tait 1200", "TAIT1200", 1200),
     UDP("UDP", "UDP", 0),
     UNKNOWN("Unknown", "UNKNOWN", 0);
@@ -62,7 +65,8 @@ public enum Protocol
     public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(AM, APCO25, DMR, FLEETSYNC, LTR, LTR_NET,
         MPT1327, NBFM, NXDN, PASSPORT);
 
-    public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, DMR, MDC1200, NXDN, PASSPORT);
+    public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, DMR, FLEX, MDC1200, NXDN, PASSPORT,
+        POCSAG);
 
     public static final EnumSet<Protocol> IDENTIFIER_FORMAT_PROTOCOLS = EnumSet.copyOf(TALKGROUP_PROTOCOLS);
 

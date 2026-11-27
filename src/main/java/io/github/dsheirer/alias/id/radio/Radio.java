@@ -94,7 +94,7 @@ public class Radio extends AliasID implements Comparable<Radio>
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Radio ID:").append(TalkgroupFormatter.format(mProtocol, mValue));
+        sb.append(RadioFormat.getIdentifierLabel(mProtocol)).append(":").append(TalkgroupFormatter.format(mProtocol, mValue));
         sb.append(" Protocol:").append((mProtocol));
 
         if(!isValid())

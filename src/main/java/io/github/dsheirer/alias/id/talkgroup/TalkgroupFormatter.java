@@ -21,6 +21,7 @@ package io.github.dsheirer.alias.id.talkgroup;
 
 import io.github.dsheirer.settings.identifier.IntegerFormat;
 import io.github.dsheirer.settings.identifier.talkgroup.MDC1200RadioFormatter;
+import io.github.dsheirer.settings.identifier.talkgroup.PagerCapcodeFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AbstractIntegerFormatter;
 import io.github.dsheirer.settings.identifier.talkgroup.AnalogTalkgroupFormatter;
@@ -62,6 +63,9 @@ public class TalkgroupFormatter
         mFormatterMap.put(Protocol.MPT1327, new MPT1327TalkgroupFormatter());
         mFormatterMap.put(Protocol.NXDN, new NXDNTalkgroupFormatter());
         mFormatterMap.put(Protocol.PASSPORT, new PassportTalkgroupFormatter());
+        PagerCapcodeFormatter capcodeFormatter = new PagerCapcodeFormatter();
+        mFormatterMap.put(Protocol.FLEX, capcodeFormatter);
+        mFormatterMap.put(Protocol.POCSAG, capcodeFormatter);
         mFormatterMap.put(Protocol.UNKNOWN, new UnknownTalkgroupFormatter());
     }
 

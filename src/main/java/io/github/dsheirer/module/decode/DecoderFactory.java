@@ -44,6 +44,9 @@ import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.cw.CWDecoder;
+import io.github.dsheirer.module.decode.cw.CWDecoderState;
+import io.github.dsheirer.module.decode.cw.CWMessageFilter;
 import io.github.dsheirer.module.decode.nbfm.DeemphasisMode;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSDecoder;
 import io.github.dsheirer.module.decode.squelch.dcs.DCSDecoderState;
@@ -92,6 +95,9 @@ import io.github.dsheirer.module.decode.nxdn.NXDNTrafficChannelManager;
 import io.github.dsheirer.module.decode.nxdn.audio.NXDNAudioModule;
 import io.github.dsheirer.module.decode.nxdn.layer3.filter.NXDNMessageFilterSet;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
+import io.github.dsheirer.module.decode.pager.PagerDecoder;
+import io.github.dsheirer.module.decode.pager.PagerDecoderState;
+import io.github.dsheirer.module.decode.pager.PagerMessageFilter;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
@@ -746,6 +752,10 @@ public class DecoderFactory
             {
                 switch(auxDecoder)
                 {
+                    case CW_ID:
+                        modules.add(new CWDecoder());
+                        modules.add(new CWDecoderState());
+                        break;
                     case DCS:
                         modules.add(new DCSDecoder());
                         modules.add(new DCSDecoderState());
@@ -761,6 +771,10 @@ public class DecoderFactory
                     case LJ_1200:
                         modules.add(new LJ1200Decoder());
                         modules.add(new LJ1200DecoderState());
+                        break;
+                    case PAGER:
+                        modules.add(new PagerDecoder());
+                        modules.add(new PagerDecoderState());
                         break;
                     case TAIT_1200:
                         modules.add(new Tait1200Decoder());
@@ -807,6 +821,9 @@ public class DecoderFactory
 
         switch(decoder)
         {
+            case CW_ID:
+                filters.add(new CWMessageFilter());
+                break;
             case DCS:
                 filters.add(new DCSMessageFilter());
                 break;
@@ -839,6 +856,9 @@ public class DecoderFactory
                 break;
             case P25_PHASE2:
                 filters.add(new P25P2MessageFilterSet());
+                break;
+            case PAGER:
+                filters.add(new PagerMessageFilter());
                 break;
             case PASSPORT:
                 filters.add(new PassportMessageFilter());

@@ -115,7 +115,7 @@ public class RadioRange extends AliasID implements Comparable<RadioRange>
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Radio ID Range:").append(RadioFormatter.format(mProtocol, mMinRadio));
+        sb.append(RadioFormat.getIdentifierLabel(mProtocol)).append(" Range:").append(RadioFormatter.format(mProtocol, mMinRadio));
         sb.append(" to ").append(RadioFormatter.format(mProtocol, mMaxRadio));
         sb.append(" Protocol:").append(mProtocol != null ? mProtocol : "unspecified");
 
