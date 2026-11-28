@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.IntField;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.VoiceLinkControlMessage;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,8 +33,11 @@ import java.util.List;
  */
 public class LCUnitToUnitAnswerRequest extends VoiceLinkControlMessage
 {
+    //Service options are in octet 1 for this message, not octet 2 like the other voice link control messages
+    private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_1_BIT_8);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_24);
     private static final IntField SOURCE_ADDRESS = IntField.length24(OCTET_6_BIT_48);
+    private VoiceServiceOptions mServiceOptions;
     private Identifier mTargetAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -56,6 +60,17 @@ public class LCUnitToUnitAnswerRequest extends VoiceLinkControlMessage
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
+    }
+
+    @Override
+    public VoiceServiceOptions getServiceOptions()
+    {
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new VoiceServiceOptions(getInt(SERVICE_OPTIONS));
+        }
+
+        return mServiceOptions;
     }
 
     /**

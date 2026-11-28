@@ -34,7 +34,7 @@ import java.util.List;
  */
 public class LCUnitToUnitVoiceChannelUserExtended extends ExtendedSourceLinkControlWord implements IServiceOptionsProvider
 {
-    private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_1_BIT_8);
+    private static final IntField SERVICE_OPTIONS = IntField.length8(OCTET_2_BIT_16);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_3_BIT_24);
 
     private VoiceServiceOptions mServiceOptions;
