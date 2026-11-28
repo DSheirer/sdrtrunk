@@ -55,6 +55,17 @@ public class CTCSSDetector
      */
     private static final int OPEN_THRESHOLD_COUNT = 2;
     private static final int CLOSE_THRESHOLD_COUNT = 2;
+
+    /**
+     * Fine resolution: a 512 sample block (64 ms) gives a Goertzel resolution of about 15.6 Hz, but adjacent CTCSS
+     * tones are as close as 2.5 - 3.5 Hz apart (e.g. 91.5 / 94.8 / 97.4), so a clean tone produces ~89% of its power in
+     * each neighbor and the strongest-tone decision can flip between neighbors on voice energy or noise.  When fine
+     * resolution is enabled, the tone is still detected per block exactly as before (power and threshold tests), and
+     * then the choice between the detected tone and its neighbors is re-evaluated over the most recent 2048 samples
+     * (256 ms, ~3.9 Hz resolution), where a neighbor's response drops to 3 - 17%.  The decision rate is unchanged.
+     */
+    private static final int FINE_RESOLUTION_SAMPLES = 2048;
+    private static final int FINE_RESOLUTION_NEIGHBOR_SPAN = 2;
     // Detection states
     private int mOpenCounter = 0;
     private int mCloseCounter = 0;
@@ -67,6 +78,10 @@ public class CTCSSDetector
     private final CTCSSCode[] mDetectingCodeArray;  // codes we are detecting
     // Goertzel coefficients for each target frequency
     private final double[] mCoefficients;
+    private final boolean mFineResolution;
+    private final float[] mHistory;      // circular buffer of the most recent audio samples for fine resolution
+    private int mHistoryWriteIndex = 0;
+    private int mHistoryCount = 0;
 
     /**
      * Constructs a CTCSS detector for a specific set of target tones.
@@ -75,7 +90,21 @@ public class CTCSSDetector
      */
     public CTCSSDetector(List<CTCSSCode> targetCodes)
     {
+        this(targetCodes, false);
+    }
+
+    /**
+     * Constructs a CTCSS detector for a specific set of target tones.
+     *
+     * @param targetCodes the set of CTCSS codes to accept as matches.
+     * @param fineResolution true to re-evaluate the detected tone against its neighbors over a longer (256 ms)
+     * window, to stop the detection flipping between adjacent tones.
+     */
+    public CTCSSDetector(List<CTCSSCode> targetCodes, boolean fineResolution)
+    {
         mTargetCodes = targetCodes;
+        mFineResolution = fineResolution;
+        mHistory = fineResolution ? new float[FINE_RESOLUTION_SAMPLES] : null;
 
         // Detect all codes including one on each end of the spectrum (DETECTING_CODES)
         // We find the strongest tone across all frequencies, then check if it's in our allowed set.
@@ -117,6 +146,11 @@ public class CTCSSDetector
         if(samples == null || samples.length < MIN_BLOCK_SIZE)
         {
             return null;
+        }
+
+        if(mFineResolution)
+        {
+            addToHistory(samples);
         }
 
         for(int i = 0; i < mDetectingFrequencies.length; i++)
@@ -163,7 +197,14 @@ public class CTCSSDetector
         ctcssMessage.setPowerThreshold(threshold);
         if(maxPower > threshold)
         {
-            CTCSSCode detected = mDetectingCodeArray[maxIndex];
+            int detectedIndex = mFineResolution ? refine(maxIndex, samples.length) : maxIndex;
+
+            if(detectedIndex != maxIndex)
+            {
+                ctcssMessage.setRefinement(mDetectingCodeArray[maxIndex], mDetectingCodeArray[detectedIndex]);
+            }
+
+            CTCSSCode detected = mDetectingCodeArray[detectedIndex];
             updateDetectionState(detected, ctcssMessage);
         }
         else
@@ -172,6 +213,76 @@ public class CTCSSDetector
         }
 
         return ctcssMessage;
+    }
+
+    /**
+     * Adds the samples to the fine resolution history buffer.
+     */
+    private void addToHistory(float[] samples)
+    {
+        int start = Math.max(0, samples.length - mHistory.length);
+
+        for(int i = start; i < samples.length; i++)
+        {
+            mHistory[mHistoryWriteIndex] = samples[i];
+            mHistoryWriteIndex = (mHistoryWriteIndex + 1) % mHistory.length;
+        }
+
+        mHistoryCount = Math.min(mHistory.length, mHistoryCount + (samples.length - start));
+    }
+
+    /**
+     * Re-evaluates the detected tone against its neighbors over the fine resolution history window.
+     * @param detectedIndex of the strongest tone in the current block
+     * @param blockLength of the current block
+     * @return index of the strongest tone among the detected tone and its neighbors over the longer window, or the
+     * detected index when the history doesn't yet extend beyond the current block (e.g. at the start of a call).
+     */
+    private int refine(int detectedIndex, int blockLength)
+    {
+        if(mHistoryCount <= blockLength)
+        {
+            return detectedIndex;
+        }
+
+        //Don't refine to the out-of-range sentinel codes at either end of the detecting code array
+        int first = Math.max(1, detectedIndex - FINE_RESOLUTION_NEIGHBOR_SPAN);
+        int last = Math.min(mDetectingCodeArray.length - 2, detectedIndex + FINE_RESOLUTION_NEIGHBOR_SPAN);
+        int bestIndex = detectedIndex;
+        double bestPower = -1;
+
+        for(int i = first; i <= last; i++)
+        {
+            double power = goertzelHistory(mCoefficients[i]);
+
+            if(power > bestPower)
+            {
+                bestPower = power;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    /**
+     * Goertzel algorithm over the fine resolution history buffer, oldest sample first.
+     */
+    private double goertzelHistory(double coefficient)
+    {
+        double s1 = 0.0;
+        double s2 = 0.0;
+        int index = (mHistoryWriteIndex - mHistoryCount + mHistory.length) % mHistory.length;
+
+        for(int i = 0; i < mHistoryCount; i++)
+        {
+            double s0 = mHistory[index] + (coefficient * s1) - s2;
+            s2 = s1;
+            s1 = s0;
+            index = (index + 1) % mHistory.length;
+        }
+
+        return (s1 * s1) + (s2 * s2) - (coefficient * s1 * s2);
     }
 
     /**
@@ -330,6 +441,8 @@ public class CTCSSDetector
         mOpenCounter = 0;
         mPreviousRejectedCode = null;
         mRejectedQualification = 0;
+        mHistoryWriteIndex = 0;
+        mHistoryCount = 0;
     }
 
 }

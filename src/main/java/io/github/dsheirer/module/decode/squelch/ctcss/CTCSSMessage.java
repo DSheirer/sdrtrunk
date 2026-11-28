@@ -46,6 +46,8 @@ public class CTCSSMessage extends Message
     private double mPowerThreshold = 0.0;
     private DecoderStateEvent.Event mCallEvent = null;
     private SquelchCodeState mCodeState = null;
+    private CTCSSCode mInitialCode = null;
+    private CTCSSCode mRefinedCode = null;
 
     /**
      * Constructs an instance
@@ -80,6 +82,13 @@ public class CTCSSMessage extends Message
         String toneString = mCTCSSCode != null ? mCTCSSCode.toString() : "None";
         String mutedString = mMutedStatus ? "MUTED" : "UNMUTED";
         String message = mDebugMessage != null ? mDebugMessage : "";
+
+        if(mInitialCode != null && mRefinedCode != null)
+        {
+            String refinement = String.format("Refined tone of %.1f replacing initial tone of %.1f",
+                mRefinedCode.getFrequency(), mInitialCode.getFrequency());
+            message = message.isEmpty() ? refinement : message + " " + refinement;
+        }
 
         String s = MessageFormat.format("CTCSS: {0}, Config: {1}, Detected: {2}, 1st Thresh: {3}, Pwr: {4}, Pwr Thresh: {5}, {6}",
                 mutedString,
@@ -124,6 +133,34 @@ public class CTCSSMessage extends Message
     public CTCSSCode getCTCSSCode()
     {
         return mCTCSSCode;
+    }
+
+    /**
+     * Notes that fine resolution replaced the tone detected in the current block with a neighboring tone.  Only set
+     * when the refined tone differs from the initially detected tone.
+     * @param initialCode detected by the per-block (64 ms) Goertzel
+     * @param refinedCode detected by the fine resolution (256 ms) Goertzel
+     */
+    public void setRefinement(CTCSSCode initialCode, CTCSSCode refinedCode)
+    {
+        mInitialCode = initialCode;
+        mRefinedCode = refinedCode;
+    }
+
+    /**
+     * Tone initially detected in the current block when fine resolution replaced it, or null.
+     */
+    public CTCSSCode getInitialCode()
+    {
+        return mInitialCode;
+    }
+
+    /**
+     * Tone that fine resolution chose in place of the initially detected tone, or null.
+     */
+    public CTCSSCode getRefinedCode()
+    {
+        return mRefinedCode;
     }
 
     public void setMessage(String s)
