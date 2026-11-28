@@ -239,9 +239,10 @@ public final class ChannelFilterTestSupport
     }
 
     /**
-     * The filter's undecimated rates (ChannelFilter.isUndecimated()) are exactly the rates where the decoder accepts
-     * the channel and skips its own filter when the channel is flagged as filtered.  Checks 1 Hz either side of every
-     * boundary of isUndecimated() from 1 kHz to five times the filter's sample rate, and the filter's sample rate.  At
+     * The filter's undecimated rates (ChannelFilter.isUndecimated()) match the rates where the decoder accepts the
+     * channel and skips its own filter when the channel is flagged as filtered.  Checks the filter's sample rate and 1
+     * to 2 Hz either side of every boundary of isUndecimated() found on a 50 Hz grid from 1 kHz to five times the
+     * filter's sample rate.  At
      * each rate the decoder either rejects the rate change, or its output on a raw channel with a stop band interferer
      * changes with the flag (it skips its filter) or doesn't (it decimates, and the flag is ignored).
      * @param label for assertion messages

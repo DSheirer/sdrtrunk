@@ -108,6 +108,11 @@ public class ChannelSpecification
          * Indicates if the decoder uses a channel at the sample rate as it is, without decimating.  A source can
          * deliver the channel at any such rate with the filter (getTaps() at that rate) applied and flag it as
          * filtered, so a source that can't deliver sampleRate() exactly can use another.
+         *
+         * This follows the decoder's own rules exactly, so it doesn't make every such rate a good one: near the
+         * lowest rates a decoder accepts, its filter's stop band can reach the Nyquist edge, and a source should check
+         * the filter it will apply.  It designs the filter at the rate, as the decoder does, so a design that fails is
+         * logged by the filter designer, and a design that succeeds may be cached by it.
          * @param sampleRate of the channel
          * @return true if the decoder accepts the rate without decimating and the filter can be designed at it
          */
@@ -124,7 +129,7 @@ public class ChannelSpecification
                 getTaps(sampleRate);
                 return true;
             }
-            catch(RuntimeException e)
+            catch(IllegalArgumentException | IllegalStateException e)
             {
                 return false;
             }
