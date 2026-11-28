@@ -57,33 +57,22 @@ public class TunerSettings extends AbstractSettings
 
 
     /**
-     * Channelizer type used by the tuners
+     * Channelizer type used by the tuners.  A stored value that isn't a channelizer type (for example one saved by a
+     * version with other types) reads as the default.
      */
     public ChannelizerType getChannelizerType()
     {
         if(mChannelizerType == null)
         {
             String type = Setting.TUNER_CHANNELIZER_TYPE.get(DEFAULT_CHANNELIZER_TYPE.name());
+            mChannelizerType = DEFAULT_CHANNELIZER_TYPE;
 
-            if(type != null)
+            for(ChannelizerType channelizerType : ChannelizerType.values())
             {
-                if(type.equalsIgnoreCase(ChannelizerType.POLYPHASE.name()))
+                if(channelizerType.name().equalsIgnoreCase(type))
                 {
-                    mChannelizerType = ChannelizerType.POLYPHASE;
+                    mChannelizerType = channelizerType;
                 }
-                else if(type.equalsIgnoreCase(ChannelizerType.HETERODYNE.name()))
-                {
-                    mChannelizerType = ChannelizerType.HETERODYNE;
-                }
-                else if(type.equalsIgnoreCase(ChannelizerType.FAST_CONVOLUTION.name()))
-                {
-                    mChannelizerType = ChannelizerType.FAST_CONVOLUTION;
-                }
-            }
-
-            if(type == null)
-            {
-                mChannelizerType = ChannelizerType.POLYPHASE;
             }
         }
 

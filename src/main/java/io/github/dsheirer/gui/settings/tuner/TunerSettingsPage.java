@@ -39,6 +39,10 @@ public class TunerSettingsPage extends SettingsPage
         "This channelizer is more efficient when decoding 3 or more channels.";
     private static final String HELP_TEXT_HETERODYNE = "Heterodyne processes each channel on-demand.  This " +
         "channelizer may work better for computers with constrained resources when processing a small number of channels.";
+    private static final String HELP_TEXT_FAST_CONVOLUTION = "Fast Convolution (Overlap-Save) processes all " +
+        "channels from one FFT per block and applies each decoder's own filter, with much deeper adjacent channel " +
+        "rejection.  It uses less CPU than polyphase with several channels, but with one channel at high tuner sample " +
+        "rates it can use more.  Tuner sample rates that it can't use fall back to polyphase.";
 
     private TunerSettings mTunerSettings;
     private ChoiceBox<ChannelizerType> mChannelizerTypeChoiceBox;
@@ -53,7 +57,8 @@ public class TunerSettingsPage extends SettingsPage
         channelizer.addRow("Channelizer type", getChannelizerTypeChoiceBox()).requiresRestart()
             .defaultValue(getChannelizerTypeChoiceBox().valueProperty(), TunerSettings.DEFAULT_CHANNELIZER_TYPE,
                 getChannelizerTypeChoiceBox()::setValue)
-            .help(HELP_TEXT_POLYPHASE).help(HELP_TEXT_HETERODYNE);
+            .help(HELP_TEXT_POLYPHASE).help(HELP_TEXT_HETERODYNE)
+            .help(HELP_TEXT_FAST_CONVOLUTION);
 
         SettingsSection rspDuo = addSection("SDRplay RSPduo");
         rspDuo.addRow("RSPduo selection mode", getRspDuoTunerModeChoiceBox()).requiresRestart()
