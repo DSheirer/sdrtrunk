@@ -86,9 +86,11 @@
  * start of the stream.  Block b starts L b samples into the stream, so its output carries an extra phase of
  * exp(j 2 pi k0 L b / N) = exp(j 2 pi k0 b (V - 1) / V).  This is 1 for every block only when k0 is a multiple of V.
  * Otherwise the output phase steps at every block boundary, by a constant (k0 mod V) / V of a turn, which would
- * scramble any phase-modulated signal.  Each block is multiplied by the conjugate of that phase [2].  The phase is
- * accumulated from block to block with the step of the block's own k0, so a change of center bin also leaves the
- * output phase continuous.
+ * scramble any phase-modulated signal.  Each block is multiplied by the conjugate of that phase, the block phase
+ * correction of equation (12) in [2].  That correction is why the bin shift isn't limited to multiples of V: without
+ * it the shift would have to be rounded to a multiple of V (200 Hz steps with 40 Hz bins), leaving up to 100 Hz for
+ * the rotator.  With it any bin can be the center bin.  The phase is accumulated from block to block with the step of
+ * the block's own k0, so a change of center bin also leaves the output phase continuous.
  *
  * <h2>Residual rotator, frequency correction and retuning</h2>
  *

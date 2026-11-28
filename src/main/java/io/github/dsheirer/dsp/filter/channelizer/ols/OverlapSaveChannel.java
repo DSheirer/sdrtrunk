@@ -29,8 +29,9 @@ import io.github.dsheirer.sample.complex.ComplexSamples;
  * the channel's nearest bin, multiplies them by the channel filter's frequency response, and inverse transforms them at
  * the output size, which filters, translates to baseband and decimates in one step.  It then discards the samples
  * that the circular convolution wrapped (the overlap), removes the phase step that a bin shift that is not a multiple
- * of the overlap factor leaves between blocks, and mixes out the residual offset between the channel frequency and the
- * bin center plus any frequency correction.
+ * of the overlap factor leaves between blocks (the block phase correction of Renfors, Yli-Kaakinen and harris,
+ * equation (12), which lets the bin shift be any bin, not only multiples of the overlap factor), and mixes out the
+ * residual offset between the channel frequency and the bin center plus any frequency correction.
  *
  * The work is split in two so that the channelizer's thread only copies bins: gather() copies the block's bins for
  * the current tuning, and process() (normally on the channel's own thread) does the rest.  Process the gathered blocks
@@ -360,8 +361,11 @@ public class OverlapSaveChannel implements OverlapSaveChannelizer.BlockListener
 
         mInverseFFT.inverse(buffer, false);
 
-        //Advance the accumulated block phase by this block's step for each block since the last one processed, so
-        //that a change of center bin or a dropped block doesn't leave a phase step
+        //Block phase correction (Renfors, Yli-Kaakinen and harris, equation (12); see package-info): it removes the
+        //phase step between blocks that a center bin that isn't a multiple of the overlap factor leaves, so the center
+        //bin isn't limited to multiples of the overlap factor.  Advance the accumulated block phase by this block's
+        //step for each block since the last one processed, so that a change of center bin or a dropped block doesn't
+        //leave a phase step.
         long elapsed = mLastBlock == Long.MIN_VALUE ? 0 : block - mLastBlock;
         mLastBlock = block;
         mBlockPhaseIndex = Math.floorMod(mBlockPhaseIndex + tuning.mBlockPhaseStep * Math.floorMod(elapsed, mFFTSize),
@@ -443,6 +447,8 @@ public class OverlapSaveChannel implements OverlapSaveChannelizer.BlockListener
             mResidualFrequency = frequencyOffset - mCenterBin * mBinWidth;
             int center = Math.floorMod(mCenterBin, mFFTSize);
             mFirstBin = Math.floorMod(center - mOutputSize / 2, mFFTSize);
+            //Block phase step k0 L mod N, in turns of 1 / N: zero when k0 is a multiple of the overlap factor, and
+            //removed in process() otherwise (Renfors, Yli-Kaakinen and harris, equation (12))
             mBlockPhaseStep = (long)center * mHop % mFFTSize;
         }
     }
