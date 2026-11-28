@@ -50,6 +50,12 @@ public class RealFFT
     private final float[] mEven;
     private final float[] mOdd;
     private final FloatFFT_1D mJTransforms;
+    /**
+     * True when the complex FFT is the vector four-step FFT, which also uses the vector data moves and split step.
+     * Below that size the complex FFT is the scalar mixed radix FFT, and the few vector iterations per call would only
+     * be slow to compile.
+     */
+    private final boolean mVector;
 
     /**
      * Constructs an instance that uses the implementation selected by calibration.
@@ -93,6 +99,7 @@ public class RealFFT
 
         mEven = new float[half];
         mOdd = new float[half];
+        mVector = mFFT instanceof VectorComplexFFT && half >= VectorComplexFFT.MINIMUM_FOUR_STEP_SIZE;
     }
 
     /**
@@ -130,6 +137,14 @@ public class RealFFT
         final float[] even = mEven;
         final float[] odd = mOdd;
 
+        if(mVector)
+        {
+            VectorMoves.deinterleave(samples, 0, even, odd, 0, half);
+            forward(even, odd);
+            VectorMoves.interleave(even, odd, 0, 1.0f, samples, 0, half);
+            return;
+        }
+
         for(int n = 0; n < half; n++)
         {
             even[n] = samples[2 * n];
@@ -163,7 +178,14 @@ public class RealFFT
         even[0] = z0i + z0q;
         odd[0] = z0i - z0q;
 
-        for(int k = 1; k <= half / 2; k++)
+        int k = 1;
+
+        if(mVector)
+        {
+            k = VectorMoves.realSplit(even, odd, cos, sin, half);
+        }
+
+        for(; k <= half / 2; k++)
         {
             int m = half - k;
             float zki = even[k];

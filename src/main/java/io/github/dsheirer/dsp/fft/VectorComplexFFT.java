@@ -305,19 +305,9 @@ public class VectorComplexFFT extends ComplexFFT
             final float[] i = inverse ? mQ : mI;
             final float[] q = inverse ? mI : mQ;
 
-            for(int x = 0; x < size; x++)
-            {
-                i[x] = samples[offset + 2 * x];
-                q[x] = samples[offset + 2 * x + 1];
-            }
-
+            VectorMoves.deinterleave(samples, offset, i, q, 0, size);
             transform(mI, mQ);
-
-            for(int x = 0; x < size; x++)
-            {
-                samples[offset + 2 * x] = i[x] * gain;
-                samples[offset + 2 * x + 1] = q[x] * gain;
-            }
+            VectorMoves.interleave(i, q, 0, gain, samples, offset, size);
         }
 
         /**
@@ -345,16 +335,8 @@ public class VectorComplexFFT extends ComplexFFT
                     mStep1.multiply(stripI, stripQ, k1 * strip, mTwiddleI, mTwiddleQ, k1 * columns + c0, strip);
                 }
 
-                for(int c = 0; c < strip; c++)
-                {
-                    int destination = (c0 + c) * rows;
-
-                    for(int k1 = 0; k1 < rows; k1++)
-                    {
-                        workI[destination + k1] = stripI[k1 * strip + c];
-                        workQ[destination + k1] = stripQ[k1 * strip + c];
-                    }
-                }
+                VectorMoves.transpose(stripI, 0, strip, workI, c0 * rows, rows, rows, strip);
+                VectorMoves.transpose(stripQ, 0, strip, workQ, c0 * rows, rows, rows, strip);
             }
 
             //Step 2: transform the columns of the work matrix a strip at a time, into the caller's arrays
