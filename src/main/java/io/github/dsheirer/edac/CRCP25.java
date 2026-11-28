@@ -473,6 +473,39 @@ public class CRCP25
         return CRC.FAILED_CRC;
     }
 
+    /**
+     * Packet CRC-32 check for a P25 Phase 1 packet data unit (TIA-102.BAAA-B 5.3.3).  The CRC covers the data octets
+     * of all data blocks, user data and pad octets, and is carried in the last four octets of the last block.
+     * Generator 0x04C11DB7 with no preset, remainder inverted, most significant bit first.  No correction is performed.
+     *
+     * @param message containing the data octets of the data blocks in order, ending with the 32-bit packet CRC.
+     * @return true if the packet CRC matches the data octets.
+     */
+    public static boolean checkPacketCRC32(BinaryMessage message)
+    {
+        int crcStart = message.size() - 32;
+
+        if(crcStart < 0)
+        {
+            return false;
+        }
+
+        int calculated = 0;
+
+        for(int x = 0; x < crcStart; x++)
+        {
+            boolean feedback = (calculated < 0) ^ message.get(x);
+            calculated <<= 1;
+
+            if(feedback)
+            {
+                calculated ^= 0x04C11DB7;
+            }
+        }
+
+        return ~calculated == message.getInt(crcStart, crcStart + 31);
+    }
+
 
     /**
      * Performs Galois 24/12/7 error detection and correction against the 12

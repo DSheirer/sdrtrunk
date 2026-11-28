@@ -41,6 +41,16 @@ public class PDUSequenceMessage extends P25P1Message
         return mPDUSequence;
     }
 
+    /**
+     * Indicates if the message is valid: the header passed its CRC, all of the data blocks were received and the
+     * packet CRC matches the data blocks.
+     */
+    @Override
+    public boolean isValid()
+    {
+        return super.isValid() && getPDUSequence().isValid();
+    }
+
     public String toString()
     {
         StringBuilder sb = new StringBuilder();

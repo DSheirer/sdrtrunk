@@ -82,7 +82,8 @@ public class UnconfirmedDataBlock extends DataBlock
     }
 
     /**
-     * Indicates if this data block passes any block-level CRC.
+     * Indicates if this data block passes any block-level CRC.  Unconfirmed data blocks don't have a block CRC.  The
+     * packet CRC in the last block covers all of the blocks and is checked by PDUSequence.isPacketCRCValid().
      * @return true always for unconfirmed data blocks.
      */
     @Override

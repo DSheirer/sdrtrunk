@@ -165,6 +165,78 @@ public class PDUMessageFactoryTest
         assertTrue(text.contains("ARS REGISTRATION SUCCESS REFRESH IN:240mins"), text);
     }
 
+    @Test
+    public void unconfirmedPacketDataPassesPacketCRC()
+    {
+        for(PacketMessage packetMessage : new PacketMessage[]{createPacketMessage(UNCONFIRMED_SAP_4_HEADER, ARS_ACK_BLOCKS),
+            createPacketMessage(UNCONFIRMED_SAP_4_HEADER_PAD_5, ARS_ACK_WITH_TRAILER_BLOCKS)})
+        {
+            assertTrue(packetMessage.getPDUSequence().isPacketCRCValid(), packetMessage.toString());
+            assertTrue(packetMessage.isValid(), packetMessage.toString());
+            assertFalse(packetMessage.toString().contains("CRC-FAILED"), packetMessage.toString());
+        }
+    }
+
+    /**
+     * The packet CRC covers the pad octets (TIA-102.BAAA-B 5.3.3).  The 10 pad octets of the ARS acknowledgement are
+     * in the last two blocks.  A damaged pad octet leaves the IP packet intact, but the packet is invalid.
+     */
+    @Test
+    public void damagedPadOctetFailsPacketCRC()
+    {
+        //Pad octet in the next to last block
+        String[] blocks = ARS_ACK_BLOCKS.clone();
+        blocks[2] = "0FA5000C81AE0002BF08AAAB";
+        assertPadOctetDamageDetected(blocks);
+
+        //Pad octet in the last block, just before the packet CRC
+        blocks = ARS_ACK_BLOCKS.clone();
+        blocks[3] = "AAAAAAAAAAAAAA2AC0F19102";
+        assertPadOctetDamageDetected(blocks);
+    }
+
+    private static void assertPadOctetDamageDetected(String[] blocks)
+    {
+        PacketMessage packetMessage = createPacketMessage(UNCONFIRMED_SAP_4_HEADER, blocks);
+
+        RegistrationAcknowledgement acknowledgement = getRegistrationAcknowledgement(packetMessage);
+        assertTrue(acknowledgement.isSuccessful());
+        assertEquals(8, acknowledgement.getPayloadValue());
+
+        assertTrue(packetMessage.getPDUSequence().isComplete());
+        assertFalse(packetMessage.getPDUSequence().isPacketCRCValid(), packetMessage.toString());
+        assertFalse(packetMessage.isValid(), packetMessage.toString());
+        assertTrue(packetMessage.toString().contains("CRC-FAILED"), packetMessage.toString());
+    }
+
+    @Test
+    public void damagedDataOctetFailsPacketCRC()
+    {
+        //Destination UDP port octet in the second block (4005 = 0x0FA5)
+        String[] blocks = ARS_ACK_BLOCKS.clone();
+        blocks[2] = "0FA4000C81AE0002BF08AAAA";
+        PacketMessage packetMessage = createPacketMessage(UNCONFIRMED_SAP_4_HEADER, blocks);
+
+        assertFalse(packetMessage.isValid(), packetMessage.toString());
+    }
+
+    @Test
+    public void incompletePacketIsInvalid()
+    {
+        PDUHeader header = PDUHeaderFactory.getPDUHeader(CorrectedBinaryMessage.loadHex(UNCONFIRMED_SAP_4_HEADER));
+        PDUSequence sequence = new PDUSequence(header, 0, NAC);
+
+        for(int x = 0; x < 3; x++)
+        {
+            sequence.addDataBlock(dataBlock(ARS_ACK_BLOCKS[x]));
+        }
+
+        assertFalse(sequence.isComplete());
+        assertFalse(sequence.isPacketCRCValid());
+        assertFalse(sequence.isValid());
+        assertFalse(PDUMessageFactory.create(sequence, NAC, 0).isValid());
+    }
+
     /**
      * Creates a PDU sequence from the header and data blocks and processes it with the PDU message factory.
      */
