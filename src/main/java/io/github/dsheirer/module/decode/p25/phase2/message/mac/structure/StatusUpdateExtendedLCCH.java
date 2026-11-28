@@ -33,8 +33,8 @@ import java.util.List;
  */
 public class StatusUpdateExtendedLCCH extends MacStructureMultiFragment
 {
-    private static final IntField UNIT_STATUS = IntField.length8(OCTET_4_BIT_24);
-    private static final IntField USER_STATUS = IntField.length8(OCTET_5_BIT_32);
+    private static final IntField UNIT_STATUS = IntField.length8(OCTET_5_BIT_32);
+    private static final IntField USER_STATUS = IntField.length8(OCTET_4_BIT_24);
     private static final IntField TARGET_ADDRESS = IntField.length24(OCTET_6_BIT_40);
     private static final IntField SOURCE_SUID_WACN = IntField.length20(OCTET_9_BIT_64);
     private static final IntField SOURCE_SUID_SYSTEM = IntField.length12(OCTET_11_BIT_80 + 4);
