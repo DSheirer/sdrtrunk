@@ -695,7 +695,10 @@ public class ComplexFFTTest
                 float[] samples = randomSamples(size * 2 * 4, new Random(13));
                 float[] real = randomSamples(size, new Random(14));
 
-                for(int x = 0; x < 200; x++)
+                //Warm up until the JIT has compiled every butterfly and data move that this size uses, since the
+                //interpreted and C1 compiled vector code allocates.  The vector data moves of the 4096-point real FFT
+                //(its split step and the 2048-point four-step inside it) take a few hundred transforms.
+                for(int x = 0; x < 2000; x++)
                 {
                     exercise(fft, realFFT, samples, real);
                 }
