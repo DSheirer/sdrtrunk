@@ -119,12 +119,23 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
      * @param sampleRate of the filter, at which the decoder doesn't decimate
      * @param passFrequency of the channel specification
      * @param stopFrequency of the channel specification
+     * @param symbolRate of the transmission mode
      */
     public static ChannelSpecification.ChannelFilter getChannelFilter(double sampleRate, double passFrequency,
-                                                                      double stopFrequency)
+                                                                      double stopFrequency, int symbolRate)
     {
         return new ChannelSpecification.ChannelFilter(sampleRate, passFrequency, stopFrequency,
-            rate -> FilterFactory.getRemezLowPass((float)rate, passFrequency, stopFrequency));
+            rate -> FilterFactory.getRemezLowPass((float)rate, passFrequency, stopFrequency),
+            rate -> isUndecimated(rate, symbolRate));
+    }
+
+    /**
+     * Indicates if setSampleRate() accepts the sample rate and doesn't decimate it, for the symbol rate.
+     */
+    private static boolean isUndecimated(double sampleRate, int symbolRate)
+    {
+        float samplesPerSymbol = (float)sampleRate / symbolRate;
+        return samplesPerSymbol > 4.0f && samplesPerSymbol < 10.0;
     }
 
     /**

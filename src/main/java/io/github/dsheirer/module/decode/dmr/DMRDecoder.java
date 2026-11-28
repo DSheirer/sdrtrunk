@@ -137,7 +137,16 @@ public class DMRDecoder extends FeedbackDecoder implements IByteBufferProvider, 
     {
         return new ChannelSpecification.ChannelFilter(CHANNEL_FILTER_SAMPLE_RATE, BASEBAND_FILTER_PASS_BAND,
             BASEBAND_FILTER_STOP_BAND, sampleRate -> FilterFactory.getRemezLowPass((float)sampleRate,
-            BASEBAND_FILTER_PASS_BAND, BASEBAND_FILTER_STOP_BAND));
+            BASEBAND_FILTER_PASS_BAND, BASEBAND_FILTER_STOP_BAND), DMRDecoder::isUndecimated);
+    }
+
+    /**
+     * Indicates if setSampleRate() accepts the sample rate and doesn't decimate it.
+     */
+    private static boolean isUndecimated(double sampleRate)
+    {
+        float samplesPerSymbol = (float)sampleRate / SYMBOL_RATE;
+        return samplesPerSymbol > 4.0f && samplesPerSymbol < 10.0;
     }
 
     /**

@@ -122,7 +122,8 @@ public class AMDecoder extends SquelchControlDecoder implements ISourceEventList
         int decimation = getDecimation(minimumSampleRate, channelBandwidth);
         double sampleRate = decimation > 0 ? minimumSampleRate / decimation : minimumSampleRate;
         return new ChannelSpecification.ChannelFilter(sampleRate, (int)(channelBandwidth * .4),
-            (int)(channelBandwidth * .5), rate -> ChannelFilterDesigner.design(rate, channelBandwidth));
+            (int)(channelBandwidth * .5), rate -> ChannelFilterDesigner.design(rate, channelBandwidth),
+            rate -> getDecimation(rate, channelBandwidth) == 0 && rate >= channelBandwidth);
     }
 
     /**

@@ -93,7 +93,16 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     public static ChannelSpecification.ChannelFilter getChannelFilter(double channelBandwidth)
     {
         return new ChannelSpecification.ChannelFilter(channelBandwidth * 2.0, (int)(channelBandwidth * .8) / 2.0,
-            (int)channelBandwidth / 2.0, sampleRate -> designChannelFilter(sampleRate, channelBandwidth));
+            (int)channelBandwidth / 2.0, sampleRate -> designChannelFilter(sampleRate, channelBandwidth),
+            sampleRate -> isUndecimated(sampleRate, channelBandwidth));
+    }
+
+    /**
+     * Indicates if the demodulator accepts the sample rate and doesn't decimate it, for the channel bandwidth.
+     */
+    private static boolean isUndecimated(double sampleRate, double channelBandwidth)
+    {
+        return sampleRate / 2 < channelBandwidth * 2 && sampleRate >= 2.0 * channelBandwidth;
     }
 
     /**

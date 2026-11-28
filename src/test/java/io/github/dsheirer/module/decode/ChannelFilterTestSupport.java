@@ -18,7 +18,9 @@
  */
 package io.github.dsheirer.module.decode;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
@@ -29,10 +31,12 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 /**
@@ -171,7 +175,24 @@ public final class ChannelFilterTestSupport
     public static void assertEquivalentAtFilterRate(String label, Function<List<String>, DecoderUnderTest> factory,
                                                     float[][] signal, ChannelSpecification.ChannelFilter filter)
     {
-        double sampleRate = filter.sampleRate();
+        assertEquivalentAtRate(label, factory, signal, filter, filter.sampleRate());
+    }
+
+    /**
+     * Equivalence at another sample rate where the decoder doesn't decimate (ChannelFilter.isUndecimated()), with the
+     * published taps designed at that rate, as assertEquivalentAtFilterRate() does at the filter's sample rate.
+     * @param label for assertion messages
+     * @param factory for the decoder
+     * @param signal raw channel at the sample rate
+     * @param filter published by the decoder
+     * @param sampleRate of the signal
+     */
+    public static void assertEquivalentAtRate(String label, Function<List<String>, DecoderUnderTest> factory,
+                                              float[][] signal, ChannelSpecification.ChannelFilter filter,
+                                              double sampleRate)
+    {
+        assertTrue(filter.isUndecimated(sampleRate), label + " undecimated at " + sampleRate);
+        label = label + " at " + sampleRate + " Hz";
         List<String> decoderFiltered = run(factory, signal, sampleRate, false, null);
         List<String> sourceFiltered = run(factory, signal, sampleRate, true, filter.getTaps(sampleRate));
         List<String> unfiltered = run(factory, signal, sampleRate, true, null);
@@ -215,6 +236,105 @@ public final class ChannelFilterTestSupport
         List<String> flagged = run(factory, signal, sampleRate, true, null);
         assertFalse(unflagged.isEmpty(), label + " produced no output");
         assertSame(label + " with and without the flag at " + sampleRate + " Hz", unflagged, flagged);
+    }
+
+    /**
+     * The filter's undecimated rates (ChannelFilter.isUndecimated()) are exactly the rates where the decoder accepts
+     * the channel and skips its own filter when the channel is flagged as filtered.  Checks 1 Hz either side of every
+     * boundary of isUndecimated() from 1 kHz to five times the filter's sample rate, and the filter's sample rate.  At
+     * each rate the decoder either rejects the rate change, or its output on a raw channel with a stop band interferer
+     * changes with the flag (it skips its filter) or doesn't (it decimates, and the flag is ignored).
+     * @param label for assertion messages
+     * @param factory for the decoder
+     * @param filter published by the decoder
+     * @param signal generator of the raw channel at a sample rate
+     */
+    public static void assertUndecimatedRatesMatchDecoder(String label,
+                                                          Function<List<String>, DecoderUnderTest> factory,
+                                                          ChannelSpecification.ChannelFilter filter,
+                                                          DoubleFunction<float[][]> signal)
+    {
+        List<Double> rates = new ArrayList<>();
+        rates.add(filter.sampleRate());
+        double step = 50.0;
+        int boundaries = 0;
+
+        for(double rate = 1000.0; rate < filter.sampleRate() * 5.0; rate += step)
+        {
+            if(filter.isUndecimated(rate) != filter.isUndecimated(rate + step))
+            {
+                double low = rate;
+                double high = rate + step;
+
+                while(high - low > 0.01)
+                {
+                    double middle = (low + high) / 2.0;
+
+                    if(filter.isUndecimated(middle) == filter.isUndecimated(low))
+                    {
+                        low = middle;
+                    }
+                    else
+                    {
+                        high = middle;
+                    }
+                }
+
+                rates.add(Math.floor(low) - 1.0);
+                rates.add(Math.ceil(high) + 1.0);
+                boundaries++;
+            }
+        }
+
+        assertTrue(boundaries >= 2, label + " undecimated rate boundaries: " + boundaries);
+
+        for(double rate : rates)
+        {
+            float[][] raw = impair(signal.apply(rate), rate, getInterfererOffset(filter, rate), 1.0, 0.05, 3);
+            List<String> unflagged = runIfAccepted(factory, raw, rate, false);
+            List<String> flagged = runIfAccepted(factory, raw, rate, true);
+            boolean skipped = unflagged != null && flagged != null && !Objects.equals(unflagged, flagged);
+
+            if(unflagged != null)
+            {
+                assertFalse(unflagged.isEmpty(), label + " produced no output at " + rate + " Hz");
+            }
+
+            assertEquals(skipped, filter.isUndecimated(rate), label + " at " + rate + " Hz: decoder " +
+                (unflagged == null ? "rejects the rate" : skipped ? "skips its filter" : "doesn't skip its filter"));
+        }
+    }
+
+    /**
+     * Runs the decoder over the signal, or returns null if the decoder rejects the sample rate.
+     */
+    private static List<String> runIfAccepted(Function<List<String>, DecoderUnderTest> factory, float[][] signal,
+                                              double sampleRate, boolean channelFiltered)
+    {
+        List<String> output = new ArrayList<>();
+        DecoderUnderTest decoder = factory.apply(output);
+
+        try
+        {
+            decoder.getSourceEventListener().receive(SourceEvent.sampleRateChange(sampleRate, channelFiltered,
+                "Test"));
+        }
+        catch(RuntimeException e)
+        {
+            decoder.stop();
+            return null;
+        }
+
+        int length = signal[0].length / BUFFER_SIZE * BUFFER_SIZE;
+
+        for(int offset = 0; offset < length; offset += BUFFER_SIZE)
+        {
+            decoder.receive(new ComplexSamples(Arrays.copyOfRange(signal[0], offset, offset + BUFFER_SIZE),
+                Arrays.copyOfRange(signal[1], offset, offset + BUFFER_SIZE), (long)(offset * 1000.0 / sampleRate)));
+        }
+
+        decoder.stop();
+        return output;
     }
 
     /**
