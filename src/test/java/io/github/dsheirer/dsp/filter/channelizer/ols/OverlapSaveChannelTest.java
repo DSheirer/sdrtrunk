@@ -326,7 +326,8 @@ public class OverlapSaveChannelTest
      * Decoder-ready channel (production mask: the decoder's own filter cascaded with a Kaiser low-pass): across the
      * decoder's pass band the response follows the decoder's own filter within 0.02 dB, and tones from 8.5 to 16.5 kHz
      * either side of the channel center (the adjacent channel beyond the decoder's transition band) are rejected by at
-     * least 120 dB.  At 2.4 MS/s (25 kHz): P25 Phase 1 LSM, NBFM, P25 Phase 2 and the FM demodulator module.  At rates
+     * least 120 dB.  The pass band is checked every 500 Hz and at the decoder's pass edge.  At 2.4 MS/s (25 kHz): P25
+     * Phase 1 LSM, NBFM, P25 Phase 2, the FM demodulator module and AM 8.33 kHz.  At rates
      * other than the filter's own: LSM at 2.048 MS/s (25.6 kHz), NXDN 9600 at 10 MS/s (25 kHz in place of 24 kHz) and
      * AM 6 kHz at 10 MS/s (16 kHz in place of 12.5 kHz).  AM 6 kHz at 16 kHz and NBFM 7.5 kHz at 25 kHz have long
      * decoder filters that leave the Kaiser filter 23 and 13 taps, so its transition band starts at the decoder's pass
@@ -343,11 +344,11 @@ public class OverlapSaveChannelTest
             new io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM().getChannelSpecification(),
             new io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2().getChannelSpecification(),
             new io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard().getChannelSpecification(),
-            lsm, nxdn(TransmissionMode.M9600), am(Bandwidth.BW_6_0), nbfm(Bandwidth.BW_7_5));
+            lsm, nxdn(TransmissionMode.M9600), am(Bandwidth.BW_6_0), nbfm(Bandwidth.BW_7_5), am(Bandwidth.BW_8_33));
         double[] sampleRates = {SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, 2048000.0, 10000000.0, 10000000.0,
-            SAMPLE_RATE};
-        double[] outputRates = {25000.0, 25000.0, 25000.0, 25000.0, 25600.0, 25000.0, 16000.0, 25000.0};
-        double[] rejections = {120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 90.0};
+            SAMPLE_RATE, SAMPLE_RATE};
+        double[] outputRates = {25000.0, 25000.0, 25000.0, 25000.0, 25600.0, 25000.0, 16000.0, 25000.0, 25000.0};
+        double[] rejections = {120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 90.0, 120.0};
 
         for(int x = 0; x < specifications.size(); x++)
         {
@@ -360,7 +361,16 @@ public class OverlapSaveChannelTest
             float[] taps = null;
             double rate = 0;
 
-            for(double tone = 500.0; tone <= filter.passFrequency(); tone += 500.0)
+            List<Double> tones = new ArrayList<>();
+
+            for(double tone = 500.0; tone < filter.passFrequency(); tone += 500.0)
+            {
+                tones.add(tone);
+            }
+
+            tones.add(filter.passFrequency());
+
+            for(double tone : tones)
             {
                 if(taps == null)
                 {
@@ -612,6 +622,30 @@ public class OverlapSaveChannelTest
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, null));
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer,
             new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0)));
+    }
+
+    /**
+     * The decoder-ready rate is at least 80% of the filter's own rate, and the decoder's filter must be a working
+     * low-pass at it.  At 3,936,600 Hz (98,415 bins of 40 Hz, 3^9 x 5), no rate from 25 kHz up to 48.6 kHz
+     * qualifies: LSM and P25 Phase 2 would otherwise get 16.2 kHz (3.4 and 2.7 samples per symbol), and the FM
+     * demodulator module 48.6 kHz, where its filter design doesn't converge.  At 2.5 MS/s AM 6 kHz gets 10 kHz, 80% of
+     * its 12.5 kHz.
+     */
+    @Test
+    void decoderReadyRateFloorAndWorkingFilter()
+    {
+        OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(3936600.0);
+        ChannelSpecification lsm = new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, LSM_FILTER);
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, lsm), "LSM");
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer,
+            new io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2().getChannelSpecification()), "P2");
+        ChannelSpecification fm =
+            new io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard().getChannelSpecification();
+        assertTrue(fm.getChannelFilter().isUndecimated(48600.0), "the demodulator accepts 48.6 kHz");
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, fm), "FM demodulator module");
+
+        assertEquals(10000.0, getDecoderReadyRate(OverlapSaveChannelizer.create(2500000.0), am(Bandwidth.BW_6_0)),
+            0.001);
     }
 
     private static double getDecoderReadyRate(OverlapSaveChannelizer channelizer, ChannelSpecification specification)

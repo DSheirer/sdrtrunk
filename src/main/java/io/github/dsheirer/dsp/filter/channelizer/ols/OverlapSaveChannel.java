@@ -94,8 +94,8 @@ public class OverlapSaveChannel implements OverlapSaveChannelizer.BlockListener
 
         if(taps.length - 1 > mDiscard)
         {
-            throw new IllegalArgumentException("Filter length [" + taps.length + "] exceeds the overlap at the output " +
-                "rate [" + mDiscard + "] plus one");
+            throw new IllegalArgumentException("Filter length [" + taps.length + "] exceeds the overlap at the " +
+                "output rate [" + mDiscard + "] plus one");
         }
 
         mGroupDelay = (taps.length - 1) / 2.0;
@@ -188,7 +188,8 @@ public class OverlapSaveChannel implements OverlapSaveChannelizer.BlockListener
      * @param maximumLength of the filter
      * @return taps
      */
-    public static float[] designFilter(double sampleRate, double pass, double stop, float attenuation, int maximumLength)
+    public static float[] designFilter(double sampleRate, double pass, double stop, float attenuation,
+                                       int maximumLength)
     {
         double transition = 2.0 * Math.PI * (stop - pass) / sampleRate;
         int length = (int)Math.ceil((attenuation - 7.95) / (2.285 * transition)) + 1;
