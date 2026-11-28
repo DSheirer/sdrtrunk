@@ -21,6 +21,9 @@ package io.github.dsheirer.dsp.squelch;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.vector.calibrate.CalibrationType;
+import io.github.dsheirer.vector.calibrate.Implementation;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
 
@@ -48,8 +51,35 @@ class VoiceModulationDetectorTest
         return detector.analyze();
     }
 
+    /**
+     * Runs the test with the detector's FFT using each implementation, independent of this computer's calibration.
+     */
+    private static void forEachImplementation(Runnable test)
+    {
+        CalibrationManager manager = CalibrationManager.getInstance();
+
+        for(Implementation implementation: new Implementation[]{Implementation.SCALAR,
+            Implementation.VECTOR_SIMD_PREFERRED})
+        {
+            try
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, implementation);
+                test.run();
+            }
+            finally
+            {
+                manager.setImplementationOverride(CalibrationType.FFT_COMPLEX, null);
+            }
+        }
+    }
+
     @Test
     void flatEnvelopeNoiseIsNotVoice()
+    {
+        forEachImplementation(VoiceModulationDetectorTest::flatEnvelopeNoiseIsNotVoiceTest);
+    }
+
+    private static void flatEnvelopeNoiseIsNotVoiceTest()
     {
         Random random = new Random(1);
 
@@ -67,6 +97,11 @@ class VoiceModulationDetectorTest
 
     @Test
     void lowFrequencyModulationIsVoice()
+    {
+        forEachImplementation(VoiceModulationDetectorTest::lowFrequencyModulationIsVoiceTest);
+    }
+
+    private static void lowFrequencyModulationIsVoiceTest()
     {
         Random random = new Random(2);
 

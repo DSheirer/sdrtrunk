@@ -25,7 +25,8 @@ package io.github.dsheirer.settings.source;
 public enum ChannelizerType
 {
     POLYPHASE("Polyphase"),
-    HETERODYNE(" Heterodyne");
+    HETERODYNE(" Heterodyne"),
+    FAST_CONVOLUTION("Fast Convolution (Overlap-Save)");
 
     private String mLabel;
 

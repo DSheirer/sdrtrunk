@@ -27,6 +27,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.OverlapSaveChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
@@ -71,6 +72,10 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
         else if(channelizerType == ChannelizerType.HETERODYNE)
         {
             setChannelSourceManager(new HeterodyneChannelSourceManager(mTunerController));
+        }
+        else if(channelizerType == ChannelizerType.FAST_CONVOLUTION)
+        {
+            setChannelSourceManager(new OverlapSaveChannelSourceManager(mTunerController));
         }
         else
         {

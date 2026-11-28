@@ -52,7 +52,7 @@ public class DecodeConfigP25Phase2 extends DecodeConfigP25
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
+        return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0, P25P2DecoderHDQPSK.getChannelFilter());
     }
 
     /**

@@ -81,6 +81,16 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     }
 
     /**
+     * Indicates if this source applies the channel filter of the consumer's channel specification
+     * (ChannelSpecification.getChannelFilter()) at the current sample rate, so that the consumer can skip its own.
+     * @return false by default
+     */
+    public boolean isChannelFiltered()
+    {
+        return false;
+    }
+
+    /**
      * Signals that this tuner channel source has an error state so that any channel processing can be shutdown.
      * @param errorMessage describing the error
      */

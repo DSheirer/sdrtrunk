@@ -136,7 +136,7 @@ import org.slf4j.LoggerFactory;
 public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
-    private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
+    private static final double FM_CHANNEL_BANDWIDTH = FMDemodulatorModule.DEFAULT_CHANNEL_BANDWIDTH;
     private static final boolean AUDIO_FILTER_ENABLE = true;
 
     /**

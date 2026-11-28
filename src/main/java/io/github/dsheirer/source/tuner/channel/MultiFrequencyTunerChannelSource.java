@@ -328,6 +328,17 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     }
 
     /**
+     * Always false, even when the current tuner channel source applies the channel filter.  The consumer is told only
+     * once, at startup, and a frequency rotation replaces the source with one that may not filter, so the consumer
+     * keeps its own filter.
+     */
+    @Override
+    public boolean isChannelFiltered()
+    {
+        return false;
+    }
+
+    /**
      * Overrides the parent method so that we can intercept external requests to change to the next frequency in the
      * frequency list.
      *

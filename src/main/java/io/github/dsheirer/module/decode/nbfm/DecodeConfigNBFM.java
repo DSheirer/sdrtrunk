@@ -81,11 +81,14 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
         switch(getBandwidth())
         {
             case BW_7_5:
-                return new ChannelSpecification(25000.0, 7500, 3500.0, 3750.0);
+                return new ChannelSpecification(25000.0, 7500, 3500.0, 3750.0,
+                    NBFMDecoder.getChannelFilter(7500));
             case BW_12_5:
-                return new ChannelSpecification(25000.0, 12500, 6000.0, 7000.0);
+                return new ChannelSpecification(25000.0, 12500, 6000.0, 7000.0,
+                    NBFMDecoder.getChannelFilter(12500));
             case BW_25_0:
-                return new ChannelSpecification(50000.0, 25000, 12500.0, 13500.0);
+                return new ChannelSpecification(50000.0, 25000, 12500.0, 13500.0,
+                    NBFMDecoder.getChannelFilter(25000));
             default:
                 throw new IllegalArgumentException("Unrecognized FM bandwidth value: " + getBandwidth());
         }

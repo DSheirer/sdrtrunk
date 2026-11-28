@@ -73,6 +73,7 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import io.github.dsheirer.source.heartbeat.IHeartbeatProvider;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -708,7 +709,10 @@ public class ProcessingChain implements Listener<ChannelEvent>
             if(mSource != null)
             {
                 //Broadcast the source sample rate so that each of the modules can self-configure
-                mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(mSource.getSampleRate(), "Processing Chain Startup"));
+                boolean channelFiltered = mSource instanceof TunerChannelSource tunerChannelSource &&
+                    tunerChannelSource.isChannelFiltered();
+                mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(mSource.getSampleRate(), channelFiltered,
+                    "Processing Chain Startup"));
 
                 //Broadcast the source center frequency / sample rate so that each of the modules can self-configure
                 mSourceEventBroadcaster.broadcast(SourceEvent.frequencyChange(mSource, mSource.getFrequency(), "Processing Chain Startup"));

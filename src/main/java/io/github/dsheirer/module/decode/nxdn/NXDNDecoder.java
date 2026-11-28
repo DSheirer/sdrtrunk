@@ -64,6 +64,11 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     private IRealDecimationFilter mDecimationFilterQ;
     private IRealFilter mBasebandFilterI;
     private IRealFilter mBasebandFilterQ;
+    /**
+     * The source has applied the baseband filter (getChannelFilter()) and there's no decimation, so the configured
+     * baseband filter isn't applied.  A null filter still means the decoder isn't configured.
+     */
+    private boolean mBasebandFilterSkipped;
     private IRealFilter mPulseShapingFilter;
     private IDemodulator mDemodulator;
 
@@ -108,11 +113,51 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
     }
 
     /**
+     * Channel filter that this decoder applies ahead of demodulation, a low-pass between the pass and stop frequencies
+     * of the transmission mode's channel specification, for a source that can apply it instead.  The taps are designed
+     * at the sample rate as a float, as the decoder designs them.
+     * @param sampleRate of the filter, at which the decoder doesn't decimate
+     * @param passFrequency of the channel specification
+     * @param stopFrequency of the channel specification
+     * @param symbolRate of the transmission mode
+     */
+    public static ChannelSpecification.ChannelFilter getChannelFilter(double sampleRate, double passFrequency,
+                                                                      double stopFrequency, int symbolRate)
+    {
+        return new ChannelSpecification.ChannelFilter(sampleRate, passFrequency, stopFrequency,
+            rate -> FilterFactory.getRemezLowPass((float)rate, passFrequency, stopFrequency),
+            rate -> isUndecimated(rate, symbolRate));
+    }
+
+    /**
+     * Indicates if setSampleRate() accepts the sample rate and doesn't decimate it, for the symbol rate.
+     */
+    private static boolean isUndecimated(double sampleRate, int symbolRate)
+    {
+        float samplesPerSymbol = (float)sampleRate / symbolRate;
+        return samplesPerSymbol > 4.0f && samplesPerSymbol < 10.0;
+    }
+
+    /**
      * Sets the sample rate and configures internal decoder components.
      * @param sampleRate of the channel to decode
      */
     public void setSampleRate(double sampleRate)
     {
+        setSampleRate(sampleRate, false);
+    }
+
+    /**
+     * Sets the sample rate and configures internal decoder components.
+     * @param sampleRate of the channel to decode
+     * @param channelFiltered true if the source has already applied this decoder's channel filter
+     * (getChannelFilter()) at this sample rate, so that the baseband filter is skipped when there's no decimation.  The
+     * pulse shaping filter is always applied.
+     */
+    public void setSampleRate(double sampleRate, boolean channelFiltered)
+    {
+        mBasebandFilterSkipped = false;
+
         float samplesPerSymbol = (float)sampleRate / mConfig.getTransmissionMode().getSymbolRate();
 
         if(samplesPerSymbol <= 4.0f)
@@ -143,11 +188,16 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
                 mConfig.getTransmissionMode().getSymbolRate(), RECEIVE_FILTER_ALPHA, rrcSymbolSpan,
                 inverseSyncSymbolSpan);
         mPulseShapingFilter = new RealFIRFilter(taps);
+
         ChannelSpecification channel = mConfig.getChannelSpecification();
         float[] basebandTaps = FilterFactory.getRemezLowPass(decimatedSampleRate, channel.getPassFrequency(),
                 channel.getStopFrequency());
         mBasebandFilterI = FilterFactory.getRealFilter(basebandTaps);
         mBasebandFilterQ = FilterFactory.getRealFilter(basebandTaps);
+
+        //Skip the baseband filter when the source has applied it (getChannelFilter()) and there's no decimation
+        mBasebandFilterSkipped = channelFiltered && decimation == 1;
+
         mDemodulator = FmDemodulatorFactory.getFmDemodulator();
         mSymbolProcessor.setSamplesPerSymbol(samplesPerSymbol);
         mMessageProcessor.setMessageListener(getMessageListener());
@@ -166,8 +216,11 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
         float[] i = mDecimationFilterI.decimateReal(samples.i());
         float[] q = mDecimationFilterQ.decimateReal(samples.q());
 
-        i = mBasebandFilterI.filter(i);
-        q = mBasebandFilterQ.filter(q);
+        if(!mBasebandFilterSkipped)
+        {
+            i = mBasebandFilterI.filter(i);
+            q = mBasebandFilterQ.filter(q);
+        }
 
         float[] demodulated = mDemodulator.demodulate(i, q);
         demodulated = mPulseShapingFilter.filter(demodulated);
@@ -233,7 +286,7 @@ public class NXDNDecoder extends FeedbackDecoder implements IByteBufferProvider,
                 //voice).
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                setSampleRate(sourceEvent.getValue().doubleValue());
+                setSampleRate(sourceEvent.getValue().doubleValue(), sourceEvent.isChannelFiltered());
                 break;
         }
     }

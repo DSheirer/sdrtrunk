@@ -20,6 +20,8 @@ package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.controller.NamingThreadFactory;
+import io.github.dsheirer.dsp.fft.ComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFTFactory;
 import io.github.dsheirer.dsp.window.WindowFactory;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
@@ -32,7 +34,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,8 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
     private float[] mWindow;
     private DFTSize mDFTSize = DFTSize.FFT04096;
     private volatile DFTSize mNewDFTSize = DFTSize.FFT04096;
-    private FloatFFT_1D mFFT = new FloatFFT_1D(mDFTSize.getSize());
+    private ComplexFFT mFFT = ComplexFFTFactory.getComplexFFT(mDFTSize.getSize(),
+        ComplexFFTFactory.Scalar.JTRANSFORMS);
     private int mFrameRate;
     private AtomicBoolean mRunning = new AtomicBoolean();
     private ScheduledFuture<?> mProcessorTaskHandle;
@@ -265,7 +267,7 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
             }
 
             WindowFactory.apply(mWindow, samples);
-            mFFT.complexForward(samples);
+            mFFT.forward(samples);
             mPreviousSamples = samples;
         }
         catch(IOException ioe)
@@ -335,7 +337,7 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
         {
             mDFTSize = mNewDFTSize;
             mWindowChanged = true;
-            mFFT = new FloatFFT_1D(mDFTSize.getSize());
+            mFFT = ComplexFFTFactory.getComplexFFT(mDFTSize.getSize(), ComplexFFTFactory.Scalar.JTRANSFORMS);
         }
 
         if(mWindowChanged)
