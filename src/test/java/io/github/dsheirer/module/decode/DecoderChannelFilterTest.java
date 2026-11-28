@@ -20,7 +20,9 @@ package io.github.dsheirer.module.decode;
 
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.amTones;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertEquivalentAtFilterRate;
+import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertEquivalentAtRate;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertFlagIgnoredWhenDecimating;
+import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertUndecimatedRatesMatchDecoder;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertUnflaggedEventRestoresFilter;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.bytes;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.dqpsk;
@@ -84,11 +86,13 @@ public class DecoderChannelFilterTest
 {
     private static final double DIGITAL_SECONDS = 3.0;
     private static final double ANALOG_SECONDS = 2.0;
+    private static final double SWEEP_SECONDS = 1.0;
     private static final double NOISE = 0.05;
 
     /**
-     * Checks equivalence at the filter's rate, that a later unflagged sample rate change restores the decoder's filter,
-     * and the flag at twice the filter's rate, where every decoder here decimates.
+     * Checks equivalence at the filter's rate and at 1.024 times it (the rate that a 2.048 MS/s tuner gives in place of
+     * 25 kHz), that a later unflagged sample rate change restores the decoder's filter, and the flag at twice the
+     * filter's rate, where every decoder here decimates.
      */
     private static void check(String label, Function<List<String>, DecoderUnderTest> factory,
                               ChannelSpecification.ChannelFilter filter, DoubleFunction<float[][]> signal,
@@ -99,6 +103,9 @@ public class DecoderChannelFilterTest
             1);
         assertEquivalentAtFilterRate(label, factory, raw, filter);
         assertUnflaggedEventRestoresFilter(label, factory, raw, filter);
+        double otherRate = rate * 1.024;
+        assertEquivalentAtRate(label, factory, impair(signal.apply(otherRate), otherRate,
+            getInterfererOffset(filter, otherRate), interfererAmplitude, NOISE, 4), filter, otherRate);
         double decimatingRate = rate * 2.0;
         assertFlagIgnoredWhenDecimating(label, factory, impair(signal.apply(decimatingRate), decimatingRate,
             getInterfererOffset(filter, rate), interfererAmplitude, NOISE, 2), decimatingRate);
@@ -244,6 +251,47 @@ public class DecoderChannelFilterTest
         check("FM demodulator", DecoderChannelFilterTest::fmDemodulator,
             FMDemodulatorModule.getChannelFilter(FMDemodulatorModule.DEFAULT_CHANNEL_BANDWIDTH),
             rate -> fmTones(rate, 2500.0, ANALOG_SECONDS), 1.0);
+    }
+
+    /**
+     * Each filter's undecimated rates are exactly the rates where its decoder skips its filter when flagged.
+     */
+    @Test
+    void undecimatedRatesMatchTheDecoders()
+    {
+        assertUndecimatedRatesMatchDecoder("DMR", DecoderChannelFilterTest::dmr, DMRDecoder.getChannelFilter(),
+            rate -> fsk4(rate, 4800.0, 1944.0, SWEEP_SECONDS, 11));
+        assertUndecimatedRatesMatchDecoder("P25 Phase 2", DecoderChannelFilterTest::p25Phase2,
+            P25P2DecoderHDQPSK.getChannelFilter(), rate -> dqpsk(rate, 6000.0, SWEEP_SECONDS, 13));
+        assertUndecimatedRatesMatchDecoder("FM demodulator", DecoderChannelFilterTest::fmDemodulator,
+            FMDemodulatorModule.getChannelFilter(FMDemodulatorModule.DEFAULT_CHANNEL_BANDWIDTH),
+            rate -> fmTones(rate, 2500.0, SWEEP_SECONDS));
+
+        for(TransmissionMode mode : new TransmissionMode[]{TransmissionMode.M4800, TransmissionMode.M9600})
+        {
+            DecodeConfigNXDN config = new DecodeConfigNXDN();
+            config.setTransmissionMode(mode);
+            assertUndecimatedRatesMatchDecoder("NXDN " + mode, nxdn(mode),
+                config.getChannelSpecification().getChannelFilter(),
+                rate -> fsk4(rate, mode.getSymbolRate(), mode.getOuterSymbolDeviation(), SWEEP_SECONDS, 12));
+        }
+
+        for(Bandwidth bandwidth : Bandwidth.FM_BANDWIDTHS)
+        {
+            DecodeConfigNBFM config = new DecodeConfigNBFM();
+            config.setBandwidth(bandwidth);
+            double deviation = bandwidth.getValue() / 5.0;
+            assertUndecimatedRatesMatchDecoder("NBFM " + bandwidth, nbfm(bandwidth),
+                config.getChannelSpecification().getChannelFilter(), rate -> fmTones(rate, deviation, SWEEP_SECONDS));
+        }
+
+        for(Bandwidth bandwidth : Bandwidth.AM_BANDWIDTHS)
+        {
+            DecodeConfigAM config = new DecodeConfigAM();
+            config.setBandwidth(bandwidth);
+            assertUndecimatedRatesMatchDecoder("AM " + bandwidth, am(bandwidth),
+                config.getChannelSpecification().getChannelFilter(), rate -> amTones(rate, SWEEP_SECONDS));
+        }
     }
 
     /**

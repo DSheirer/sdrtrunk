@@ -435,7 +435,16 @@ public class NBFMDecoder extends SquelchControlDecoder implements ISourceEventLi
     public static ChannelSpecification.ChannelFilter getChannelFilter(int bandwidth)
     {
         return new ChannelSpecification.ChannelFilter(bandwidth > 12500 ? 50000.0 : 25000.0, bandwidth * .4,
-            bandwidth * .5, sampleRate -> ChannelFilterDesigner.design(sampleRate, bandwidth));
+            bandwidth * .5, sampleRate -> ChannelFilterDesigner.design(sampleRate, bandwidth),
+            sampleRate -> isUndecimated(sampleRate, bandwidth));
+    }
+
+    /**
+     * Indicates if setSampleRate() accepts the sample rate and doesn't decimate it, for the channel bandwidth.
+     */
+    private static boolean isUndecimated(double sampleRate, double channelBandwidth)
+    {
+        return sampleRate / 2 < channelBandwidth * 2 && sampleRate >= 2.0 * channelBandwidth;
     }
 
     /**

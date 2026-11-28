@@ -151,7 +151,15 @@ public class P25P2DecoderHDQPSK extends FeedbackDecoder implements ISourceEventL
     {
         return new ChannelSpecification.ChannelFilter(CHANNEL_FILTER_SAMPLE_RATE, BASEBAND_FILTER_PASS_BAND,
             BASEBAND_FILTER_STOP_BAND, sampleRate -> FilterFactory.getRemezLowPass((float)sampleRate,
-            BASEBAND_FILTER_PASS_BAND, BASEBAND_FILTER_STOP_BAND));
+            BASEBAND_FILTER_PASS_BAND, BASEBAND_FILTER_STOP_BAND), P25P2DecoderHDQPSK::isUndecimated);
+    }
+
+    /**
+     * Indicates if setSampleRate() accepts the sample rate and doesn't decimate it.
+     */
+    private static boolean isUndecimated(double sampleRate)
+    {
+        return sampleRate > SYMBOL_RATE * 2 && sampleRate < 48000;
     }
 
     /**

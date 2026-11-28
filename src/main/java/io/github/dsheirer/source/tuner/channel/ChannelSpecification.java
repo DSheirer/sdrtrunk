@@ -19,6 +19,7 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import java.util.function.DoubleFunction;
+import java.util.function.DoublePredicate;
 
 /**
  * Channel source specification
@@ -63,9 +64,9 @@ public class ChannelSpecification
 
     /**
      * Low-pass channel filter that the decoder applies to the complex samples ahead of demodulation, when the decoder
-     * receives the channel at the filter's sample rate.  A tuner channel source that applies this filter itself (at
-     * least as well) and delivers the channel at a sample rate that the decoder uses without decimation signals it
-     * with SourceEvent.isChannelFiltered() so that the decoder can skip its own filter.
+     * receives the channel at a sample rate that it uses without decimating (ChannelFilter.isUndecimated()).  A tuner
+     * channel source that applies this filter itself (at least as well), designed at the rate that it delivers the
+     * channel at, signals it with SourceEvent.isChannelFiltered() so that the decoder can skip its own filter.
      * @return filter or null if the decoder doesn't support a pre-filtered channel
      */
     public ChannelFilter getChannelFilter()
@@ -83,15 +84,17 @@ public class ChannelSpecification
 
     /**
      * Decoder channel filter.
-     * @param sampleRate a sample rate at which the decoder doesn't decimate, and at which a source applies the filter
+     * @param sampleRate the decoder's preferred sample rate for a filtered channel, one at which it doesn't decimate
      * @param passFrequency end of the pass band in hertz
      * @param stopFrequency start of the stop band in hertz
      * @param design of the decoder's own filter taps for a sample rate, exactly as the decoder designs them, so that a
      * source can reproduce the decoder's filter response (the decoder's demodulator, symbol recovery and squelch are
      * tuned to it) and may add further stop band attenuation.
+     * @param undecimated the decoder's own sample rate rules: true for a rate that the decoder accepts and uses
+     * without decimating.
      */
     public record ChannelFilter(double sampleRate, double passFrequency, double stopFrequency,
-                                DoubleFunction<float[]> design)
+                                DoubleFunction<float[]> design, DoublePredicate undecimated)
     {
         /**
          * Decoder's own filter taps for the sample rate.
@@ -99,6 +102,32 @@ public class ChannelSpecification
         public float[] getTaps(double sampleRate)
         {
             return design.apply(sampleRate);
+        }
+
+        /**
+         * Indicates if the decoder uses a channel at the sample rate as it is, without decimating.  A source can
+         * deliver the channel at any such rate with the filter (getTaps() at that rate) applied and flag it as
+         * filtered, so a source that can't deliver sampleRate() exactly can use another.
+         * @param sampleRate of the channel
+         * @return true if the decoder accepts the rate without decimating and the filter can be designed at it
+         */
+        public boolean isUndecimated(double sampleRate)
+        {
+            if(!undecimated.test(sampleRate))
+            {
+                return false;
+            }
+
+            //The decoder designs the same filter at the rate, and rejects the rate if the design fails
+            try
+            {
+                getTaps(sampleRate);
+                return true;
+            }
+            catch(RuntimeException e)
+            {
+                return false;
+            }
         }
     }
 

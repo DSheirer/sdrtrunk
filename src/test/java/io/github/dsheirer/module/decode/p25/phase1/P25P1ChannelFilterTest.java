@@ -19,7 +19,9 @@
 package io.github.dsheirer.module.decode.p25.phase1;
 
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertEquivalentAtFilterRate;
+import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertEquivalentAtRate;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertFlagIgnoredWhenDecimating;
+import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertUndecimatedRatesMatchDecoder;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.assertUnflaggedEventRestoresFilter;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.bytes;
 import static io.github.dsheirer.module.decode.ChannelFilterTestSupport.getInterfererOffset;
@@ -203,6 +205,10 @@ public class P25P1ChannelFilterTest
         float[][] raw = impair(signal.apply(rate), rate, getInterfererOffset(filter, rate), 1.0, NOISE, 1);
         assertEquivalentAtFilterRate(label, factory, raw, filter);
         assertUnflaggedEventRestoresFilter(label, factory, raw, filter);
+        double otherRate = rate * 1.024;
+        assertEquivalentAtRate(label, factory, impair(signal.apply(otherRate), otherRate,
+            getInterfererOffset(filter, otherRate), 1.0, NOISE, 4), filter, otherRate);
+        assertUndecimatedRatesMatchDecoder(label, factory, filter, signal);
 
         //The comparison covers decoded messages: nearly every TSBK decodes
         long valid = run(factory, raw, rate, false, null).stream().filter(item -> item.startsWith("T")).count();
