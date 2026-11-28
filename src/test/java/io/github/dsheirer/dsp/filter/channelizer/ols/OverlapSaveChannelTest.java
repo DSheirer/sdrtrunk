@@ -625,11 +625,11 @@ public class OverlapSaveChannelTest
     }
 
     /**
-     * The decoder-ready rate is at least 80% of the filter's own rate, and the decoder's filter must be a working
-     * low-pass at it.  At 3,936,600 Hz (98,415 bins of 40 Hz, 3^9 x 5), no rate from 25 kHz up to 48.6 kHz
-     * qualifies: LSM and P25 Phase 2 would otherwise get 16.2 kHz (3.4 and 2.7 samples per symbol), and the FM
-     * demodulator module 48.6 kHz, where its filter design doesn't converge.  At 2.5 MS/s AM 6 kHz gets 10 kHz, 80% of
-     * its 12.5 kHz.
+     * The decoder-ready rate is at least 80% of the filter's own rate: at 3,936,600 Hz (98,415 bins of 40 Hz, 3^9 x 5)
+     * no rate from 25 kHz up qualifies for LSM and P25 Phase 2, which would otherwise get 16.2 kHz (3.4 and 2.7
+     * samples per symbol), while at 2.5 MS/s AM 6 kHz gets 10 kHz, 80% of its 12.5 kHz.  And the decoder's filter must
+     * be a working low-pass at the rate: a decoder filter whose design gives a 3-tap boxcar (stop band about 10 dB
+     * down) isn't applied, while the same specification with a remez design is.
      */
     @Test
     void decoderReadyRateFloorAndWorkingFilter()
@@ -639,13 +639,19 @@ public class OverlapSaveChannelTest
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, lsm), "LSM");
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer,
             new io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2().getChannelSpecification()), "P2");
-        ChannelSpecification fm =
-            new io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard().getChannelSpecification();
-        assertTrue(fm.getChannelFilter().isUndecimated(48600.0), "the demodulator accepts 48.6 kHz");
-        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, fm), "FM demodulator module");
-
         assertEquals(10000.0, getDecoderReadyRate(OverlapSaveChannelizer.create(2500000.0), am(Bandwidth.BW_6_0)),
             0.001);
+
+        channelizer = OverlapSaveChannelizer.create(SAMPLE_RATE);
+        ChannelSpecification boxcar = new ChannelSpecification(25000.0, 12500, 5000.0, 6250.0,
+            new ChannelSpecification.ChannelFilter(25000.0, 5000.0, 6250.0, rate -> new float[]{1.0f, 1.0f, 1.0f},
+                rate -> rate >= 25000.0 && rate < 50000.0));
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, boxcar), "boxcar");
+        ChannelSpecification remez = new ChannelSpecification(25000.0, 12500, 5000.0, 6250.0,
+            new ChannelSpecification.ChannelFilter(25000.0, 5000.0, 6250.0,
+                rate -> io.github.dsheirer.dsp.filter.FilterFactory.getRemezLowPass((float)rate, 5000.0, 6250.0),
+                rate -> rate >= 25000.0 && rate < 50000.0));
+        assertEquals(25000.0, getDecoderReadyRate(channelizer, remez), 0.001, "remez");
     }
 
     private static double getDecoderReadyRate(OverlapSaveChannelizer channelizer, ChannelSpecification specification)
