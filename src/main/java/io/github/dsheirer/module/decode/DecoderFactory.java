@@ -41,6 +41,7 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.AMDecoderState;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
@@ -359,6 +360,7 @@ public class DecoderFactory
 
             P25P1AudioModule audioModule = new P25P1AudioModule(settings, aliasList);
             configureJMBEAudioModule(audioModule, configP25P1);
+            audioModule.setNacFilter(configP25P1.getNacFilter());
             modules.add(audioModule);
 
             //Add a channel rotation monitor when we have multiple control channel frequencies specified
@@ -570,6 +572,7 @@ public class DecoderFactory
 
             NXDNAudioModule audioModule = new NXDNAudioModule(settings, aliasList);
             configureJMBEAudioModule(audioModule, configNXDN);
+            audioModule.setRanFilter(configNXDN.getEffectiveRanFilter());
             modules.add(audioModule);
 
             if(channel.getChannelType() == ChannelType.STANDARD)
@@ -723,6 +726,8 @@ public class DecoderFactory
         DMRAudioModule audioModule2 = new DMRAudioModule(settings, aliasList, DMRMessage.TIMESLOT_2);
         configureJMBEAudioModule(audioModule1, decodeConfig);
         configureJMBEAudioModule(audioModule2, decodeConfig);
+        audioModule1.setColorCodeFilter(decodeConfig.getColorCodeFilter());
+        audioModule2.setColorCodeFilter(decodeConfig.getColorCodeFilter());
         modules.add(audioModule1);
         modules.add(audioModule2);
 
@@ -908,6 +913,14 @@ public class DecoderFactory
     }
 
     /**
+     * Copy of an access code filter, or null
+     */
+    private static AccessCodeFilter copyOf(AccessCodeFilter filter)
+    {
+        return filter != null ? filter.copy() : null;
+    }
+
+    /**
      * Creates a copy of the configuration
      */
     public static DecodeConfiguration copy(DecodeConfiguration config)
@@ -927,6 +940,7 @@ public class DecoderFactory
                 case DMR:
                     DecodeConfigDMR originalDMR = (DecodeConfigDMR)config;
                     DecodeConfigDMR copyDMR = new DecodeConfigDMR();
+                    copyDMR.setColorCodeFilter(copyOf(originalDMR.getColorCodeFilter()));
                     transferJMBESettings(originalDMR, copyDMR);
                     return copyDMR;
                 case LTR_NET:
@@ -964,6 +978,7 @@ public class DecoderFactory
                     copyNXDN.setChannelMap(origNXDN.getChannelMap());
                     copyNXDN.setTransmissionMode(origNXDN.getTransmissionMode());
                     copyNXDN.setTrafficChannelPoolSize(origNXDN.getTrafficChannelPoolSize());
+                    copyNXDN.setRanFilter(copyOf(origNXDN.getRanFilter()));
                     transferJMBESettings(origNXDN, copyNXDN);
                     return copyNXDN;
                 case P25_PHASE1:
@@ -973,6 +988,7 @@ public class DecoderFactory
                     copyP25P1.setIgnoreEncryptedCalls(originalP25P1.getIgnoreEncryptedCalls());
                     copyP25P1.setModulation(originalP25P1.getModulation());
                     copyP25P1.setTrafficChannelPoolSize(originalP25P1.getTrafficChannelPoolSize());
+                    copyP25P1.setNacFilter(copyOf(originalP25P1.getNacFilter()));
                     transferJMBESettings(originalP25P1, copyP25P1);
                     return copyP25P1;
                 case P25_PHASE2:

@@ -32,6 +32,7 @@ import io.github.dsheirer.protocol.Protocol;
 public abstract class P25P1Message extends TimeslotMessage implements IMessage
 {
     private Identifier mNAC;
+    private boolean mNACAssisted = false;
 
     /**
      * Constructs a P25 message.
@@ -74,6 +75,24 @@ public abstract class P25P1Message extends TimeslotMessage implements IMessage
     public Identifier getNAC()
     {
         return mNAC;
+    }
+
+    /**
+     * Sets whether the NAC came from a NID decode assisted by the tracked (most often seen) NAC, or was carried over
+     * from a previous NID, rather than from this message's received NID alone.  An assisted NAC can be the tracked NAC
+     * even when the message was transmitted with a different NAC.
+     */
+    public void setNACAssisted(boolean assisted)
+    {
+        mNACAssisted = assisted;
+    }
+
+    /**
+     * Indicates the NAC came from an assisted NID decode, or was carried over from a previous NID.
+     */
+    public boolean isNACAssisted()
+    {
+        return mNACAssisted;
     }
 
     /**

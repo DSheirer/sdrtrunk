@@ -28,6 +28,7 @@ import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyField;
 import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
@@ -62,6 +63,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
@@ -100,6 +102,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     private Slider mJmbeToneGainSlider;
     private ToggleSwitch mJmbeLegacyToneLevelsButton;
     private Slider mJmbeNoiseGainSlider;
+    private AccessCodeFilterEditor mRanFilterEditor;
 
     /**
      * Constructs an instance
@@ -220,6 +223,10 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(editorBox, 0, row, 4, 1);
             gridPane.getChildren().add(editorBox);
+
+            row++;
+            GridPane.setConstraints(getRanFilterEditor(), 0, row, 8, 1);
+            gridPane.getChildren().add(getRanFilterEditor());
 
             row++;
             addAudioControls(gridPane, row, "AMBE Audio", getJmbeNoiseGainSlider(), getJmbeAGCButton(),
@@ -370,6 +377,8 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
                         //Only set modified if the toggle changed from one to the other
                         modifiedProperty().set(true);
                     }
+
+                    updateRanFilterAvailability();
                 });
         }
 
@@ -523,6 +532,30 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
     }
 
     /**
+     * RAN filter editor.  The RAN filter isn't available in Type-D mode, where the RAN isn't decoded.
+     */
+    private AccessCodeFilterEditor getRanFilterEditor()
+    {
+        if(mRanFilterEditor == null)
+        {
+            mRanFilterEditor = new AccessCodeFilterEditor("RAN", DecodeConfigNXDN.RAN_MAXIMUM, 1, false,
+                AccessCodeFilter.Format.DECIMAL, modifiedProperty());
+        }
+
+        return mRanFilterEditor;
+    }
+
+    /**
+     * Updates the RAN filter editor for the selected transmission mode.
+     */
+    private void updateRanFilterAvailability()
+    {
+        Toggle selected = getTransmissionModeButton().getToggleGroup().getSelectedToggle();
+        boolean typeD = selected != null && selected.getUserData() == TransmissionMode.TYPE_D;
+        getRanFilterEditor().setUnavailable(typeD ? "RAN filter isn't available in Type-D mode" : null);
+    }
+
+    /**
      * Toggle switch for ignore data calls.
      */
     private ToggleSwitch getIgnoreDataCallsToggle()
@@ -672,9 +705,11 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         getJmbeNoiseGainSlider().setDisable(disable);
         getJmbeToneGainSlider().setDisable(disable);
         getJmbeLegacyToneLevelsButton().setDisable(disable);
+        getRanFilterEditor().setEditorDisabled(disable);
 
         if(config instanceof DecodeConfigNXDN configNXDN)
         {
+            getRanFilterEditor().setFilter(configNXDN.getRanFilter());
             for(ToggleButton toggle: getTransmissionModeButton().getButtons())
             {
                 if(toggle.getUserData() == configNXDN.getTransmissionMode())
@@ -683,6 +718,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
                 }
             }
 
+            updateRanFilterAvailability();
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(configNXDN.getTrafficChannelPoolSize());
 
             for(ChannelFrequency channelFrequency: configNXDN.getChannelMap())
@@ -702,6 +738,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
             getIgnoreDataCallsToggle().setSelected(false);
+            getRanFilterEditor().setFilter(null);
             getIgnoreEncryptedCallsToggle().setSelected(false);
             getJmbeAGCButton().setSelected(false);
             getJmbeNoiseGainSlider().setValue(0);
@@ -743,6 +780,7 @@ public class NXDNConfigurationEditor extends ChannelConfigurationEditor
         config.setComfortNoiseGain((float)getJmbeNoiseGainSlider().getValue());
         config.setToneGain((float)getJmbeToneGainSlider().getValue());
         config.setLegacyToneLevels(getJmbeLegacyToneLevelsButton().isSelected());
+        config.setRanFilter(getRanFilterEditor().getFilter());
         getItem().setDecodeConfiguration(config);
     }
 

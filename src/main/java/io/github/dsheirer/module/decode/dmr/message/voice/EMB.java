@@ -209,6 +209,14 @@ public class EMB
     }
 
     /**
+     * Number of bits corrected when decoding the EMB word.
+     */
+    public int getCorrectedBitCount()
+    {
+        return getMessage().getCorrectedBitCount();
+    }
+
+    /**
      * Message bits
      */
     protected CorrectedBinaryMessage getMessage()

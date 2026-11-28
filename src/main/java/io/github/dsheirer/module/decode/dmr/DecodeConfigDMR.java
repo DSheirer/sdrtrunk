@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.dmr;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
@@ -37,11 +38,13 @@ public class DecodeConfigDMR extends DecodeConfigJMBE
     public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
     public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
     public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
+    public static final int COLOR_CODE_MAXIMUM = 15;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
     private boolean mIgnoreCRCChecksums = false;
     private boolean mUseCompressedTalkgroups = false;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
+    private AccessCodeFilter mColorCodeFilter = new AccessCodeFilter(AccessCodeFilter.Format.DECIMAL);
 
     @JsonIgnore
     private DecodeEvent mChannelGrantEvent;
@@ -130,6 +133,25 @@ public class DecodeConfigDMR extends DecodeConfigJMBE
     public void setUseCompressedTalkgroups(boolean useCompressedTalkgroups)
     {
         mUseCompressedTalkgroups = useCompressedTalkgroups;
+    }
+
+    /**
+     * Color code (CC) filter for the channel.
+     */
+    @JacksonXmlProperty(isAttribute = false, localName = "color_code_filter")
+    public AccessCodeFilter getColorCodeFilter()
+    {
+        return mColorCodeFilter;
+    }
+
+    /**
+     * Sets the color code (CC) filter for the channel.
+     * @param colorCodeFilter to apply, or null to remove the filter.
+     */
+    public void setColorCodeFilter(AccessCodeFilter colorCodeFilter)
+    {
+        mColorCodeFilter = colorCodeFilter != null ? colorCodeFilter :
+            new AccessCodeFilter(AccessCodeFilter.Format.DECIMAL);
     }
 
     /**

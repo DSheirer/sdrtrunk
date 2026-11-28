@@ -58,6 +58,7 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     //Soft symbol reliabilities for each assembled dibit, in received order, or NaN when not provided.
     private float[] mReliabilities = new float[256];
     private int mSoftSymbolCount = 0;
+    private boolean mNACAssisted = false;
 
     /**
      * Constructs an instance
@@ -277,6 +278,23 @@ public class P25P1MessageAssembler implements Listener<Dibit>
     public int getNAC()
     {
         return mNac;
+    }
+
+    /**
+     * Sets whether the NAC came from a decode assisted by the tracked NAC (or was carried over from a previous NID),
+     * rather than from this message's received NID alone.
+     */
+    public void setNACAssisted(boolean assisted)
+    {
+        mNACAssisted = assisted;
+    }
+
+    /**
+     * Indicates the NAC came from a decode assisted by the tracked NAC, or was carried over from a previous NID.
+     */
+    public boolean isNACAssisted()
+    {
+        return mNACAssisted;
     }
 
     /**

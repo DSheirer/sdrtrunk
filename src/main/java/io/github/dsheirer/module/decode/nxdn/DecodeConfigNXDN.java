@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.nxdn;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AccessCodeFilter;
 import io.github.dsheirer.module.decode.config.DecodeConfigJMBE;
 import io.github.dsheirer.module.decode.nxdn.channel.ChannelFrequency;
 import io.github.dsheirer.module.decode.nxdn.layer3.proprietary.Encoding;
@@ -35,9 +36,11 @@ import java.util.List;
  */
 public class DecodeConfigNXDN extends DecodeConfigJMBE
 {
+    public static final int RAN_MAXIMUM = 63;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = false;
     private boolean mIgnoreEncryptedCalls = false;
+    private AccessCodeFilter mRanFilter = new AccessCodeFilter(AccessCodeFilter.Format.DECIMAL);
 
     private static final ChannelSpecification CHANNEL_4800 = new ChannelSpecification(12000.0, 6250, 3000.0, 3125.0);
     private static final ChannelSpecification CHANNEL_9600 = new ChannelSpecification(24000.0, 12500, 5200.0, 6250.0);
@@ -134,6 +137,34 @@ public class DecodeConfigNXDN extends DecodeConfigJMBE
     public void setIgnoreEncryptedCalls(boolean ignore)
     {
         mIgnoreEncryptedCalls = ignore;
+    }
+
+    /**
+     * Radio Access Number (RAN) filter for the channel.
+     */
+    @JacksonXmlProperty(isAttribute = false, localName = "ran_filter")
+    public AccessCodeFilter getRanFilter()
+    {
+        return mRanFilter;
+    }
+
+    /**
+     * Sets the Radio Access Number (RAN) filter for the channel.
+     * @param ranFilter to apply, or null to remove the filter.
+     */
+    public void setRanFilter(AccessCodeFilter ranFilter)
+    {
+        mRanFilter = ranFilter != null ? ranFilter : new AccessCodeFilter(AccessCodeFilter.Format.DECIMAL);
+    }
+
+    /**
+     * RAN filter to apply when decoding, or null when the filter doesn't apply: the RAN isn't decoded in Type-D mode,
+     * so a filter would have no effect there.
+     */
+    @JsonIgnore
+    public AccessCodeFilter getEffectiveRanFilter()
+    {
+        return getTransmissionMode() == TransmissionMode.TYPE_D ? null : getRanFilter();
     }
 
     /**

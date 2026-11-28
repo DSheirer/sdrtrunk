@@ -134,6 +134,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     private final TalkerAliasTracker mTalkerAliasTracker = new TalkerAliasTracker(getIdentifierCollection(),
             this::getTalkerAliasManager, TalkerAliasTracker.BetweenCalls.PREVIOUS_TALKER);
     private boolean mIgnoreCRCChecksums;
+    private DMRColorCodeGate mColorCodeGate = new DMRColorCodeGate(null);
     private DMRDecoderState mSisterDecoderState;
 
     /**
@@ -159,6 +160,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR config)
         {
             mIgnoreCRCChecksums = config.getIgnoreCRCChecksums();
+            mColorCodeGate = new DMRColorCodeGate(config.getColorCodeFilter());
         }
     }
 
@@ -303,6 +305,12 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         if(message.getTimeslot() == getTimeslot())
         {
+            //Color code filter: drop bursts from co-channel transmitters with a non-matching color code
+            if(!mColorCodeGate.passes(message))
+            {
+                return;
+            }
+
             if(message instanceof VoiceMessage voice)
             {
                 if(isValid(voice))
@@ -335,8 +343,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
             }
         }
-        //SLCO messages on timeslot 0 to catch capacity plus rest channel events
-        else if(isValid(message) && message.getTimeslot() == 0 && message instanceof LCMessage lcMessage)
+        //SLCO messages on timeslot 0 to catch capacity plus rest channel events.  The CACH carries no color code, so
+        //apply the color code filter's decision for this timeslot's most recent bursts: a rest channel SLCO from a
+        //co-channel site with a different color code shouldn't retune the channel.
+        else if(isValid(message) && message.getTimeslot() == 0 && message instanceof LCMessage lcMessage &&
+                mColorCodeGate.passes(message))
         {
             processLinkControl(lcMessage, false);
         }
@@ -1512,6 +1523,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             case REQUEST_RESET:
                 resetState();
+                mColorCodeGate.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 setCurrentFrequency(event.getFrequency());

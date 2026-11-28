@@ -195,6 +195,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private final Listener<ChannelEvent> mChannelEventListener;
     private final P25TrafficChannelManager mTrafficChannelManager;
     private ServiceOptions mCurrentServiceOptions;
+    private final P25P1NacGate mNacGate;
 
     /**
      * Encryption state of the current call as signalled by the algorithm ID in the HDU header or LDU2 encryption sync
@@ -215,7 +216,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     public P25P1DecoderState(Channel channel, P25TrafficChannelManager trafficChannelManager)
     {
         mChannel = channel;
-        mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
+        DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)channel.getDecodeConfiguration();
+        mModulation = config.getModulation();
+        mNacGate = new P25P1NacGate(config.getNacFilter());
         mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
@@ -289,6 +292,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void receive(IMessage iMessage)
     {
+        //NAC filter: drop messages from co-channel transmitters with a non-matching NAC.  Talker alias and link control
+        //messages assembled by the message processor carry no NAC, so they follow the decision for the most recent
+        //message that did (the LDU/TDULC fragments that they were assembled from).
+        if(isNacFiltered(iMessage) && !mNacGate.passes(iMessage))
+        {
+            return;
+        }
+
         if(iMessage instanceof P25P1Message message)
         {
             getIdentifierCollection().update(message.getNAC());
@@ -353,6 +364,16 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private TalkerAliasManager getTalkerAliasManager()
     {
         return mTrafficChannelManager.getTalkerAliasManager();
+    }
+
+    /**
+     * Indicates if the message is subject to the NAC filter: P25 Phase 1 messages, which carry the NAC, and the
+     * talker alias and link control messages that the message processor assembles from them.
+     */
+    private static boolean isNacFiltered(IMessage message)
+    {
+        return message instanceof P25P1Message || message instanceof MotorolaTalkerAliasComplete ||
+            message instanceof LinkControlWord;
     }
 
     /**
@@ -2220,6 +2241,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 resetState();
                 mTalkerAliasTracker.reset();
                 mNetworkConfigurationMonitor.reset();
+                mNacGate.reset();
                 break;
             case NOTIFICATION_SOURCE_FREQUENCY:
                 long frequency = event.getFrequency();
