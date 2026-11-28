@@ -64,7 +64,7 @@ public class Golay24
      *
      * @param message - source message containing startIndex + 24 bits length
      * @param startIndex - start of the 24-bit galois 24 protected bit set
-     * @return - corrected 24-bit galois value
+     * @return 0 = no errors, 1 = corrected, 2 = uncorrectable
      */
     public static int checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
     {
@@ -152,7 +152,16 @@ public class Golay24
 
                         int corrected = message.getInt(0, 22);
 
-                        if(Integer.bitCount(original ^ corrected) > 3)
+                        int bitsCorrected = Integer.bitCount(original ^ corrected);
+
+                        if(bitsCorrected > 3)
+                        {
+                            return 2;
+                        }
+
+                        //Three bits corrected with the overall parity still wrong is a fourth error, which the
+                        //(24,12,8) code detects but can't correct.
+                        if(bitsCorrected == 3 && message.cardinality() % 2 != 0)
                         {
                             return 2;
                         }
