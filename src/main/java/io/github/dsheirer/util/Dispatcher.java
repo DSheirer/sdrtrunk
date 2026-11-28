@@ -86,6 +86,23 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
+     * Constructs an instance with integrated heartbeat support that uses the queue, for example an ArrayBlockingQueue,
+     * which doesn't allocate for each element.  Elements received while a bounded queue is full are dropped.
+     * @param threadName to name the dispatcher thread
+     * @param interval for processing each batch in milliseconds.
+     * @param heartbeatManager to receive a heartbeat command at each processing interval.
+     * @param queue for the queued elements, used only by this dispatcher
+     */
+    public Dispatcher(String threadName, long interval, HeartbeatManager heartbeatManager, BlockingQueue<E> queue)
+    {
+        mThreadName = threadName;
+        mInterval = interval;
+        mQueue = queue;
+        mWeigher = null;
+        mHeartbeatManager = heartbeatManager;
+    }
+
+    /**
      * Constructs an instance with an unbounded queue.
      * @param threadName to name the dispatcher thread
      * @param interval for processing each batch in milliseconds.

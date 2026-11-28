@@ -26,6 +26,7 @@ import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.OverlapSaveChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.PassThroughSourceManager;
 import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
 import org.slf4j.Logger;
@@ -68,6 +69,10 @@ public class RecordingTuner extends Tuner
             else if(channelizerType == ChannelizerType.HETERODYNE)
             {
                 setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+            }
+            else if(channelizerType == ChannelizerType.FAST_CONVOLUTION)
+            {
+                setChannelSourceManager(new OverlapSaveChannelSourceManager(getTunerController()));
             }
             else
             {

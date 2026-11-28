@@ -82,6 +82,16 @@ public class FloatNativeBuffer extends AbstractNativeBuffer
         return mInterleavedComplexSamples.length / 2;
     }
 
+    /**
+     * Interleaved complex samples of this buffer, without a copy, for a consumer that processes them in place.  The
+     * array is shared with every listener of this buffer: read it only, and only during the call that delivered the
+     * buffer.  Don't modify or retain it.
+     */
+    public float[] getInterleavedSamples()
+    {
+        return mInterleavedComplexSamples;
+    }
+
     private class ComplexSamplesIterator implements  Iterator<ComplexSamples>
     {
         private int mBufferPointer = 0;

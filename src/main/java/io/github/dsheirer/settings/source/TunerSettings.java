@@ -75,6 +75,10 @@ public class TunerSettings extends AbstractSettings
                 {
                     mChannelizerType = ChannelizerType.HETERODYNE;
                 }
+                else if(type.equalsIgnoreCase(ChannelizerType.FAST_CONVOLUTION.name()))
+                {
+                    mChannelizerType = ChannelizerType.FAST_CONVOLUTION;
+                }
             }
 
             if(type == null)
