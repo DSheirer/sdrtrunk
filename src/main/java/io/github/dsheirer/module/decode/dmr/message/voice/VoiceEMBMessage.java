@@ -83,9 +83,9 @@ public class VoiceEMBMessage extends VoiceMessage
         {
             sb.append(" ").append(getEmbeddedParameters());
         }
-        else if(getEMB().isValid() && getEMB().isEncrypted())
+        else if(getEMB().isValid() && getEMB().isReverseChannel())
         {
-            sb.append(" ENCRYPTED");
+            sb.append(" REVERSE CHANNEL");
         }
 
         return sb.toString();

@@ -51,12 +51,12 @@ public class EMBTest
     }
 
     /**
-     * Asserts that the EMB fields decode to the information word (color code, privacy indicator, LCSS).
+     * Asserts that the EMB fields decode to the information word (color code, PI, LCSS).
      */
     private static void assertFields(int information, EMB emb, String context)
     {
         assertEquals(information >> 3, emb.getColorCode(), context);
-        assertEquals(((information >> 2) & 1) == 1, emb.isEncrypted(), context);
+        assertEquals(((information >> 2) & 1) == 1, emb.isReverseChannel(), context);
         assertEquals(LCSS.fromValue(information & 3), emb.getLCSS(), context);
     }
 
