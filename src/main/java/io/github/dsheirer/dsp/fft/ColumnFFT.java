@@ -279,11 +279,17 @@ class ColumnFFT
         final int inputSpacing = groups * stride * xStride;
         final int outputSpacing = stride * yStride;
 
+        //When the rows of both matrices are contiguous (no gap between one row and the next), the stride rows of a
+        //group are one contiguous run of stride x width elements, so one butterfly call covers all of them
+        final boolean contiguous = xStride == width && yStride == width;
+        final int calls = contiguous ? 1 : stride;
+        final int length = contiguous ? stride * width : width;
+
         for(int j = 0; j < groups; j++)
         {
             int t = j * radix;
 
-            for(int s = 0; s < stride; s++)
+            for(int s = 0; s < calls; s++)
             {
                 int in = xBase + (s + stride * j) * xStride;
                 int out = yBase + (s + stride * radix * j) * yStride;
@@ -294,19 +300,19 @@ class ColumnFFT
                     {
                         if(j == 0)
                         {
-                            radix4(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, width);
+                            radix4(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, length);
                         }
                         else
                         {
-                            radix4(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, width, twi[t + 1],
+                            radix4(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, length, twi[t + 1],
                                 twq[t + 1], twi[t + 2], twq[t + 2], twi[t + 3], twq[t + 3]);
                         }
                     }
-                    case 2 -> radix2(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, width, twi[t + 1],
+                    case 2 -> radix2(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, length, twi[t + 1],
                         twq[t + 1]);
-                    case 5 -> radix5(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, width, twi[t + 1],
+                    case 5 -> radix5(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, length, twi[t + 1],
                         twq[t + 1], twi[t + 2], twq[t + 2], twi[t + 3], twq[t + 3], twi[t + 4], twq[t + 4]);
-                    default -> radix3(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, width, twi[t + 1],
+                    default -> radix3(xi, xq, yi, yq, in, inputSpacing, out, outputSpacing, length, twi[t + 1],
                         twq[t + 1], twi[t + 2], twq[t + 2]);
                 }
             }
