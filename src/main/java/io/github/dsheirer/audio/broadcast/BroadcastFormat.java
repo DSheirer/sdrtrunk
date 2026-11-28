@@ -20,7 +20,8 @@ package io.github.dsheirer.audio.broadcast;
 
 public enum BroadcastFormat
 {
-    MP3("audio/mpeg", ".mp3");
+    MP3("audio/mpeg", ".mp3"),
+    PCM_S16LE("audio/L16", ".pcm");
 
     private String mValue;
     private String mFileExtension;
