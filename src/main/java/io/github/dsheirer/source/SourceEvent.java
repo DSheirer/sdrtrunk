@@ -72,16 +72,26 @@ public class SourceEvent
     private final Number mValue;
     private Source mSource;
     private final String mEventDescription;
+    private final boolean mChannelFiltered;
 
     /**
      * Private constructor.  Use the static constructor methods to create an event.
      */
     public SourceEvent(Event event, Source source, Number value, String eventDescription)
     {
+        this(event, source, value, eventDescription, false);
+    }
+
+    /**
+     * Private constructor.  Use the static constructor methods to create an event.
+     */
+    private SourceEvent(Event event, Source source, Number value, String eventDescription, boolean channelFiltered)
+    {
         mEvent = event;
         mSource = source;
         mValue = value;
         mEventDescription = eventDescription;
+        mChannelFiltered = channelFiltered;
     }
 
     /**
@@ -164,6 +174,16 @@ public class SourceEvent
     public boolean hasValue()
     {
         return mValue != null;
+    }
+
+    /**
+     * Indicates if the source of a sample rate change has already applied the channel filter of the consumer's
+     * channel specification (ChannelSpecification.getChannelFilter()) at this sample rate, so that the consumer can
+     * skip its own baseband channel filter.
+     */
+    public boolean isChannelFiltered()
+    {
+        return mChannelFiltered;
     }
 
     /**
@@ -295,6 +315,19 @@ public class SourceEvent
     public static SourceEvent sampleRateChange(double sampleRate, String eventDescription)
     {
         return new SourceEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate, eventDescription);
+    }
+
+    /**
+     * Creates a new sample rate change event
+     *
+     * @param sampleRate in hertz
+     * @param channelFiltered true if the source has applied the consumer's channel filter at this sample rate
+     * @param eventDescription to include with the event
+     */
+    public static SourceEvent sampleRateChange(double sampleRate, boolean channelFiltered, String eventDescription)
+    {
+        return new SourceEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, null, sampleRate, eventDescription,
+            channelFiltered);
     }
 
     /**

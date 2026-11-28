@@ -22,6 +22,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigLTRStandard extends DecodeConfiguration
@@ -58,6 +59,6 @@ public class DecodeConfigLTRStandard extends DecodeConfiguration
     public ChannelSpecification getChannelSpecification()
     {
         return new ChannelSpecification(25000.0,
-            12500, 6000.0, 7000.0);
+            12500, 6000.0, 7000.0, FMDemodulatorModule.getChannelFilter(FMDemodulatorModule.DEFAULT_CHANNEL_BANDWIDTH));
     }
 }
