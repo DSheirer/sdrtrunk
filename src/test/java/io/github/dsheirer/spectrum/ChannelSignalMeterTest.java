@@ -19,12 +19,13 @@
 
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.dsp.fft.ComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFTFactory;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.spectrum.converter.FullScaleDecibelConverter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.jtransforms.fft.FloatFFT_1D;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +57,8 @@ public class ChannelSignalMeterTest
         meter.setWindowNoiseBandwidth(ComplexDftProcessor.getNoiseBandwidth(windowType));
 
         float[] window = ComplexDftProcessor.createWindow(windowType, DFT_SIZE, true);
-        FloatFFT_1D fft = new FloatFFT_1D(DFT_SIZE);
+        ComplexFFT fft = ComplexFFTFactory.getComplexFFT(DFT_SIZE,
+            ComplexFFTFactory.Scalar.JTRANSFORMS);
         Random random = new Random(42);
         double sigma = Math.sqrt(NOISE_VARIANCE / 2.0);
         double phase = 0.0;
@@ -73,7 +75,7 @@ public class ChannelSignalMeterTest
                 phase += increment;
             }
 
-            fft.complexForward(samples);
+            fft.forward(samples);
             meter.receive(FullScaleDecibelConverter.convert(samples));
         }
 

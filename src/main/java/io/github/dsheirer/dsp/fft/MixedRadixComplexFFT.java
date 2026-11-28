@@ -61,7 +61,7 @@ package io.github.dsheirer.dsp.fft;
  *
  * Note: this class is NOT thread-safe since it reuses an internal scratch buffer.  Use one instance per thread.
  */
-public class MixedRadixComplexFFT
+public class MixedRadixComplexFFT extends ComplexFFT
 {
     private static final int[] FACTORS = {4, 2, 3, 5};
     private static final int FORWARD = -1;
@@ -81,12 +81,7 @@ public class MixedRadixComplexFFT
      */
     public MixedRadixComplexFFT(int size)
     {
-        if(!isSupported(size))
-        {
-            throw new IllegalArgumentException("Unsupported FFT size [" + size +
-                "] - size must be positive and have no prime factors other than 2, 3 and 5");
-        }
-
+        super(size);
         mSize = size;
         mFactors = factorize(size);
         mTwiddles = new float[2 * size + 2];
@@ -121,20 +116,12 @@ public class MixedRadixComplexFFT
     }
 
     /**
-     * Size of this transform
-     * @return size in complex samples
-     */
-    public int getSize()
-    {
-        return mSize;
-    }
-
-    /**
      * Computes the forward DFT of the interleaved complex samples, in place.  Equivalent to JTransforms
      * FloatFFT_1D.complexForward(samples, offset).
      * @param samples interleaved complex, with at least 2N values from the offset
      * @param offset to the first sample
      */
+    @Override
     public void forward(float[] samples, int offset)
     {
         transform(samples, offset, FORWARD);
@@ -144,6 +131,7 @@ public class MixedRadixComplexFFT
      * Computes the forward DFT of the interleaved complex samples, in place.
      * @param samples interleaved complex, with at least 2N values
      */
+    @Override
     public void forward(float[] samples)
     {
         forward(samples, 0);
@@ -156,6 +144,7 @@ public class MixedRadixComplexFFT
      * @param offset to the first sample
      * @param scale true to scale the results by 1/N
      */
+    @Override
     public void inverse(float[] samples, int offset, boolean scale)
     {
         transform(samples, offset, INVERSE);
@@ -176,6 +165,7 @@ public class MixedRadixComplexFFT
      * @param samples interleaved complex, with at least 2N values
      * @param scale true to scale the results by 1/N
      */
+    @Override
     public void inverse(float[] samples, boolean scale)
     {
         inverse(samples, 0, scale);

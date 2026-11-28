@@ -20,7 +20,8 @@
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.dsp.fft.MixedRadixComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFT;
+import io.github.dsheirer.dsp.fft.ComplexFFTFactory;
 import io.github.dsheirer.dsp.window.WindowFactory;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
@@ -102,7 +103,7 @@ public class TunerNoiseFloorEstimator
     //Measurement state, accessed only by the processing task
     private long mMeasurementFrequency;
     private double mMeasurementSampleRate;
-    private MixedRadixComplexFFT mFFT;
+    private ComplexFFT mFFT;
     private float[] mWindow;
     private double mWindowPower;
     private float[] mBlock;
@@ -360,7 +361,7 @@ public class TunerNoiseFloorEstimator
 
         if(mWindow == null || mWindow.length != size)
         {
-            mFFT = new MixedRadixComplexFFT(size);
+            mFFT = ComplexFFTFactory.getComplexFFT(size);
             mWindow = WindowFactory.getWindow(WINDOW_TYPE, size);
             mBlock = new float[size * 2];
             double sumSquares = 0.0;
@@ -385,7 +386,7 @@ public class TunerNoiseFloorEstimator
     {
         int size = Math.max(MINIMUM_FFT_SIZE, (int)Math.round(sampleRate / BIN_WIDTH));
 
-        while(size > MINIMUM_FFT_SIZE && !MixedRadixComplexFFT.isSupported(size))
+        while(size > MINIMUM_FFT_SIZE && !ComplexFFT.isSupported(size))
         {
             size--;
         }
