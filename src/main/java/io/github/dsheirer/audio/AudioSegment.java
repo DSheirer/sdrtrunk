@@ -33,11 +33,15 @@ import io.github.dsheirer.sample.Listener;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -67,12 +71,19 @@ import org.slf4j.LoggerFactory;
 public class AudioSegment implements Listener<IdentifierUpdateNotification>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioSegment.class);
+    private static final AtomicLong ID_GENERATOR = new AtomicLong();
+    private final long mId = ID_GENERATOR.incrementAndGet();
     private BooleanProperty mComplete = new SimpleBooleanProperty(false);
     private BooleanProperty mDuplicate = new SimpleBooleanProperty(false);
     private BooleanProperty mEncrypted = new SimpleBooleanProperty(false);
     private BooleanProperty mRecordAudio = new SimpleBooleanProperty(false);
     private IntegerProperty mMonitorPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private ObservableSet<BroadcastChannel> mBroadcastChannels = FXCollections.observableSet(new HashSet<>());
+    /**
+     * Aliases that added each broadcast channel, with the identifier that each alias matched, so that the streaming
+     * view can show why the call was sent to a stream.
+     */
+    private final Map<BroadcastChannel,Map<Alias,Identifier>> mBroadcastChannelAliases = new HashMap<>();
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private List<float[]> mAudioBuffers = new CopyOnWriteArrayList();
@@ -94,6 +105,15 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         mAliasList = aliasList;
         mTimeslot = timeslot;
         mIdentifierCollection.setTimeslot(timeslot);
+    }
+
+    /**
+     * Unique identifier of this audio segment for the current application session.  The call manager uses it as the
+     * call key, which links a call that is playing on an audio channel to the call in the Calls tab.
+     */
+    public long getId()
+    {
+        return mId;
     }
 
     /**
@@ -198,6 +218,19 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public Set<BroadcastChannel> getBroadcastChannels()
     {
         return Collections.unmodifiableSet(mBroadcastChannels);
+    }
+
+    /**
+     * Aliases that added the broadcast channel to this segment, each with the identifier that it matched, in the order
+     * that they were added.
+     */
+    public Map<Alias,Identifier> getBroadcastChannelAliases(BroadcastChannel broadcastChannel)
+    {
+        synchronized(mBroadcastChannelAliases)
+        {
+            Map<Alias,Identifier> aliases = mBroadcastChannelAliases.get(broadcastChannel);
+            return aliases != null ? new LinkedHashMap<>(aliases) : Map.of();
+        }
     }
 
     /**
@@ -459,7 +492,21 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
             }
 
             //Add all broadcast channels for the alias ... let the set handle duplication.
-            mBroadcastChannels.addAll(alias.getBroadcastChannels());
+            Set<BroadcastChannel> broadcastChannels = alias.getBroadcastChannels();
+
+            if(!broadcastChannels.isEmpty())
+            {
+                synchronized(mBroadcastChannelAliases)
+                {
+                    for(BroadcastChannel broadcastChannel: broadcastChannels)
+                    {
+                        mBroadcastChannelAliases.computeIfAbsent(broadcastChannel, key -> new LinkedHashMap<>())
+                            .putIfAbsent(alias, identifier);
+                    }
+                }
+
+                mBroadcastChannels.addAll(broadcastChannels);
+            }
 
             //Only assign a playback priority if it is lower priority than the current setting.
             int playbackPriority = alias.getPlaybackPriority();

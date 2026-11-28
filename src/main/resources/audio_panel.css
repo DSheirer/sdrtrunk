@@ -33,6 +33,7 @@
     -audio-text-dim: #5f6b78;
     -audio-live: #3ddc84;
     -audio-muted: #ff5c5c;
+    -audio-hold: #f0b429;
     -audio-accent: #3ddc84;
 
     -fx-background-color: -audio-display;
@@ -97,6 +98,29 @@
     -fx-fill: -audio-muted;
 }
 
+.audio-view .audio-hold-button:selected
+{
+    -fx-background-color: derive(-audio-hold, -60%);
+    -fx-border-color: -audio-hold;
+}
+
+.audio-view .audio-hold-button:selected .audio-button-icon
+{
+    -fx-fill: -audio-hold;
+}
+
+.audio-view .audio-hold-label
+{
+    -fx-text-fill: -audio-hold;
+    -fx-font-size: 0.8em;
+    -fx-font-weight: bold;
+}
+
+.audio-view .audio-hold-label .text
+{
+    -fx-fill: -audio-hold;
+}
+
 .audio-view .audio-master-mute
 {
     -fx-padding: 6 10 6 10;
@@ -138,6 +162,13 @@
 {
     -fx-background-color: -audio-panel-active;
     -fx-border-color: -audio-accent;
+}
+
+/* A channel that holds a talkgroup keeps the hold color border, playing or not */
+.audio-view .audio-channel:held,
+.audio-view .audio-channel:held:active
+{
+    -fx-border-color: -audio-hold;
 }
 
 .audio-view .audio-accent
@@ -193,6 +224,29 @@
 .audio-view .audio-channel-tag .text
 {
     -fx-fill: -audio-text-secondary;
+}
+
+/* Channel tag colors match the Playing column of the Calls tab: left (and mono) blue, right orange */
+.audio-view .audio-channel-tag-left
+{
+    -fx-background-color: #4a90d9;
+}
+
+.audio-view .audio-channel-tag-right
+{
+    -fx-background-color: #e8912d;
+}
+
+.audio-view .audio-channel-tag-left,
+.audio-view .audio-channel-tag-right
+{
+    -fx-text-fill: white;
+}
+
+.audio-view .audio-channel-tag-left .text,
+.audio-view .audio-channel-tag-right .text
+{
+    -fx-fill: white;
 }
 
 .audio-view .audio-status

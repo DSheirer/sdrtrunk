@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.playlist;
 
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.database.DatabaseManager;
 import io.github.dsheirer.gui.WindowManager;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -42,6 +43,7 @@ public class PlaylistEditorApplication extends Application
     private Settings mSettings = new Settings();
     private PlaylistManager mPlaylistManager;
     private WindowManager mWindowManager;
+    private DatabaseManager mDatabaseManager;
 
     public PlaylistEditorApplication()
     {
@@ -49,10 +51,13 @@ public class PlaylistEditorApplication extends Application
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mSettings);
         mTunerManager = new TunerManager(mSettings);
         mTunerManager.start();
-        mPlaylistManager = new PlaylistManager(mSettings, mTunerManager, aliasModel, eventLogManager, new IconModel());
+        mDatabaseManager = new DatabaseManager(mSettings);
+        mDatabaseManager.start();
+        mPlaylistManager = new PlaylistManager(mSettings, mTunerManager, aliasModel, eventLogManager, new IconModel(),
+            mDatabaseManager);
 
         mPlaylistManager.init();
-        mWindowManager = new WindowManager(mSettings, mTunerManager, mPlaylistManager);
+        mWindowManager = new WindowManager(mSettings, mTunerManager, mPlaylistManager, mDatabaseManager, null);
     }
 
     @Override

@@ -47,12 +47,6 @@ public class DmrTalkerAliasIdentifier extends TalkerAliasIdentifier
         return Protocol.DMR;
     }
 
-    @Override
-    public String toString()
-    {
-        return "TA-" + super.toString();
-    }
-
     public static DmrTalkerAliasIdentifier create(String value)
     {
         return new DmrTalkerAliasIdentifier(value);

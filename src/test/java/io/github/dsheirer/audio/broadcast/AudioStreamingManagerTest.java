@@ -24,6 +24,9 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivity;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivityModel;
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
 import io.github.dsheirer.dsp.oscillator.ScalarRealOscillator;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
@@ -38,11 +41,18 @@ import io.github.dsheirer.sample.Listener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -124,6 +134,115 @@ public class AudioStreamingManagerTest
 
         assertTrue(success, "Stream patch group audio as INDIVIDUAL TALKGROUPS failed to produce [" +
                 latch.getCount() + "/" + expectedRecordingsCount + "] streaming recordings");
+    }
+
+    @Test
+    public void testStreamActivityForPatchGroup()
+    {
+        StreamActivityModel model = new StreamActivityModel();
+        Settings settings = new Settings();
+        settings.getCallManagementSettings().setPatchGroupStreamingOption(PatchGroupStreamingOption.PATCH_GROUP);
+        List<AudioRecording> recordings = process(settings, model, getAudioSegment(), 1);
+
+        //Streamed as the patch group: the aliases of the patch group and of the patched talkgroups select streams
+        Map<String,StreamActivity> byStream = model.getActivities().stream()
+            .collect(Collectors.toMap(StreamActivity::getStreamName, Function.identity()));
+        assertEquals(Set.of("Stream A", "Stream B", "Stream C"), byStream.keySet());
+        StreamActivity activity = byStream.get("Stream A");
+        assertEquals(StreamStatus.PENDING, activity.getStatus());
+        assertEquals(1, activity.getSelectingAliases().size());
+        assertEquals("patch", activity.getSelectingAliases().getFirst().alias());
+        assertTrue(activity.getSelectingAliases().getFirst().identifier().startsWith("To "),
+            activity.getSelectingAliases().getFirst().identifier());
+        assertEquals("talkgroup1", byStream.get("Stream B").getSelectingAliases().getFirst().alias());
+        assertEquals("talkgroup2", byStream.get("Stream C").getSelectingAliases().getFirst().alias());
+        assertTrue(activity.getDuration() > 0);
+        assertEquals(activity, recordings.getFirst().getStreamActivity("Stream A"));
+    }
+
+    @Test
+    public void testStreamActivityForPatchedTalkgroups()
+    {
+        StreamActivityModel model = new StreamActivityModel();
+        Settings settings = new Settings();
+        settings.getCallManagementSettings().setPatchGroupStreamingOption(PatchGroupStreamingOption.TALKGROUPS);
+        process(settings, model, getAudioSegment(), 2);
+
+        Map<String,StreamActivity> byStream = model.getActivities().stream()
+            .collect(Collectors.toMap(StreamActivity::getStreamName, Function.identity()));
+        assertEquals(3, byStream.size(), byStream.toString());
+
+        StreamActivity b = byStream.get("Stream B");
+        assertEquals(StreamStatus.PENDING, b.getStatus());
+        assertEquals("talkgroup1", b.getSelectingAliases().getFirst().alias());
+        assertEquals("Patched " + b.getTo(), b.getSelectingAliases().getFirst().identifier());
+
+        StreamActivity c = byStream.get("Stream C");
+        assertEquals("talkgroup2", c.getSelectingAliases().getFirst().alias());
+
+        //The patch group alias streams to A, but patch calls are streamed as the patched talkgroups
+        StreamActivity a = byStream.get("Stream A");
+        assertEquals(StreamStatus.SUPPRESSED, a.getStatus());
+        assertEquals("patch", a.getSelectingAliases().getFirst().alias());
+        assertNotNull(a.getDetail());
+    }
+
+    @Test
+    public void testStreamActivityForSuppressedDuplicate() throws InterruptedException
+    {
+        StreamActivityModel model = new StreamActivityModel();
+        Settings settings = new Settings();
+        settings.getCallManagementSettings().setDuplicateStreamingSuppressionEnabled(true);
+        settings.getCallManagementSettings().setPatchGroupStreamingOption(PatchGroupStreamingOption.PATCH_GROUP);
+        AudioSegment audioSegment = getAudioSegment();
+        audioSegment.setDuplicate(true);
+        List<AudioRecording> recordings = process(settings, model, audioSegment, 0);
+
+        assertTrue(recordings.isEmpty());
+        List<StreamActivity> activities = model.getActivities();
+        assertEquals(3, activities.size());
+
+        for(StreamActivity activity: activities)
+        {
+            assertEquals(StreamStatus.SUPPRESSED, activity.getStatus());
+            assertTrue(activity.getDetail().startsWith("Duplicate call"), activity.getDetail());
+        }
+    }
+
+    /**
+     * Processes the audio segment and waits for the expected number of recordings (or a short time when none).
+     */
+    private List<AudioRecording> process(Settings settings, StreamActivityModel model, AudioSegment audioSegment,
+                                         int expectedRecordings)
+    {
+        List<AudioRecording> recordings = new java.util.concurrent.CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(Math.max(1, expectedRecordings));
+        AudioStreamingManager manager = new AudioStreamingManager(recording -> {
+            recordings.add(recording);
+            latch.countDown();
+        }, BroadcastFormat.MP3, settings, model);
+        manager.start();
+        manager.receive(audioSegment);
+
+        try
+        {
+            boolean done = latch.await(expectedRecordings > 0 ? 5 : 1, TimeUnit.SECONDS);
+            assertEquals(expectedRecordings > 0, done, "recordings: " + recordings.size());
+            //Let the manager finish adding the rows of the segment after the last recording
+            Thread.sleep(300);
+        }
+        catch(InterruptedException e)
+        {
+            throw new RuntimeException(e);
+        }
+        finally
+        {
+            manager.stop();
+            cleanupStreamingDirectory(settings.getDirectorySettings().getDirectoryStreaming());
+        }
+
+        assertEquals(expectedRecordings, recordings.size());
+        return recordings;
     }
 
     /**

@@ -36,11 +36,14 @@ import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.monitor.DiagnosticMonitor;
+import io.github.dsheirer.call.CallManager;
+import io.github.dsheirer.database.streaming.StreamActivityRecorder;
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.event.EventManager;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
@@ -49,6 +52,8 @@ import io.github.dsheirer.source.tuner.ui.TunerSpectralDisplayManager;
 import io.github.dsheirer.util.DuplicateLibraryDetector;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.web.WebServer;
+import io.github.dsheirer.web.WebSources;
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -58,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -68,7 +74,10 @@ public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
 
-    private AudioRecordingManager mAudioRecordingManager;
+    private CallManager mCallManager;
+    private DatabaseManager mDatabaseManager;
+    private EventManager mEventManager;
+    private StreamActivityRecorder mStreamActivityRecorder;
     private AudioStreamingManager mAudioStreamingManager;
     private DiagnosticMonitor mDiagnosticMonitor;
     private IconModel mIconModel = new IconModel();
@@ -79,9 +88,14 @@ public class SDRTrunk implements Listener<TunerEvent>
     private TunerManager mTunerManager;
     private ApplicationLog mApplicationLog;
     private ResourceMonitor mResourceMonitor;
+    private WebServer mWebServer;
+    private final AtomicBoolean mShutdown = new AtomicBoolean();
 
-    public SDRTrunk()
+    public SDRTrunk(LaunchOptions options)
     {
+        mSettings.getWebServerSettings().setOverrides(options.webEnabled(), options.webBindAddress(),
+            options.webPort());
+
         try
         {
             initialize();
@@ -134,7 +148,12 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mSettings);
-        mPlaylistManager = new PlaylistManager(mSettings, mTunerManager, aliasModel, eventLogManager, mIconModel);
+        //The database opens first, since it stores the playlists
+        mDatabaseManager = new DatabaseManager(mSettings);
+        mDatabaseManager.start();
+
+        mPlaylistManager = new PlaylistManager(mSettings, mTunerManager, aliasModel, eventLogManager, mIconModel,
+            mDatabaseManager);
 
         boolean headless = GraphicsEnvironment.isHeadless();
 
@@ -142,9 +161,12 @@ public class SDRTrunk implements Listener<TunerEvent>
                 mTunerManager, headless);
         mDiagnosticMonitor.start();
 
+        mWebServer = new WebServer(mSettings.getWebServerSettings(), mDatabaseManager);
+
         if(!headless)
         {
-            mWindowManager = new WindowManager(mSettings, mTunerManager, mPlaylistManager);
+            mWindowManager = new WindowManager(mSettings, mTunerManager, mPlaylistManager, mDatabaseManager,
+                mWebServer);
         }
 
         CalibrationManager calibrationManager = CalibrationManager.getInstance(mSettings);
@@ -155,29 +177,36 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSettings);
 
-        mAudioRecordingManager = new AudioRecordingManager(mSettings);
-        mAudioRecordingManager.start();
+        mCallManager = new CallManager(mSettings, mDatabaseManager);
+        mCallManager.start();
+        mEventManager = new EventManager(mSettings.getTalkgroupFormatSettings(), mDatabaseManager);
+        mEventManager.start();
+        mStreamActivityRecorder = new StreamActivityRecorder(mDatabaseManager,
+            mPlaylistManager.getBroadcastModel().getStreamActivityModel());
+        mStreamActivityRecorder.start();
+        mResourceMonitor.setDatabaseSettings(mSettings.getDatabaseSettings());
 
         mAudioStreamingManager = new AudioStreamingManager(mPlaylistManager.getBroadcastModel(), BroadcastFormat.MP3,
-            mSettings);
+            mSettings, mPlaylistManager.getBroadcastModel().getStreamActivityModel());
         mAudioStreamingManager.start();
 
         DuplicateCallDetector duplicateCallDetector = new DuplicateCallDetector(mSettings);
 
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(duplicateCallDetector);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
-        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
+        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mCallManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
 
         MapService mapService = new MapService(aliasModel, mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
+        mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mEventManager);
 
         if(!headless)
         {
             //The main window's status bar starts the resource monitor while it shows resource usage
             mMainWindow = FxToolkit.callAndWait(() -> new MainWindow(mSettings, mPlaylistManager,
                 mTunerManager, audioPlaybackManager, aliasModel, mIconModel, mapService, mResourceMonitor,
-                mDiagnosticMonitor, this::processShutdown));
+                mDiagnosticMonitor, mDatabaseManager, mCallManager, mEventManager, mWebServer, this::processShutdown));
         }
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(
@@ -187,6 +216,13 @@ public class SDRTrunk implements Listener<TunerEvent>
         mTunerManager.getDiscoveredTunerModel().addListener(this);
 
         mPlaylistManager.init();
+
+        //When the database wasn't available to load the playlist, the playlist loads when the database becomes
+        //available.  Auto-start the channels then.
+        mPlaylistManager.addDelayedLoadListener(this::autoStartChannels);
+        mWebServer.setSources(new WebSources(mTunerManager, mPlaylistManager, mCallManager, mEventManager, aliasModel,
+            mSettings.getTalkgroupFormatSettings()));
+        mWebServer.start();
 
         if(headless)
         {
@@ -199,6 +235,9 @@ public class SDRTrunk implements Listener<TunerEvent>
                 calibrationManager.calibrate();
             }
 
+            //There is no window to close, so shut down cleanly (database writes, tuners) when the process is told to
+            //stop, for example with SIGTERM from a service manager or Ctrl-C.
+            Runtime.getRuntime().addShutdownHook(new Thread(this::processShutdown, "sdrtrunk shutdown"));
             autoStartChannels();
             return;
         }
@@ -223,6 +262,12 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     mMainWindow.showDuplicateLibraries(DuplicateLibraryDetector.describe(duplicateLibraries),
                         String.valueOf(DuplicateLibraryDetector.getFolder(duplicateLibraries)));
+                }
+
+                if(!mPlaylistManager.isLoaded())
+                {
+                    mMainWindow.showPlaylistNotLoaded(mPlaylistManager.getLoadError(),
+                        mDatabaseManager.getConfiguration().getDescription());
                 }
             }
             catch(Exception e)
@@ -302,7 +347,19 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void processShutdown()
     {
+        if(!mShutdown.compareAndSet(false, true))
+        {
+            return;
+        }
+
         mLog.info("Application shutdown started ...");
+
+        if(mWebServer != null)
+        {
+            mLog.info("Stopping web server ...");
+            mWebServer.stop();
+        }
+
         mDiagnosticMonitor.stop();
         mLog.info("Stopping spectral display ...");
 
@@ -318,7 +375,17 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
-        mAudioRecordingManager.stop();
+        mLog.info("Saving playlist ...");
+        mPlaylistManager.stop();
+        mCallManager.stop();
+        mEventManager.stop();
+
+        if(mStreamActivityRecorder != null)
+        {
+            mStreamActivityRecorder.stop();
+        }
+        mLog.info("Closing call database ...");
+        mDatabaseManager.stop();
         mResourceMonitor.stop();
 
         mLog.info("Stopping tuners ...");
@@ -493,6 +560,32 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     public static void main(String[] args)
     {
+        LaunchOptions options;
+
+        try
+        {
+            options = LaunchOptions.parse(args);
+        }
+        catch(IllegalArgumentException iae)
+        {
+            System.err.println(iae.getMessage());
+            System.err.println(LaunchOptions.USAGE);
+            System.exit(2);
+            return;
+        }
+
+        if(options.help())
+        {
+            System.out.println(LaunchOptions.USAGE);
+            return;
+        }
+
+        if(options.headless())
+        {
+            //Must be set before anything queries GraphicsEnvironment, which caches the headless state
+            System.setProperty("java.awt.headless", "true");
+        }
+
         String version = SDRTrunk.class.getPackage().getImplementationVersion();
         Splash.showVersion(version != null ? "v" + version : null);
 
@@ -510,7 +603,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         try
         {
-            new SDRTrunk();
+            new SDRTrunk(options);
         }
         catch(Throwable t)
         {

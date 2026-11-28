@@ -98,6 +98,17 @@
     -fx-fill: #ffffff;
 }
 
+.broadcast-status-view .broadcast-status-severity-active
+{
+    -fx-background-color: #3778c2;
+    -fx-text-fill: #ffffff;
+}
+
+.broadcast-status-view .broadcast-status-severity-active .text
+{
+    -fx-fill: #ffffff;
+}
+
 .broadcast-status-view .broadcast-status-severity-neutral
 {
     -fx-background-color: transparent;

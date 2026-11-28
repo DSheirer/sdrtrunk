@@ -20,6 +20,8 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivityModel;
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.properties.SystemProperties;
@@ -65,6 +67,7 @@ public class BroadcastModel implements Listener<AudioRecording>
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
     private Settings mSettings;
+    private final StreamActivityModel mStreamActivityModel = new StreamActivityModel();
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
@@ -302,8 +305,12 @@ public class BroadcastModel implements Listener<AudioRecording>
 
                     if(audioBroadcaster != null)
                     {
-                        audioRecording.addPendingReplay();
+                        audioRecording.addBroadcaster(audioBroadcaster, channelName);
                         audioBroadcaster.receive(audioRecording);
+                    }
+                    else
+                    {
+                        audioRecording.setStatus(channelName, StreamStatus.NOT_SENT, getNoBroadcasterReason(channelName));
                     }
                 }
             }
@@ -315,6 +322,42 @@ public class BroadcastModel implements Listener<AudioRecording>
     /**
      * Creates a new broadcaster for the broadcast configuration and adds it to the model
      */
+    /**
+     * Explains why a stream that a call was selected for has no broadcaster.
+     */
+    private String getNoBroadcasterReason(String streamName)
+    {
+        BroadcastConfiguration configuration = getBroadcastConfiguration(streamName);
+
+        if(configuration == null)
+        {
+            for(String name: getBroadcastConfigurationNames())
+            {
+                if(name != null && name.trim().equalsIgnoreCase(streamName.trim()))
+                {
+                    return "No stream named '" + streamName + "' - the alias doesn't match the name of stream '" +
+                        name + "' exactly";
+                }
+            }
+
+            return "No stream named '" + streamName + "' is configured - check the streaming of the alias";
+        }
+        else if(!configuration.isEnabled())
+        {
+            return "The stream is disabled";
+        }
+
+        return "The stream is enabled but isn't running - it restarts after an edit, or check its configuration";
+    }
+
+    /**
+     * Calls selected for streaming and what each stream did with them.
+     */
+    public StreamActivityModel getStreamActivityModel()
+    {
+        return mStreamActivityModel;
+    }
+
     private void createBroadcaster(BroadcastConfiguration broadcastConfiguration)
     {
         ConfiguredBroadcast configuredBroadcast = getConfiguredBroadcast(broadcastConfiguration);

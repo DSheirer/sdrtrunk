@@ -22,17 +22,23 @@ package io.github.dsheirer.gui;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
+import io.github.dsheirer.call.CallManager;
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.event.EventManager;
+import io.github.dsheirer.gui.events.EventsView;
+import io.github.dsheirer.gui.calls.CallsView;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.audio.AudioView;
-import io.github.dsheirer.gui.broadcast.BroadcastStatusView;
-import io.github.dsheirer.gui.playlist.streaming.ViewStreamingRequest;
+import io.github.dsheirer.gui.broadcast.StreamingView;
 import io.github.dsheirer.gui.status.ChannelStatusItem;
 import io.github.dsheirer.gui.status.CpuStatusItem;
 import io.github.dsheirer.gui.status.MemoryStatusItem;
 import io.github.dsheirer.gui.status.StatusBar;
+import io.github.dsheirer.gui.status.StatusItem;
 import io.github.dsheirer.gui.status.StorageStatusItem;
 import io.github.dsheirer.gui.status.StreamingStatusItem;
 import io.github.dsheirer.gui.status.TunerStatusItem;
+import io.github.dsheirer.gui.status.WebServerStatusItem;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.map.MapView;
 import io.github.dsheirer.gui.nowplaying.NowPlayingView;
@@ -48,6 +54,7 @@ import io.github.dsheirer.monitor.DiagnosticMonitor;
 import io.github.dsheirer.monitor.ResourceMonitor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.web.WebServer;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
@@ -111,8 +118,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main application window: menu bar, optional toolbar, audio playback display, the spectrum and waterfall, the Now Playing, Map and
- * Tuners tabs, the optional streaming status and the optional status bar.
+ * Main application window: menu bar, optional toolbar, audio playback display, the spectrum and waterfall, the Now
+ * Playing, Calls, Streaming, Events, Map and Tuners tabs and the optional status bar.
  *
  * The spectrum and waterfall can be hidden from the View menu, the hide button in the display settings panel or a
  * keyboard shortcut.  A hidden spectrum is disposed so that it uses no processing or memory.
@@ -121,7 +128,6 @@ public class MainWindow
 {
     private static final Logger mLog = LoggerFactory.getLogger(MainWindow.class);
     private static final double DEFAULT_SPECTRAL_DIVIDER = 0.38;
-    private static final double DEFAULT_BROADCAST_FRACTION = 0.18;
     static final KeyCombination SPECTRAL_TOGGLE_SHORTCUT = new KeyCodeCombination(KeyCode.S,
         KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN);
     private static final KeyCombination SCREEN_CAPTURE_SHORTCUT = new KeyCodeCombination(KeyCode.C,
@@ -150,14 +156,16 @@ public class MainWindow
     private final MainSpectralDisplay mSpectralDisplay;
     private final HBox mSpectralHiddenBar;
     private final NowPlayingView mNowPlayingView;
+    private final CallsView mCallsView;
+    private final EventsView mEventsView;
     private final TabPane mTabPane = new TabPane();
-    private BroadcastStatusView mBroadcastStatusView;
+    private final StreamingView mStreamingView;
+    private Tab mStreamingTab;
     private StatusBar mStatusBar;
     private Tab mNowPlayingTab;
     private Tab mTunersTab;
     private final CheckMenuItem mToolbarMenuItem = new CheckMenuItem("Toolbar");
     private final CheckMenuItem mSpectralMenuItem = new CheckMenuItem("Spectrum & Waterfall");
-    private final CheckMenuItem mBroadcastMenuItem = new CheckMenuItem("Streaming Status");
     private final CheckMenuItem mStatusBarMenuItem = new CheckMenuItem("Status Bar");
     private final CheckMenuItem mNowPlayingDetailsMenuItem = new CheckMenuItem("Now Playing Channel Details");
     private final CheckMenuItem mAutoHideMenuItem = new CheckMenuItem("Auto-hide Menu Bar");
@@ -167,8 +175,8 @@ public class MainWindow
     private MenuBar mMenuBar;
     private MenuBarAutoHide mMenuBarAutoHide;
     private final List<ButtonBase> mToolbarButtons = new ArrayList<>();
+    private final WebServer mWebServer;
     private double mSpectralDivider;
-    private double mBroadcastFraction;
     private boolean mUpdatingDividers;
 
     static
@@ -187,13 +195,19 @@ public class MainWindow
      * @param mapService for the map
      * @param resourceMonitor for the status bar, which starts and stops it
      * @param diagnosticMonitor for the reports
+     * @param databaseManager for the Calls and Events tabs
+     * @param callManager for live call updates in the Calls tab
+     * @param eventManager for live event updates in the Events tab
+     * @param webServer for the status bar, or null
      * @param exitHandler that shuts down the application, invoked on a background thread
      */
     public MainWindow(Settings settings, PlaylistManager playlistManager, TunerManager tunerManager,
                       AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, IconModel iconModel,
                       MapService mapService, ResourceMonitor resourceMonitor, DiagnosticMonitor diagnosticMonitor,
-                      Runnable exitHandler)
+                      DatabaseManager databaseManager, CallManager callManager, EventManager eventManager,
+                      WebServer webServer, Runnable exitHandler)
     {
+        mWebServer = webServer;
         mSettings = settings;
         mPlaylistManager = playlistManager;
         mTunerManager = tunerManager;
@@ -202,7 +216,6 @@ public class MainWindow
         mExitHandler = exitHandler;
         mTitle = SystemProperties.getInstance().getApplicationName();
         mSpectralDivider = clamp(Setting.MAIN_WINDOW_SPECTRAL_DIVIDER.getDouble(DEFAULT_SPECTRAL_DIVIDER));
-        mBroadcastFraction = clamp(Setting.MAIN_WINDOW_BROADCAST_DIVIDER.getDouble(DEFAULT_BROADCAST_FRACTION));
 
         mAudioView = new AudioView(audioPlaybackManager, aliasModel, iconModel, settings);
 
@@ -214,6 +227,10 @@ public class MainWindow
 
         boolean detailsVisible = Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.getBoolean(true);
         mNowPlayingView = new NowPlayingView(playlistManager, iconModel, settings, tunerManager, detailsVisible);
+        mCallsView = new CallsView(databaseManager, callManager, audioPlaybackManager, aliasModel);
+        mEventsView = new EventsView(databaseManager, eventManager, audioPlaybackManager, aliasModel);
+        mStreamingView = new StreamingView(playlistManager.getBroadcastModel(), settings.getSwingSettings(),
+            databaseManager);
         createTabs(mapService, iconModel);
 
         URL stylesheet = MainWindow.class.getResource("/main_window.css");
@@ -240,7 +257,6 @@ public class MainWindow
 
         mSpectralMenuItem.setSelected(spectralVisible);
         mNowPlayingDetailsMenuItem.setSelected(detailsVisible);
-        mBroadcastMenuItem.setSelected(Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.getBoolean(false));
         mStatusBarMenuItem.setSelected(Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.getBoolean(true));
         mToolbarMenuItem.setSelected(Setting.MAIN_WINDOW_TOOLBAR_VISIBLE.getBoolean(true));
         mCompactMenuItem.setSelected(Setting.MAIN_WINDOW_COMPACT_VIEW.getBoolean(false));
@@ -362,16 +378,15 @@ public class MainWindow
     public void dispose()
     {
         mAudioView.dispose();
+        mCallsView.dispose();
+        mEventsView.dispose();
 
         if(mStatusBar != null)
         {
             mStatusBar.dispose();
         }
 
-        if(mBroadcastStatusView != null)
-        {
-            mBroadcastStatusView.dispose();
-        }
+        mStreamingView.dispose();
 
         mSpectralDisplay.dispose();
     }
@@ -535,17 +550,20 @@ public class MainWindow
             new RadioReferencePlaylistActions(mPlaylistManager), true);
 
         mNowPlayingTab = new Tab("Now Playing", mNowPlayingView);
+        Tab calls = new Tab("Calls", mCallsView);
+        mStreamingTab = new Tab("Streaming", mStreamingView);
+        Tab events = new Tab("Events", mEventsView);
         Tab map = new Tab("Map", mapView);
         mTunersTab = new Tab("Tuners", new io.github.dsheirer.source.tuner.ui.TunerView(mTunerManager,
             mSettings));
 
-        mTabPane.getTabs().addAll(mNowPlayingTab, map, mTunersTab);
+        mTabPane.getTabs().addAll(mNowPlayingTab, calls, mStreamingTab, events, map, mTunersTab);
         mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         mTabPane.getStyleClass().add("main-tab-pane");
     }
 
     /**
-     * Updates the split pane to hold the visible panes: spectrum (optional), tabs and streaming status (optional).
+     * Updates the split pane to hold the visible panes: spectrum (optional) and tabs.
      */
     private void updateSplitPaneItems()
     {
@@ -562,25 +580,8 @@ public class MainWindow
 
         items.add(mTabPane);
 
-        if(mBroadcastMenuItem.isSelected())
-        {
-            if(mBroadcastStatusView == null)
-            {
-                mBroadcastStatusView = new BroadcastStatusView(mPlaylistManager.getBroadcastModel(),
-                    mSettings.getSwingSettings());
-                mBroadcastStatusView.setMinHeight(70);
-            }
-
-            items.add(mBroadcastStatusView);
-        }
-
         mSplitPane.getItems().setAll(items);
         SplitPane.setResizableWithParent(mTabPane, true);
-
-        if(mBroadcastStatusView != null)
-        {
-            SplitPane.setResizableWithParent(mBroadcastStatusView, false);
-        }
 
         mSpectralHiddenBar.setVisible(!spectralVisible);
         mSpectralHiddenBar.setManaged(!spectralVisible);
@@ -595,16 +596,10 @@ public class MainWindow
     {
         mUpdatingDividers = true;
         List<SplitPane.Divider> dividers = mSplitPane.getDividers();
-        int index = 0;
 
-        if(mSpectralDisplay.displayVisibleProperty().get() && index < dividers.size())
+        if(mSpectralDisplay.displayVisibleProperty().get() && !dividers.isEmpty())
         {
-            dividers.get(index++).setPosition(mSpectralDivider);
-        }
-
-        if(mBroadcastMenuItem.isSelected() && index < dividers.size())
-        {
-            dividers.get(index).setPosition(1.0 - mBroadcastFraction);
+            dividers.getFirst().setPosition(mSpectralDivider);
         }
 
         mUpdatingDividers = false;
@@ -620,19 +615,10 @@ public class MainWindow
             return;
         }
 
-        List<SplitPane.Divider> dividers = mSplitPane.getDividers();
-        int index = 0;
-
-        if(mSpectralDisplay.displayVisibleProperty().get() && index < dividers.size())
+        if(mSpectralDisplay.displayVisibleProperty().get())
         {
-            mSpectralDivider = clamp(dividers.get(index++).getPosition());
+            mSpectralDivider = clamp(mSplitPane.getDividers().getFirst().getPosition());
             Setting.MAIN_WINDOW_SPECTRAL_DIVIDER.putDouble(mSpectralDivider);
-        }
-
-        if(mBroadcastMenuItem.isSelected() && index < dividers.size())
-        {
-            mBroadcastFraction = clamp(1.0 - dividers.get(index).getPosition());
-            Setting.MAIN_WINDOW_BROADCAST_DIVIDER.putDouble(mBroadcastFraction);
         }
     }
 
@@ -670,16 +656,7 @@ public class MainWindow
     private StatusBar createStatusBar()
     {
         StreamingStatusItem streaming = new StreamingStatusItem(mPlaylistManager.getBroadcastModel());
-        streaming.setAction(() -> {
-            if(isCompact())
-            {
-                MyEventBus.getGlobalEventBus().post(new ViewStreamingRequest());
-            }
-            else
-            {
-                mBroadcastMenuItem.setSelected(!mBroadcastMenuItem.isSelected());
-            }
-        }, "Click to show or hide the streaming status.  In the compact view, click to edit the streams.");
+        streaming.setAction(() -> showTab(mStreamingTab), "Click to open the Streaming tab.");
 
         TunerStatusItem tuners = new TunerStatusItem(mTunerManager.getDiscoveredTunerModel());
         tuners.setOpenTunersAction(() -> showTab(mTunersTab));
@@ -696,8 +673,15 @@ public class MainWindow
             Setting.MAIN_WINDOW_STATUS_ITEM_EVENT_LOGS, mResourceMonitor.eventLogsUsageProperty());
         eventLogs.setAction(() -> openFolder(() -> mSettings.getDirectorySettings().getDirectoryEventLog()));
 
-        StatusBar statusBar = new StatusBar(mResourceMonitor, List.of(streaming, tuners, channels),
-            List.of(cpu, memory, recordings, eventLogs));
+        List<StatusItem> services = new ArrayList<>();
+
+        if(mWebServer != null)
+        {
+            services.add(new WebServerStatusItem(mWebServer));
+        }
+
+        services.addAll(List.of(streaming, tuners, channels));
+        StatusBar statusBar = new StatusBar(mResourceMonitor, services, List.of(cpu, memory, recordings, eventLogs));
         statusBar.setHideAction(() -> mStatusBarMenuItem.setSelected(false));
         return statusBar;
     }
@@ -747,7 +731,7 @@ public class MainWindow
 
         mCompactMenuItem.setAccelerator(COMPACT_VIEW_SHORTCUT);
         Menu view = new Menu("View", null, mCompactMenuItem, new SeparatorMenuItem(), mToolbarMenuItem,
-            mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem, mStatusBarMenuItem,
+            mSpectralMenuItem, mNowPlayingDetailsMenuItem, mStatusBarMenuItem,
             new SeparatorMenuItem(), spectrumTuner);
 
         if(isAutoHideSupported())
@@ -756,8 +740,7 @@ public class MainWindow
         }
 
         //These only apply to the normal view
-        for(MenuItem item: List.of(mSpectralMenuItem, mNowPlayingDetailsMenuItem, mBroadcastMenuItem,
-            spectrumTuner))
+        for(MenuItem item: List.of(mSpectralMenuItem, mNowPlayingDetailsMenuItem, spectrumTuner))
         {
             item.disableProperty().bind(mCompactMenuItem.selectedProperty());
         }
@@ -810,8 +793,6 @@ public class MainWindow
 
         ToggleButton spectrum = toolbarToggle(FontAwesome.AREA_CHART, "Spectrum", "Show spectrum & waterfall",
             SPECTRAL_TOGGLE_SHORTCUT, mSpectralMenuItem);
-        ToggleButton streaming = toolbarToggle(FontAwesome.RSS, "Streaming", "Show streaming status", null,
-            mBroadcastMenuItem);
 
         Button capture = toolbarButton(FontAwesome.CAMERA, "Capture", "Screen capture", SCREEN_CAPTURE_SHORTCUT);
         capture.setOnAction(event -> captureScreen());
@@ -826,11 +807,10 @@ public class MainWindow
         compact.selectedProperty().addListener((observable, oldValue, selected) -> updateCompactButton(compact));
         updateCompactButton(compact);
         spectrum.disableProperty().bind(mCompactMenuItem.selectedProperty());
-        streaming.disableProperty().bind(mCompactMenuItem.selectedProperty());
 
-        mToolbarButtons.addAll(List.of(playlistEditor, settings, spectrum, streaming, capture, recordings, compact));
+        mToolbarButtons.addAll(List.of(playlistEditor, settings, spectrum, capture, recordings, compact));
 
-        ToolBar toolBar = new ToolBar(playlistEditor, settings, new Separator(), spectrum, streaming,
+        ToolBar toolBar = new ToolBar(playlistEditor, settings, new Separator(), spectrum,
             new Separator(), capture, recordings, new Separator(), compact);
         toolBar.getStyleClass().add("main-toolbar");
 
@@ -934,15 +914,6 @@ public class MainWindow
         mNowPlayingDetailsMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
             mNowPlayingView.setDetailTabsVisible(selected);
             Setting.MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE.putBoolean(selected);
-        });
-        mBroadcastMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
-            Setting.MAIN_WINDOW_BROADCAST_STATUS_VISIBLE.putBoolean(selected);
-
-            if(!isCompact())
-            {
-                updateSplitPaneItems();
-                applyDividers();
-            }
         });
         mStatusBarMenuItem.selectedProperty().addListener((observable, oldValue, selected) -> {
             Setting.MAIN_WINDOW_STATUS_BAR_VISIBLE.putBoolean(selected);
@@ -1182,6 +1153,25 @@ public class MainWindow
         libraries.setPrefRowCount(8);
         alert.getDialogPane().setExpandableContent(libraries);
         alert.getDialogPane().setExpanded(true);
+        alert.initOwner(mStage);
+        alert.show();
+    }
+
+    /**
+     * Tells the user that the playlist couldn't be loaded because the database isn't available.
+     * @param error describing why the playlist couldn't be loaded
+     * @param database description of the selected database
+     */
+    public void showPlaylistNotLoaded(String error, String database)
+    {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Playlist Not Loaded");
+        alert.setHeaderText("The playlist couldn't be loaded from the database");
+        alert.setContentText("sdrtrunk stores its playlists in the database (" + database + "), and the playlist " +
+            "couldn't be loaded:\n\n" + error + "\n\nNo channels or aliases are loaded, and playlist changes " +
+            "can't be saved.  sdrtrunk keeps trying to connect to the database, and loads the playlist and " +
+            "auto-starts its channels when the database becomes available.\n\nCheck the database in Settings > " +
+            "Database.");
         alert.initOwner(mStage);
         alert.show();
     }

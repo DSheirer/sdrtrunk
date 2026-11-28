@@ -25,6 +25,8 @@ import io.github.dsheirer.gui.icon.IconManager;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
 import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.web.WebServer;
 import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditor;
 import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
 import io.github.dsheirer.gui.settings.SettingsEditor;
@@ -63,6 +65,8 @@ public class WindowManager
     private PlaylistManager mPlaylistManager;
     private TunerManager mTunerManager;
     private Settings mSettings;
+    private final DatabaseManager mDatabaseManager;
+    private final WebServer mWebServer;
     private SettingsEditor mSettingsEditor;
     private MessageRecordingViewer mMessageRecordingViewer;
 
@@ -78,10 +82,15 @@ public class WindowManager
      * @param settings for the windows and their stored locations
      * @param tunerManager for the playlist editor
      * @param playlistManager for the playlist and channel map editors
+     * @param databaseManager for the call database preference editor
+     * @param webServer for the web server settings page
      */
-    public WindowManager(Settings settings, TunerManager tunerManager, PlaylistManager playlistManager)
+    public WindowManager(Settings settings, TunerManager tunerManager, PlaylistManager playlistManager,
+                         DatabaseManager databaseManager, WebServer webServer)
     {
         mSettings = settings;
+        mDatabaseManager = databaseManager;
+        mWebServer = webServer;
         mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
@@ -304,7 +313,8 @@ public class WindowManager
         {
             mSettingsEditor = new SettingsEditor(mSettings,
                 mPlaylistManager != null ? mPlaylistManager.getRadioReference() : null,
-                mPlaylistManager != null ? mPlaylistManager.getChannelProcessingManager() : null);
+                mPlaylistManager != null ? mPlaylistManager.getChannelProcessingManager() : null, mDatabaseManager,
+                mWebServer);
         }
 
         return mSettingsEditor;

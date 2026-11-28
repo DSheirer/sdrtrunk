@@ -20,9 +20,11 @@
 package io.github.dsheirer.gui.settings;
 
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.database.DatabaseManager;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.Settings;
+import io.github.dsheirer.web.WebServer;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -72,11 +74,14 @@ public class SettingsEditor extends BorderPane
      * @param settings to edit
      * @param radioReference service for the Radio Reference account controls, or null
      * @param channelProcessingManager for the processing state of channels, or null
+     * @param databaseManager for the database page, or null
+     * @param webServer for the web server page, or null
      */
     public SettingsEditor(Settings settings, RadioReference radioReference,
-                          ChannelProcessingManager channelProcessingManager)
+                          ChannelProcessingManager channelProcessingManager, DatabaseManager databaseManager,
+                          WebServer webServer)
     {
-        mContext = new SettingsContext(settings, radioReference, channelProcessingManager);
+        mContext = new SettingsContext(settings, radioReference, channelProcessingManager, databaseManager, webServer);
 
         getStyleClass().add("settings-editor");
         URL stylesheet = SettingsEditor.class.getResource("/settings_editor.css");

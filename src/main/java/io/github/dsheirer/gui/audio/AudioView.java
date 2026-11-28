@@ -30,6 +30,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.settings.SettingsPageType;
 import io.github.dsheirer.gui.settings.ViewSettingsEditorRequest;
 import io.github.dsheirer.icon.IconModel;
+import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingsType;
 import io.github.dsheirer.settings.Settings;
 import io.github.dsheirer.sample.Listener;
@@ -73,6 +74,7 @@ public class AudioView extends HBox
     private static final Logger mLog = LoggerFactory.getLogger(AudioView.class);
     static final PseudoClass ACTIVE = PseudoClass.getPseudoClass("active");
     static final PseudoClass MUTED = PseudoClass.getPseudoClass("muted");
+    static final PseudoClass HELD = PseudoClass.getPseudoClass("held");
     private static final double UPDATES_PER_SECOND = 25.0;
 
     private final AudioPlaybackManager mAudioPlaybackManager;
@@ -260,10 +262,12 @@ public class AudioView extends HBox
 
         List<AudioChannel> channels = mAudioPlaybackManager.getAudioChannels();
 
-        for(AudioChannel channel: channels)
+        for(int x = 0; x < channels.size(); x++)
         {
+            AudioChannel channel = channels.get(x);
             AudioChannelView view = new AudioChannelView(channel, mAliasModel, mIconModel,
-                mSettings.getTalkgroupFormatSettings(), UPDATES_PER_SECOND, this::updateMuted);
+                mSettings.getTalkgroupFormatSettings(), UPDATES_PER_SECOND, this::channelMuteChanged,
+                mAudioPlaybackManager, x);
             mChannelViews.add(view);
             mChannelsBox.getChildren().add(view);
         }
@@ -324,8 +328,24 @@ public class AudioView extends HBox
         mMuteButton.setAccessibleText(muted ? "Unmute all audio" : "Mute all audio");
     }
 
+    /**
+     * A channel was muted or unmuted, by its own button or the master mute.  Saves the master mute state (every
+     * channel muted) so the next session starts muted or unmuted the same way.  FX thread.
+     */
+    private void channelMuteChanged()
+    {
+        updateMuted();
+
+        if(!mChannelViews.isEmpty())
+        {
+            Setting.PLAYBACK_MUTED.putBoolean(mMuteButton.isSelected());
+        }
+    }
+
     private void setOutputMuted(boolean muted)
     {
+        Setting.PLAYBACK_MUTED.putBoolean(muted);
+
         AudioOutput output = mAudioPlaybackManager.getAudioOutput();
 
         if(output != null)

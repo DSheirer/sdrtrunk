@@ -23,7 +23,6 @@
 package io.github.dsheirer.settings.playlist;
 
 import io.github.dsheirer.settings.Setting;
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import io.github.dsheirer.settings.AbstractSettings;
 import io.github.dsheirer.settings.SettingsType;
@@ -68,7 +67,9 @@ public class PlaylistSettings extends AbstractSettings
     }
 
     /**
-     * Path to the current playlist
+     * Path to the playlist file that older versions of sdrtrunk use.  Playlists are stored in the database, so this
+     * is only read to import the playlist files into the database the first time, and is never changed, so that an
+     * older version still finds its playlist.
      */
     public Path getPlaylist()
     {
@@ -89,30 +90,20 @@ public class PlaylistSettings extends AbstractSettings
     }
 
     /**
-     * Lock file for the playlist when updating the file.
+     * Name of the database playlist that is loaded at startup, or null when not set yet
      */
-    public Path getPlaylistLock()
+    public String getActivePlaylist()
     {
-        String playlist = getPlaylist().toAbsolutePath().toString();
-        return Paths.get(playlist + ".lck");
+        String name = Setting.PLAYLIST_ACTIVE.get(null);
+        return name != null && !name.isBlank() ? name : null;
     }
 
     /**
-     * Lock file for the playlist when updating the file.
+     * Sets the name of the database playlist that is loaded at startup
      */
-    public Path getPlaylistBackup()
+    public void setActivePlaylist(String name)
     {
-        String playlist = getPlaylist().toString();
-        return Paths.get(playlist + ".backup");
-    }
-
-    /**
-     * Sets the path to the playlist
-     */
-    public void setPlaylist(Path path)
-    {
-        mPlaylistPath = path;
-        Setting.PLAYLIST_PATH.put(path.toString());
+        Setting.PLAYLIST_ACTIVE.put(name);
         notifySettingsUpdated();
     }
 
@@ -125,7 +116,8 @@ public class PlaylistSettings extends AbstractSettings
     }
 
     /**
-     * List of known playlists
+     * Playlist files that older versions of sdrtrunk list in the playlist manager, including the current playlist
+     * file.  Read only, to import the files into the database.
      */
     public List<Path> getPlaylistList()
     {
@@ -164,18 +156,6 @@ public class PlaylistSettings extends AbstractSettings
         }
 
         return playlists;
-    }
-
-    /**
-     * Sets the list of known playlists
-     */
-    public void setPlaylistList(List<Path> playlistPaths)
-    {
-        if(playlistPaths != null && !playlistPaths.isEmpty())
-        {
-            String rawList = Joiner.on(",").join(playlistPaths);
-            Setting.PLAYLIST_LIST.put(rawList);
-        }
     }
 
     /**

@@ -51,6 +51,31 @@ public enum Setting
     CALL_SUPPRESS_DUPLICATE_RECORDING(Node.CALL_MANAGEMENT, "suppress.duplicate.audio.recording"),
     CALL_SUPPRESS_DUPLICATE_STREAMING(Node.CALL_MANAGEMENT, "suppress.duplicate.audio.streaming"),
 
+    //Calls tab
+    CALLS_VIEW_PAGE_SIZE(Node.CALLS_VIEW, "calls.view.page.size"),
+
+    //Call and event database: connection, age-off and backups
+    DATABASE_AGE_RULE_ACTION(Node.DATABASE, "ageoff.age.action"),
+    DATABASE_AGE_RULE_DAYS(Node.DATABASE, "ageoff.age.days"),
+    DATABASE_AGE_RULE_ENABLED(Node.DATABASE, "ageoff.age.enabled"),
+    DATABASE_BACKUP_INTERVAL(Node.DATABASE, "backup.interval"),
+    DATABASE_BACKUP_RETAIN(Node.DATABASE, "backup.retain"),
+    DATABASE_DUPLICATE_DNM_RETENTION(Node.DATABASE, "ageoff.duplicate.dnm.retention"),
+    DATABASE_EVENT_RULE_DAYS(Node.DATABASE, "ageoff.events.days"),
+    DATABASE_EVENT_RULE_ENABLED(Node.DATABASE, "ageoff.events.enabled"),
+    DATABASE_HOST(Node.DATABASE, "database.host"),
+    DATABASE_NAME(Node.DATABASE, "database.name"),
+    DATABASE_PASSWORD(Node.DATABASE, "database.password"),
+    DATABASE_PORT(Node.DATABASE, "database.port"),
+    DATABASE_SCHEMA(Node.DATABASE, "database.schema"),
+    DATABASE_STREAM_ACTIVITY_RULE_DAYS(Node.DATABASE, "ageoff.stream.activity.days"),
+    DATABASE_STREAM_ACTIVITY_RULE_ENABLED(Node.DATABASE, "ageoff.stream.activity.enabled"),
+    DATABASE_SIZE_RULE_ACTION(Node.DATABASE, "ageoff.size.action"),
+    DATABASE_SIZE_RULE_ENABLED(Node.DATABASE, "ageoff.size.enabled"),
+    DATABASE_SIZE_RULE_LIMIT_MB(Node.DATABASE, "ageoff.size.limit.mb"),
+    DATABASE_TYPE(Node.DATABASE, "database.type"),
+    DATABASE_USER(Node.DATABASE, "database.user"),
+
     //Decode events
     DECODE_EVENT_TIMESTAMP_FORMAT(Node.DECODE_EVENT, "timestamp.format"),
 
@@ -67,6 +92,9 @@ public enum Setting
     DIRECTORY_SCREEN_CAPTURE(Node.DIRECTORY, "directory.screen.capture"),
     DIRECTORY_STREAMING(Node.DIRECTORY, "directory.streaming"),
 
+    //Events tab
+    EVENTS_VIEW_PAGE_SIZE(Node.EVENTS_VIEW, "events.view.page.size"),
+
     //JavaFX stage size and location: argument is the {@link Window} key
     JAVAFX_STAGE_HEIGHT(Node.JAVAFX, "stage.height.%s"),
     JAVAFX_STAGE_MAXIMIZED(Node.JAVAFX, "state.maximized%s"),
@@ -79,8 +107,6 @@ public enum Setting
     JMBE_LIBRARY_PATH(Node.JMBE_LIBRARY, "path.jmbe.library.1.0.0"),
 
     //Main window
-    MAIN_WINDOW_BROADCAST_DIVIDER(Node.GUI, "sdrtrunk.main.window.streaming.fraction"),
-    MAIN_WINDOW_BROADCAST_STATUS_VISIBLE(Node.GUI, "sdrtrunk.broadcast.status.visible"),
     MAIN_WINDOW_COMPACT_VIEW(Node.GUI, "sdrtrunk.main.window.compact.view"),
     MAIN_WINDOW_MENU_BAR_AUTO_HIDE(Node.GUI, "sdrtrunk.main.window.menu.bar.auto.hide"),
     MAIN_WINDOW_NOW_PLAYING_DETAILS_VISIBLE(Node.GUI, "sdrtrunk.now.playing.details.visible"),
@@ -97,6 +123,7 @@ public enum Setting
     MAIN_WINDOW_STATUS_ITEM_RECORDINGS(Node.GUI, "sdrtrunk.main.window.status.item.recordings"),
     MAIN_WINDOW_STATUS_ITEM_STREAMING(Node.GUI, "sdrtrunk.main.window.status.item.streaming"),
     MAIN_WINDOW_STATUS_ITEM_TUNERS(Node.GUI, "sdrtrunk.main.window.status.item.tuners"),
+    MAIN_WINDOW_STATUS_ITEM_WEB_SERVER(Node.GUI, "sdrtrunk.main.window.status.item.web.server"),
     MAIN_WINDOW_TOOLBAR_LABELS(Node.GUI, "sdrtrunk.main.window.toolbar.labels"),
     MAIN_WINDOW_TOOLBAR_VISIBLE(Node.GUI, "sdrtrunk.main.window.toolbar.visible"),
 
@@ -118,12 +145,15 @@ public enum Setting
     PLAYBACK_AUDIO_DEVICE_NAME(Node.PLAYBACK, "audio.playback.device.name"),
     PLAYBACK_DROP_TONE_FREQUENCY(Node.PLAYBACK, "audio.playback.segment.drop.frequency"),
     PLAYBACK_DROP_TONE_VOLUME(Node.PLAYBACK, "audio.playback.segment.drop.volume"),
+    PLAYBACK_HOLD_AUTO_RELEASE_MINUTES(Node.PLAYBACK, "audio.playback.hold.auto.release.minutes"),
+    PLAYBACK_MUTED(Node.PLAYBACK, "audio.playback.muted"),
     PLAYBACK_START_TONE_FREQUENCY(Node.PLAYBACK, "audio.playback.segment.start.frequency"),
     PLAYBACK_START_TONE_VOLUME(Node.PLAYBACK, "audio.playback.segment.start.volume"),
     PLAYBACK_USE_DROP_TONE(Node.PLAYBACK, "audio.playback.segment.drop.tone"),
     PLAYBACK_USE_START_TONE(Node.PLAYBACK, "audio.playback.segment.start.tone"),
 
     //Playlists
+    PLAYLIST_ACTIVE(Node.PLAYLIST, "playlist.active"),
     PLAYLIST_LIST(Node.PLAYLIST, "playlist.list"),
     PLAYLIST_PATH(Node.PLAYLIST, "playlist.path"),
 
@@ -157,7 +187,14 @@ public enum Setting
 
     //Recording
     RECORD_AUDIO_FORMAT(Node.RECORD, "audio.record.format"),
+    RECORD_ALL_CALLS(Node.RECORD, "audio.record.all.calls"),
     RECORD_BASEBAND_FORMAT(Node.RECORD, "baseband.record.format"),
+    RECORD_FOLDER_HOUR(Node.RECORD, "audio.record.folder.hour"),
+    RECORD_FOLDER_LAYOUT(Node.RECORD, "audio.record.folder.layout"),
+
+    //Streaming tab: divider between the streams and the streamed calls
+    STREAMING_VIEW_DIVIDER(Node.GUI, "sdrtrunk.streaming.view.divider"),
+    STREAMING_VIEW_PAGE_SIZE(Node.GUI, "sdrtrunk.streaming.view.page.size"),
 
     //Swing window and table state stored by earlier versions, read only to migrate it: argument is the swing key
     SWING_COLUMN_WIDTH(Node.SWING, "%s.column.%s"), //Arguments: table key and legacy column index
@@ -196,7 +233,18 @@ public enum Setting
     VIEWER_P25P2_LAST_DIRECTORY(Node.VIEWER, "last.selected.directory.p25p2"),
     VIEWER_P25P2_LAST_NAC(Node.VIEWER, "last.nac.value.p25p2"),
     VIEWER_P25P2_LAST_SYSTEM(Node.VIEWER, "last.system.value.p25p2"),
-    VIEWER_P25P2_LAST_WACN(Node.VIEWER, "last.wacn.value.p25p2");
+    VIEWER_P25P2_LAST_WACN(Node.VIEWER, "last.wacn.value.p25p2"),
+
+    //Web server and web API
+    WEB_BIND_ADDRESS(Node.WEB, "bind.address"),
+    WEB_ENABLED(Node.WEB, "enabled"),
+    WEB_INSTANCE_ID(Node.WEB, "instance.id"),
+    WEB_PORT(Node.WEB, "port"),
+    WEB_REGISTRATION_ENABLED(Node.WEB, "registration.enabled"),
+    WEB_SESSION_TIMEOUT_MINUTES(Node.WEB, "session.timeout.minutes"),
+    WEB_TLS_ENABLED(Node.WEB, "tls.enabled"),
+    WEB_TLS_KEYSTORE_PASSWORD(Node.WEB, "tls.keystore.password"),
+    WEB_TLS_KEYSTORE_PATH(Node.WEB, "tls.keystore.path");
 
     private static final String TEMPLATE_ARGUMENT = "%s";
     private final String mNodePath;
@@ -431,6 +479,7 @@ public enum Setting
 
         private static final String APPLICATION = PREFERENCE + "application";
         private static final String CALL_MANAGEMENT = PREFERENCE + "duplicate";
+        private static final String DATABASE = PREFERENCE + "database";
         private static final String DECODE_EVENT = PREFERENCE + "event";
         private static final String DIRECTORY = PREFERENCE + "directory";
         private static final String JAVAFX = PREFERENCE + "javafx";
@@ -445,8 +494,11 @@ public enum Setting
         private static final String SWING = PREFERENCE + "swing";
         private static final String TALKGROUP_FORMAT = PREFERENCE + "identifier";
         private static final String VECTOR_CALIBRATION = PREFERENCE + "calibration";
+        private static final String WEB = PREFERENCE + "web";
 
         private static final String GUI = ROOT + "gui";
+        private static final String CALLS_VIEW = ROOT + "gui/calls";
+        private static final String EVENTS_VIEW = ROOT + "gui/events";
         private static final String TABLE = ROOT + "gui/table";
         private static final String VECTOR_CALIBRATE = ROOT + "vector/calibrate";
         private static final String VECTOR_CALIBRATE_RESULT = ROOT + "vector/calibrate/result";

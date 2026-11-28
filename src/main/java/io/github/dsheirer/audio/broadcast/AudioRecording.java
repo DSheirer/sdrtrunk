@@ -19,12 +19,18 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivity;
+import io.github.dsheirer.audio.broadcast.activity.StreamActivityModel;
+import io.github.dsheirer.audio.broadcast.activity.StreamStatus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class AudioRecording implements Comparable<AudioRecording>
@@ -37,6 +43,14 @@ public class AudioRecording implements Comparable<AudioRecording>
     private AtomicInteger mPendingReplayCount = new AtomicInteger();
     private IdentifierCollection mIdentifierCollection;
     private Collection<BroadcastChannel> mBroadcastChannels;
+    private StreamActivityModel mStreamActivityModel;
+    private final Map<String,StreamActivity> mActivitiesByStream = new HashMap<>();
+    /**
+     * Stream activity row by the broadcaster that holds a pending replay of this recording.  The entry is removed
+     * when the broadcaster releases the recording, so that each broadcaster releases it once.
+     */
+    private final Map<AbstractAudioBroadcaster<?>,StreamActivity> mPendingBroadcasters = new IdentityHashMap<>();
+    private final Map<AbstractAudioBroadcaster<?>,StreamActivity> mActivitiesByBroadcaster = new IdentityHashMap<>();
 
     /**
      * Audio recording that is ready to be streamed
@@ -115,19 +129,113 @@ public class AudioRecording implements Comparable<AudioRecording>
     }
 
     /**
-     * Increments the count of pending replays.
+     * Sets the stream activity rows of this recording, one per stream name, so that the streams can report what they
+     * do with the recording.
+     * @param model that holds the rows
+     * @param activitiesByStream row by stream (broadcast channel) name
      */
-    public void addPendingReplay()
+    public void setStreamActivities(StreamActivityModel model, Map<String,StreamActivity> activitiesByStream)
     {
-        mPendingReplayCount.incrementAndGet();
+        mStreamActivityModel = model;
+
+        synchronized(mActivitiesByStream)
+        {
+            mActivitiesByStream.clear();
+            mActivitiesByStream.putAll(activitiesByStream);
+        }
     }
 
     /**
-     * Decrements the count of pending replays.
+     * Stream activity row for the stream name, or null.
      */
-    public void removePendingReplay()
+    public StreamActivity getStreamActivity(String streamName)
     {
-        mPendingReplayCount.decrementAndGet();
+        synchronized(mActivitiesByStream)
+        {
+            return mActivitiesByStream.get(streamName);
+        }
+    }
+
+    /**
+     * Updates the status of the row for the stream name.  Used when there's no broadcaster for the stream.
+     */
+    public void setStatus(String streamName, StreamStatus status, String detail)
+    {
+        if(mStreamActivityModel != null)
+        {
+            mStreamActivityModel.update(getStreamActivity(streamName), status, detail);
+        }
+    }
+
+    /**
+     * Assigns the recording to the broadcaster of the stream and adds a pending replay that the broadcaster releases
+     * when it is done with the recording.
+     * @param broadcaster that will stream or upload the recording
+     * @param streamName of the broadcaster, for the stream activity row
+     */
+    public void addBroadcaster(AbstractAudioBroadcaster<?> broadcaster, String streamName)
+    {
+        StreamActivity activity = getStreamActivity(streamName);
+
+        synchronized(mPendingBroadcasters)
+        {
+            if(mActivitiesByBroadcaster.containsKey(broadcaster))
+            {
+                return;
+            }
+
+            mActivitiesByBroadcaster.put(broadcaster, activity);
+            mPendingBroadcasters.put(broadcaster, activity);
+            mPendingReplayCount.incrementAndGet();
+        }
+
+        if(mStreamActivityModel != null && activity != null)
+        {
+            mStreamActivityModel.setServerType(activity, broadcaster.getBroadcastConfiguration() != null ?
+                broadcaster.getBroadcastConfiguration().getBroadcastServerType() : null);
+        }
+    }
+
+    /**
+     * Updates the status of this recording for the broadcaster.  A final status also releases the recording.
+     * @param broadcaster that reports the status
+     * @param status of the recording for the broadcaster
+     * @param detail explaining the status, or null
+     */
+    public void setStatus(AbstractAudioBroadcaster<?> broadcaster, StreamStatus status, String detail)
+    {
+        StreamActivity activity;
+
+        synchronized(mPendingBroadcasters)
+        {
+            activity = mActivitiesByBroadcaster.get(broadcaster);
+        }
+
+        if(mStreamActivityModel != null && activity != null)
+        {
+            mStreamActivityModel.update(activity, status, detail);
+        }
+
+        if(status.isFinal())
+        {
+            release(broadcaster);
+        }
+    }
+
+    /**
+     * Releases the pending replay of the broadcaster, so the temporary recording file can be deleted once every
+     * broadcaster is done with it.  Releasing more than once has no effect.
+     */
+    public void release(AbstractAudioBroadcaster<?> broadcaster)
+    {
+        synchronized(mPendingBroadcasters)
+        {
+            if(mPendingBroadcasters.containsKey(broadcaster))
+            {
+                mPendingBroadcasters.remove(broadcaster);
+                mPendingReplayCount.decrementAndGet();
+            }
+        }
     }
 
     /**

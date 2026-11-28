@@ -42,6 +42,7 @@ public class DirectorySettings extends AbstractSettings
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
     private static final String DIRECTORY_APPLICATION_LOG = "logs";
     private static final String DIRECTORY_CONFIGURATION = "configuration";
+    private static final String DIRECTORY_DATABASE = "db";
     private static final String DIRECTORY_EVENT_LOG = "event_logs";
     private static final String DIRECTORY_JMBE = "jmbe";
     private static final String DIRECTORY_PLAYLIST = "playlist";
@@ -465,6 +466,19 @@ public class DirectorySettings extends AbstractSettings
     public Path getDefaultApplicationDirectory()
     {
         return Paths.get(System.getProperty("user.home"), DIRECTORY_APPLICATION_ROOT);
+    }
+
+    /**
+     * Built-in (H2) call database directory: the 'db' folder in the application root directory.
+     */
+    public Path getDirectoryDatabaseBackup()
+    {
+        return getDirectoryDatabase().resolve("backups");
+    }
+
+    public Path getDirectoryDatabase()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_DATABASE);
     }
 
     /**

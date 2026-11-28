@@ -34,4 +34,13 @@
   <!-- Apache Mina TCP/HTTP library -->
   <logger name="org.apache.mina" level="INFO" />
 
+  <!-- Call database: HikariCP connection pool (logs pool housekeeping every 30 seconds at DEBUG) and the MariaDB
+       driver, which logs through SLF4J -->
+  <logger name="com.zaxxer.hikari" level="INFO" />
+  <logger name="org.mariadb.jdbc" level="INFO" />
+
+  <!-- Web server: Jetty and Javalin log every connection and request at DEBUG -->
+  <logger name="org.eclipse.jetty" level="INFO" />
+  <logger name="io.javalin" level="INFO" />
+
 </configuration>

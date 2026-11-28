@@ -24,6 +24,7 @@ import io.github.dsheirer.settings.AbstractSettings;
 import io.github.dsheirer.settings.SettingsType;
 import io.github.dsheirer.record.BasebandRecordFormat;
 import io.github.dsheirer.record.RecordFormat;
+import io.github.dsheirer.record.RecordingFolderLayout;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,9 @@ public class RecordSettings extends AbstractSettings
 {
     public static final RecordFormat DEFAULT_RECORD_FORMAT = RecordFormat.MP3;
     public static final BasebandRecordFormat DEFAULT_BASEBAND_RECORD_FORMAT = BasebandRecordFormat.WAVE;
+    public static final boolean DEFAULT_RECORD_ALL_CALLS = true;
+    public static final RecordingFolderLayout DEFAULT_RECORDING_FOLDER_LAYOUT = RecordingFolderLayout.DEFAULT;
+    public static final boolean DEFAULT_RECORDING_HOUR_FOLDER = false;
     private final static Logger mLog = LoggerFactory.getLogger(RecordSettings.class);
     private RecordFormat mAudioRecordFormat;
     private BasebandRecordFormat mBasebandRecordFormat;
@@ -125,6 +129,60 @@ public class RecordSettings extends AbstractSettings
     {
         mBasebandRecordFormat = basebandRecordFormat;
         Setting.RECORD_BASEBAND_FORMAT.put(basebandRecordFormat.name());
+        notifySettingsUpdated();
+    }
+
+    /**
+     * Indicates if the audio of every call is recorded.  When false, only calls with an alias that has the record
+     * option are recorded.  Default: true.
+     */
+    public boolean isRecordAllCalls()
+    {
+        return Setting.RECORD_ALL_CALLS.getBoolean(DEFAULT_RECORD_ALL_CALLS);
+    }
+
+    /**
+     * Sets whether the audio of every call is recorded
+     */
+    public void setRecordAllCalls(boolean recordAllCalls)
+    {
+        Setting.RECORD_ALL_CALLS.putBoolean(recordAllCalls);
+        notifySettingsUpdated();
+    }
+
+    /**
+     * How call audio recordings are organized into subfolders of the recordings folder.  Default: System / Date.
+     */
+    public RecordingFolderLayout getRecordingFolderLayout()
+    {
+        try
+        {
+            return RecordingFolderLayout.valueOf(Setting.RECORD_FOLDER_LAYOUT.get(
+                DEFAULT_RECORDING_FOLDER_LAYOUT.name()));
+        }
+        catch(IllegalArgumentException iae)
+        {
+            return DEFAULT_RECORDING_FOLDER_LAYOUT;
+        }
+    }
+
+    public void setRecordingFolderLayout(RecordingFolderLayout layout)
+    {
+        Setting.RECORD_FOLDER_LAYOUT.put(layout.name());
+        notifySettingsUpdated();
+    }
+
+    /**
+     * Indicates if an hour folder (00 - 23) is added below the date folder, for busy systems.  Default: false.
+     */
+    public boolean isRecordingHourFolder()
+    {
+        return Setting.RECORD_FOLDER_HOUR.getBoolean(DEFAULT_RECORDING_HOUR_FOLDER);
+    }
+
+    public void setRecordingHourFolder(boolean hourFolder)
+    {
+        Setting.RECORD_FOLDER_HOUR.putBoolean(hourFolder);
         notifySettingsUpdated();
     }
 }

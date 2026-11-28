@@ -18,40 +18,38 @@
  */
 package io.github.dsheirer.playlist;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasListConfiguration;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
+import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.database.DatabaseEvent;
+import io.github.dsheirer.database.DatabaseManager;
+import io.github.dsheirer.database.playlist.PlaylistRecord;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.IAliasListRefreshListener;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.playlist.PlaylistStore.PlaylistReplacedException;
+import io.github.dsheirer.playlist.PlaylistStore.PlaylistStoreException;
 import io.github.dsheirer.settings.Settings;
-import io.github.dsheirer.settings.playlist.PlaylistSettings;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.service.radioreference.AliasListSynchronizer;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,13 +58,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages all aspects of playlists and related models
+ * Manages all aspects of playlists and related models.  Playlists are stored in the database (see PlaylistStore).
+ *
+ * When the database isn't available at startup, no playlist is loaded and the playlist is never saved, so that empty
+ * models can't replace the stored playlist.  The playlist loads when the database becomes available.
  */
 public class PlaylistManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistManager.class);
 
     public static final int PLAYLIST_CURRENT_VERSION = 4;
+    private static final long SAVE_RETRY_SECONDS = 30;
 
     private AliasModel mAliasModel;
     private ChannelMapModel mChannelMapModel = new ChannelMapModel();
@@ -79,14 +81,23 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private Settings mSettings;
     private RadioReference mRadioReference;
     private AliasListSynchronizer mAliasListSynchronizer;
+    private final Object mLoadLock = new Object();
+    private final DatabaseManager mDatabaseManager;
+    private final PlaylistStore mPlaylistStore;
+    private final ExecutorService mDatabaseEventExecutor =
+        Executors.newSingleThreadExecutor(new NamingThreadFactory("sdrtrunk playlist database events"));
+    private final Listener<DatabaseEvent> mDatabaseEventListener = this::receiveDatabaseEvent;
+    private final List<Runnable> mDelayedLoadListeners = new CopyOnWriteArrayList<>();
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
     private ScheduledFuture<?> mPlaylistSaveFuture;
-    private boolean mPlaylistLoading = false;
+    private volatile boolean mPlaylistLoading = false;
+    private volatile boolean mPlaylistLoaded = false;
+    private volatile String mLoadError;
     private List<IAliasListRefreshListener> mAliasListRefreshListeners = new ArrayList<>();
 
     /**
      * Playlist manager - manages all channel configurations, channel maps, and alias lists and handles loading or
-     * persisting to the current playlist file
+     * persisting the current playlist to the database
      *
      * Monitors playlist changes to automatically save configuration changes after they occur.
      *
@@ -95,11 +106,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * @param aliasModel for aliases
      * @param eventLogManager for event logging
      * @param iconModel for icons
+     * @param databaseManager that stores the playlists
      */
     public PlaylistManager(Settings settings, TunerManager tunerManager, AliasModel aliasModel,
-                           EventLogManager eventLogManager, IconModel iconModel)
+                           EventLogManager eventLogManager, IconModel iconModel, DatabaseManager databaseManager)
     {
         mSettings = settings;
+        mDatabaseManager = databaseManager;
+        mPlaylistStore = new PlaylistStore(databaseManager, settings.getPlaylistSettings());
         mTunerManager = tunerManager;
         mAliasModel = aliasModel;
         mIconModel = iconModel;
@@ -270,99 +284,184 @@ public class PlaylistManager implements Listener<ChannelEvent>
         return mChannelMapModel;
     }
 
+
     /**
-     * Loads playlist from the current playlist file, or the default playlist file,
-     * as specified in the current SDRTRunk system settings
+     * Loads the active playlist from the database and starts the alias list synchronizer.  When the database isn't
+     * available, no playlist is loaded (see {@link #getLoadError()}) and the playlist loads when the database becomes
+     * available, followed by a notification to the delayed load listeners.
      */
     public void init()
     {
-        PlaylistV2 playlist = load();
-        transferPlaylistToModels(playlist);
+        mDatabaseManager.addListener(mDatabaseEventListener);
+        loadActive();
         mAliasListSynchronizer.start();
     }
 
     /**
-     * Closes the current playlist, saving if necessary, clears the models and sets the current playlist to use
-     * the specified playlist path.
-     * @param path to use for the playlist.
+     * Saves any pending playlist changes and stops listening for database events.  Invoke before stopping the
+     * database manager.
      */
-    public void setPlaylist(Path path) throws IOException
+    public void stop()
     {
-        if(path == null)
+        mDatabaseManager.removeListener(mDatabaseEventListener);
+        mDatabaseEventExecutor.shutdownNow();
+
+        synchronized(mLoadLock)
         {
-            throw new IllegalArgumentException("Specified playlist path does not exist");
+            saveNow();
         }
-
-        //Complete any pending playlist save
-        saveNow();
-
-        mSettings.getPlaylistSettings().setPlaylist(path);
-
-        if(!Files.exists(path))
-        {
-            createEmptyPlaylist(path);
-        }
-
-        init();
     }
 
     /**
-     * Checks the path argument to determine if it is a valid V2 playlist file by loading and deserializer the file.
-     * @param path to check
-     * @return true if the path is a valid playist.
+     * Indicates if a playlist is loaded.  False when the database wasn't available to load the playlist.
      */
-    public static boolean isPlaylist(Path path)
+    public boolean isLoaded()
     {
-        if(path == null || !Files.exists(path))
-        {
-            return false;
-        }
-
-        JacksonXmlModule xmlModule = new JacksonXmlModule();
-        xmlModule.setDefaultUseWrapper(false);
-        ObjectMapper objectMapper = new XmlMapper(xmlModule)
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        try(InputStream in = Files.newInputStream(path))
-        {
-            PlaylistV2 playlist = objectMapper.readValue(in, PlaylistV2.class);
-
-            //If jackson can successfully deserialize the file, then it's a good V2 playlist
-            return true;
-        }
-        catch(IOException ioe)
-        {
-            mLog.error("IO error while reading playlist file", ioe);
-        }
-
-        return false;
+        return mPlaylistLoaded;
     }
 
     /**
-     * Creates an empty serialized playlist
-     * @param path for storing the playlist
-     * @throws IOException if there is an error writing to disk
+     * Reason that the playlist couldn't be loaded, or null when the playlist is loaded
      */
-    public void createEmptyPlaylist(Path path) throws IOException
+    public String getLoadError()
     {
-        PlaylistV2 playlist = new PlaylistV2();
+        return mLoadError;
+    }
 
-        try(OutputStream out = Files.newOutputStream(path))
+    /**
+     * Name of the loaded playlist, or null when no playlist is loaded
+     */
+    public String getActivePlaylistName()
+    {
+        return mPlaylistStore.getActiveName();
+    }
+
+    /**
+     * Adds a listener to be notified (on a background thread) when a playlist loads after startup: when the database
+     * becomes available after it wasn't available at startup, or after a backup restore replaced the playlists.
+     */
+    public void addDelayedLoadListener(Runnable listener)
+    {
+        mDelayedLoadListeners.add(listener);
+    }
+
+    /**
+     * Loads the active playlist into the models
+     * @return true if loaded
+     */
+    private boolean loadActive()
+    {
+        synchronized(mLoadLock)
         {
-            JacksonXmlModule xmlModule = new JacksonXmlModule();
-            xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            objectMapper.writeValue(out, playlist);
-            out.flush();
+            try
+            {
+                PlaylistV2 playlist = mPlaylistStore.loadActive();
+                transferPlaylistToModels(playlist);
+                mLoadError = null;
+                mPlaylistLoaded = true;
+                return true;
+            }
+            catch(PlaylistStoreException pse)
+            {
+                mLoadError = pse.getMessage();
+                mLog.error("Unable to load the playlist from the database - no channels or aliases are loaded until " +
+                    "the database is available: " + pse.getMessage());
+                return false;
+            }
         }
-        catch(IOException ioe)
+    }
+
+    /**
+     * Saves the current playlist and then loads the named playlist and makes it the active playlist.  When the named
+     * playlist can't be loaded, the current playlist stays loaded.
+     * @param name of the playlist to load
+     * @throws PlaylistStoreException if the current playlist can't be saved or the named playlist can't be loaded
+     */
+    public void selectPlaylist(String name) throws PlaylistStoreException
+    {
+        synchronized(mLoadLock)
         {
-            throw ioe;
+            if(!saveNow())
+            {
+                throw new PlaylistStoreException("Unable to save the changes of the current playlist");
+            }
+
+            PlaylistV2 playlist = mPlaylistStore.load(name);
+            transferPlaylistToModels(playlist);
+            mLoadError = null;
+            mPlaylistLoaded = true;
         }
-        catch(Exception e)
+    }
+
+    /**
+     * Playlists in the database, ordered by name
+     */
+    public List<PlaylistRecord> getPlaylists() throws PlaylistStoreException
+    {
+        return mPlaylistStore.list();
+    }
+
+    /**
+     * Creates an empty playlist
+     */
+    public PlaylistRecord createPlaylist(String name) throws PlaylistStoreException
+    {
+        return mPlaylistStore.create(name);
+    }
+
+    /**
+     * Creates a copy of the playlist, including the latest changes when it is the active playlist
+     */
+    public PlaylistRecord copyPlaylist(String source, String name) throws PlaylistStoreException
+    {
+        saveIfActive(source);
+        return mPlaylistStore.copy(source, name);
+    }
+
+    /**
+     * Renames the playlist
+     */
+    public void renamePlaylist(String name, String newName) throws PlaylistStoreException
+    {
+        synchronized(mLoadLock)
         {
-            mLog.error("Error while creating empty playlist [" + path.toString() + "]", e);
+            mPlaylistStore.rename(name, newName);
+        }
+    }
+
+    /**
+     * Deletes the playlist.  The active playlist can't be deleted.
+     */
+    public void deletePlaylist(String name) throws PlaylistStoreException
+    {
+        mPlaylistStore.delete(name);
+    }
+
+    /**
+     * Imports a playlist file as a new playlist.  The file isn't changed.
+     */
+    public PlaylistRecord importPlaylist(Path file, String name) throws PlaylistStoreException
+    {
+        return mPlaylistStore.importFile(file, name);
+    }
+
+    /**
+     * Exports the playlist to a playlist file, including the latest changes when it is the active playlist
+     */
+    public void exportPlaylist(String name, Path file) throws PlaylistStoreException
+    {
+        saveIfActive(name);
+        mPlaylistStore.exportFile(name, file);
+    }
+
+    private void saveIfActive(String name) throws PlaylistStoreException
+    {
+        synchronized(mLoadLock)
+        {
+            if(name.equals(mPlaylistStore.getActiveName()) && !saveNow())
+            {
+                throw new PlaylistStoreException("Unable to save the changes of the current playlist");
+            }
         }
     }
 
@@ -381,26 +480,34 @@ public class PlaylistManager implements Listener<ChannelEvent>
         mPlaylistLoading = false;
     }
 
-    private void saveNow()
+    /**
+     * Cancels a scheduled save and saves now when there are unsaved changes.
+     * @return true if there was nothing to save or the save succeeded
+     */
+    private boolean saveNow()
     {
-        //Complete any pending playlist save
-        if(mPlaylistSaveFuture != null)
-        {
-            try
-            {
-                mPlaylistSaveFuture.cancel(true);
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error trying to cancel pending playlist save");
-            }
-
-            mPlaylistSaveFuture = null;
-        }
+        cancelScheduledSave();
 
         if(mPlaylistSavePending.getAndSet(false))
         {
-            save();
+            if(!save())
+            {
+                scheduleRetry();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void cancelScheduledSave()
+    {
+        ScheduledFuture<?> future = mPlaylistSaveFuture;
+
+        if(future != null)
+        {
+            future.cancel(false);
+            mPlaylistSaveFuture = null;
         }
     }
 
@@ -452,170 +559,46 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
-     * Saves the current playlist
+     * Playlist model objects in stored order: aliases, alias lists, broadcast configurations, channel maps, channels.
      */
-    private void save()
+    private List<Object> getModelObjects()
     {
-        PlaylistSettings playlistSettings = mSettings.getPlaylistSettings();
-
         PlaylistV2 playlist = new PlaylistV2();
-
-        playlist.setAliases(new ArrayList(mAliasModel.getAliases()));
+        playlist.setAliases(new ArrayList<>(mAliasModel.getAliases()));
         playlist.setAliasListConfigurations(new ArrayList<>(mAliasModel.aliasListConfigurations()));
-        playlist.setBroadcastConfigurations(new ArrayList(mBroadcastModel.getBroadcastConfigurations()));
-        playlist.setChannels(new ArrayList(mChannelModel.getChannels()));
-        playlist.setChannelMaps(new ArrayList(mChannelMapModel.getChannelMaps()));
-        playlist.setVersion(PLAYLIST_CURRENT_VERSION);
-
-        //Create a backup copy of the current playlist
-        if(Files.exists(playlistSettings.getPlaylist()))
-        {
-            try
-            {
-                Files.copy(playlistSettings.getPlaylist(), playlistSettings.getPlaylistBackup(),
-                    StandardCopyOption.REPLACE_EXISTING);
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error creating backup copy of current playlist prior to saving updates [" +
-                    playlistSettings.getPlaylist().toString() + "]", e);
-            }
-        }
-
-        //Create a temporary lock file to signify that we're in the process of updating the playlist
-        if(!Files.exists(playlistSettings.getPlaylistLock()))
-        {
-            try
-            {
-                Files.createFile(playlistSettings.getPlaylistLock());
-            }
-            catch(IOException e)
-            {
-                mLog.error("Error creating temporary lock file prior to saving playlist [" +
-                    playlistSettings.getPlaylistLock().toString() + "]", e);
-            }
-        }
-
-        try(OutputStream out = Files.newOutputStream(playlistSettings.getPlaylist()))
-        {
-            JacksonXmlModule xmlModule = new JacksonXmlModule();
-            xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            objectMapper.writeValue(out, playlist);
-            out.flush();
-
-            //Remove the playlist lock file to indicate that we successfully saved the file
-            if(Files.exists(playlistSettings.getPlaylistLock()))
-            {
-                Files.delete(playlistSettings.getPlaylistLock());
-            }
-        }
-        catch(IOException ioe)
-        {
-            mLog.error("IO error while writing the playlist to a file [" + playlistSettings.getPlaylist().toString() + "]", ioe);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error while saving playlist [" + playlistSettings.getPlaylist().toString() + "]", e);
-        }
+        playlist.setBroadcastConfigurations(new ArrayList<>(mBroadcastModel.getBroadcastConfigurations()));
+        playlist.setChannelMaps(new ArrayList<>(mChannelMapModel.getChannelMaps()));
+        playlist.setChannels(new ArrayList<>(mChannelModel.getChannels()));
+        return PlaylistCodec.getModelObjects(playlist);
     }
 
     /**
-     * Loads a version 2 playlist
+     * Saves the current playlist to the database
+     * @return true if saved (or nothing to save), false on error
      */
-    public PlaylistV2 load()
+    private boolean save()
     {
-        PlaylistSettings files = mSettings.getPlaylistSettings();
-
-        PlaylistV2 playlist = null;
-
-        //Check for a lock file that indicates the previous save attempt was incomplete or had an error
-        if(Files.exists(files.getPlaylistLock()))
+        if(!mPlaylistLoaded)
         {
-            mLog.info("Previous playlist save was incomplete -- restoring from backup file (if possible)");
-
-            try
-            {
-                //Remove the previous playlist
-                Files.delete(files.getPlaylist());
-
-                //Copy the backup file to restore the previous playlist
-                if(Files.exists(files.getPlaylistBackup()))
-                {
-                    Files.copy(files.getPlaylistBackup(), files.getPlaylist());
-                }
-
-                //Remove the lock file
-                Files.delete(files.getPlaylistLock());
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Previous playlist save attempt was incomplete and there was an error restoring the " +
-                    "playlist backup file", ioe);
-            }
+            //Never write the empty models of a playlist that wasn't loaded
+            return true;
         }
 
-        if(Files.exists(files.getPlaylist()))
+        try
         {
-            mLog.info("Loading playlist [" + files.getPlaylist().toString() + "]");
-
-            JacksonXmlModule xmlModule = new JacksonXmlModule();
-            xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-            try(InputStream in = Files.newInputStream(files.getPlaylist()))
-            {
-                playlist = objectMapper.readValue(in, PlaylistV2.class);
-
-                if(PlaylistUpdater.update(playlist))
-                {
-                    schedulePlaylistSave();
-                }
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("IO error while reading playlist file", ioe);
-            }
+            mPlaylistStore.save(getModelObjects(), PLAYLIST_CURRENT_VERSION);
+            return true;
         }
-        else if(Files.exists(files.getLegacyPlaylist()))
+        catch(PlaylistReplacedException pre)
         {
-            mLog.info("Loading legacy playlist [" + files.getLegacyPlaylist().toString() + "]");
-
-            JacksonXmlModule xmlModule = new JacksonXmlModule();
-            xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-            try(InputStream in = Files.newInputStream(files.getLegacyPlaylist()))
-            {
-                playlist = objectMapper.readValue(in, PlaylistV2.class);
-
-                //Perform any updates that may be needed for the playist.
-                if(PlaylistUpdater.update(playlist))
-                {
-                    mLog.info("Legacy playlist was updated to version [" + PLAYLIST_CURRENT_VERSION + "] - saving");
-                    schedulePlaylistSave();
-                }
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("IO error while reading playlist file", ioe);
-            }
+            mLog.info("Playlist changes were not saved because a backup restore replaced the playlists");
+            return true;
         }
-        else
+        catch(PlaylistStoreException pse)
         {
-            mLog.info("PlaylistManager - playlist not found at [" + files.getPlaylist().toString() + "] - creating new (empty) playlist");
+            mLog.error("Unable to save the playlist to the database - will retry: " + pse.getMessage());
+            return false;
         }
-
-        if(playlist == null)
-        {
-            playlist = new PlaylistV2();
-            schedulePlaylistSave();
-        }
-
-        return playlist;
     }
 
     /**
@@ -624,12 +607,24 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     public void schedulePlaylistSave()
     {
-        if(!mPlaylistLoading)
+        if(!mPlaylistLoading && mPlaylistLoaded)
         {
             if(mPlaylistSavePending.compareAndSet(false, true))
             {
                 mPlaylistSaveFuture = ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
             }
+        }
+    }
+
+    /**
+     * Schedules another save attempt after a failed save
+     */
+    private void scheduleRetry()
+    {
+        if(mPlaylistSavePending.compareAndSet(false, true))
+        {
+            mPlaylistSaveFuture = ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), SAVE_RETRY_SECONDS,
+                TimeUnit.SECONDS);
         }
     }
 
@@ -641,10 +636,128 @@ public class PlaylistManager implements Listener<ChannelEvent>
         @Override
         public void run()
         {
-            save();
+            synchronized(mLoadLock)
+            {
+                mPlaylistSaveFuture = null;
 
-            mPlaylistSaveFuture = null;
+                //Clear the flag before saving, so that a change during the save schedules another save
+                if(mPlaylistSavePending.getAndSet(false) && !save())
+                {
+                    scheduleRetry();
+                }
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------------------
+    // Database events
+    //----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Receives database events on the database thread and handles them on the playlist database event thread, since
+     * the playlist store waits for work on the database thread.
+     */
+    private void receiveDatabaseEvent(DatabaseEvent event)
+    {
+        try
+        {
+            switch(event.type())
+            {
+                case CONNECTED -> mDatabaseEventExecutor.execute(this::loadIfNotLoaded);
+                case SWITCHED -> mDatabaseEventExecutor.execute(this::databaseSwitched);
+                case PLAYLISTS_RESTORED -> mDatabaseEventExecutor.execute(this::playlistsRestored);
+                default -> {}
+            }
+        }
+        catch(Exception e)
+        {
+            //Executor shut down while the application stops
+        }
+    }
+
+    /**
+     * Loads the playlist when the database becomes available after it wasn't available at startup
+     */
+    private void loadIfNotLoaded()
+    {
+        boolean loaded;
+
+        synchronized(mLoadLock)
+        {
+            loaded = !mPlaylistLoaded && loadActive();
+        }
+
+        if(loaded)
+        {
+            mLog.info("The database is available - loaded playlist [" + getActivePlaylistName() + "]");
+            notifyDelayedLoad();
+        }
+    }
+
+    /**
+     * Writes the running playlist to the database that was switched to, so that the new database has the playlist as
+     * it is now.  The save detects the new database and writes all of the playlist items.
+     */
+    private void databaseSwitched()
+    {
+        if(!mPlaylistLoaded)
+        {
+            loadIfNotLoaded();
+            return;
+        }
+
+        synchronized(mLoadLock)
+        {
+            cancelScheduledSave();
             mPlaylistSavePending.set(false);
+
+            if(!save())
+            {
+                scheduleRetry();
+            }
+        }
+    }
+
+    /**
+     * Reloads the active playlist after a backup restore replaced the playlists.
+     */
+    private void playlistsRestored()
+    {
+        boolean loaded;
+
+        synchronized(mLoadLock)
+        {
+            cancelScheduledSave();
+            mPlaylistSavePending.set(false);
+            mPlaylistLoaded = false;
+            mPlaylistStore.unload();
+            loaded = loadActive();
+        }
+
+        if(loaded)
+        {
+            mLog.info("Reloaded playlist [" + getActivePlaylistName() + "] after the backup restore");
+            notifyDelayedLoad();
+        }
+        else
+        {
+            //Nothing is loaded, so clear the models of the replaced playlist
+            clearModels();
+        }
+    }
+
+    private void notifyDelayedLoad()
+    {
+        for(Runnable listener: mDelayedLoadListeners)
+        {
+            try
+            {
+                listener.run();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error notifying playlist load listener", e);
+            }
         }
     }
 }

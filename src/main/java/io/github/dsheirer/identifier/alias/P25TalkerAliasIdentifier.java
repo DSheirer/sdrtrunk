@@ -47,12 +47,6 @@ public class P25TalkerAliasIdentifier extends TalkerAliasIdentifier
         return Protocol.APCO25;
     }
 
-    @Override
-    public String toString()
-    {
-        return "TA-" + super.toString();
-    }
-
     public static P25TalkerAliasIdentifier create(String value)
     {
         return new P25TalkerAliasIdentifier(value);

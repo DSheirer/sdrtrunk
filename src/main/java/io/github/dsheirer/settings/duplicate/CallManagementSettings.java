@@ -142,7 +142,10 @@ public class CallManagementSettings extends AbstractSettings implements ICallMan
 
     /**
      * Setting for suppressing recording of duplicate calls.
+     * @deprecated duplicate calls are always recorded and are deleted after the call database duplicate and Do Not
+     * Monitor retention time (#2742).  Kept so that the stored setting value remains readable.
      */
+    @Deprecated
     public boolean isDuplicateRecordingSuppressionEnabled()
     {
         if(mDuplicateRecordingSuppressionEnabled == null)
@@ -155,7 +158,9 @@ public class CallManagementSettings extends AbstractSettings implements ICallMan
 
     /**
      * Sets the setting for suppressing recording of duplicate calls.
+     * @deprecated see {@link #isDuplicateRecordingSuppressionEnabled()}
      */
+    @Deprecated
     public void setDuplicateRecordingSuppressionEnabled(boolean enabled)
     {
         Setting.CALL_SUPPRESS_DUPLICATE_RECORDING.putBoolean(enabled);

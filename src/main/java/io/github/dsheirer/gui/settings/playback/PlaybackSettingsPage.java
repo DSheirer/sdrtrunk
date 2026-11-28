@@ -30,6 +30,8 @@ import io.github.dsheirer.settings.playback.PlayTestAudioRequest;
 import io.github.dsheirer.settings.playback.PlaybackSettings;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
 import javafx.scene.paint.Color;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
@@ -54,6 +56,7 @@ public class PlaybackSettingsPage extends SettingsPage
     private ComboBox<ToneVolume> mStartToneVolumeComboBox;
     private ComboBox<ToneFrequency> mDropToneFrequencyComboBox;
     private ComboBox<ToneVolume> mDropToneVolumeComboBox;
+    private Spinner<Integer> mHoldAutoReleaseSpinner;
 
     public PlaybackSettingsPage(Settings settings)
     {
@@ -85,6 +88,13 @@ public class PlaybackSettingsPage extends SettingsPage
                 getDropToneFrequencyComboBox()::setValue)
             .defaultValue(getDropToneVolumeComboBox().valueProperty(), PlaybackSettings.DEFAULT_DROP_TONE_VOLUME,
                 getDropToneVolumeComboBox()::setValue);
+
+        SettingsSection hold = addSection("Talkgroup Hold");
+        hold.addRow("Release an idle hold after", getHoldAutoReleaseSpinner(), new Label("minutes"))
+            .defaultValue(getHoldAutoReleaseSpinner().valueProperty(), PlaybackSettings.DEFAULT_HOLD_AUTO_RELEASE_MINUTES,
+                getHoldAutoReleaseSpinner().getValueFactory()::setValue)
+            .help("Minutes without a call to the held talkgroup before the hold is released automatically.  0 never " +
+                "releases a hold automatically.");
     }
 
     private ComboBox<AudioPlaybackDeviceDescriptor> getAudioPlaybackDevicesCombo()
@@ -245,5 +255,26 @@ public class PlaybackSettingsPage extends SettingsPage
     private void play(float[] audioSamples, int channel)
     {
         MyEventBus.getGlobalEventBus().post(new PlayTestAudioRequest(audioSamples, channel));
+    }
+
+    /**
+     * Talkgroup hold automatic release time in minutes (0 = never)
+     */
+    private Spinner<Integer> getHoldAutoReleaseSpinner()
+    {
+        if(mHoldAutoReleaseSpinner == null)
+        {
+            mHoldAutoReleaseSpinner = new Spinner<>(0, 1440, mPlaybackSettings.getHoldAutoReleaseMinutes());
+            mHoldAutoReleaseSpinner.setEditable(true);
+            mHoldAutoReleaseSpinner.setPrefWidth(90);
+            mHoldAutoReleaseSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue != null)
+                {
+                    mPlaybackSettings.setHoldAutoReleaseMinutes(newValue);
+                }
+            });
+        }
+
+        return mHoldAutoReleaseSpinner;
     }
 }

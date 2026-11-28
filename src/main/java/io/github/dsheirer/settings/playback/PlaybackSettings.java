@@ -42,6 +42,7 @@ public class PlaybackSettings extends AbstractSettings
     public static final ToneFrequency DEFAULT_START_TONE_FREQUENCY = ToneFrequency.F700;
     public static final ToneVolume DEFAULT_DROP_TONE_VOLUME = ToneVolume.V3;
     public static final ToneVolume DEFAULT_START_TONE_VOLUME = ToneVolume.V3;
+    public static final int DEFAULT_HOLD_AUTO_RELEASE_MINUTES = 0;
 
 
     public static final int TONE_LENGTH_SAMPLES = 160;
@@ -292,5 +293,23 @@ public class PlaybackSettings extends AbstractSettings
             Setting.PLAYBACK_AUDIO_CHANNEL_COUNT.putInt(descriptor.getAudioFormat().getChannels());
             notifySettingsUpdated();
         }
+    }
+
+    /**
+     * Minutes without a call to a hold talkgroup before the hold is released automatically, or 0 to never release
+     * a hold automatically.
+     */
+    public int getHoldAutoReleaseMinutes()
+    {
+        return Math.max(0, Setting.PLAYBACK_HOLD_AUTO_RELEASE_MINUTES.getInt(DEFAULT_HOLD_AUTO_RELEASE_MINUTES));
+    }
+
+    /**
+     * Sets the hold talkgroup automatic release time in minutes (0 = never).
+     */
+    public void setHoldAutoReleaseMinutes(int minutes)
+    {
+        Setting.PLAYBACK_HOLD_AUTO_RELEASE_MINUTES.putInt(Math.max(0, minutes));
+        notifySettingsUpdated();
     }
 }
