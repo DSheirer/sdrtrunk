@@ -104,18 +104,22 @@
  *
  * When a decoder's channel specification carries its channel filter
  * ({@link io.github.dsheirer.source.tuner.channel.ChannelSpecification#getChannelFilter()}), the channel is delivered
- * at the filter's rate, normally 25 kHz, at which the decoder doesn't decimate, and the mask applies the decoder's own
- * filter, designed by the decoder's own design function at the output rate, convolved with a Kaiser low-pass whose
- * transition starts just above the decoder's pass band.  So the decoder sees the pass band response that its
- * demodulator, symbol recovery and squelch are tuned to, and the Kaiser filter adds stop band attenuation (the
- * decoders' own filters stop at about 40 to 46 dB).  The source reports
+ * at a rate at which the decoder doesn't decimate, normally the filter's own rate (25 kHz for most decoders), and the
+ * mask applies the decoder's own filter, designed by the decoder's own design function at the output rate, convolved
+ * with a Kaiser low-pass whose transition starts just above the decoder's pass band.  So the decoder sees the pass
+ * band response that its demodulator, symbol recovery and squelch are tuned to, and the Kaiser filter adds stop band
+ * attenuation (the decoders' own filters stop at about 40 to 46 dB).  The source reports
  * {@link io.github.dsheirer.source.tuner.channel.TunerChannelSource#isChannelFiltered()}, the processing chain passes
- * that on with the startup sample rate event, and the decoder then skips its own baseband filter.  A channel is
- * decoder-ready only when the channelizer can deliver the filter's rate exactly and the filter fits the overlap's
- * length limit at that rate (OverlapSaveChannelSource.isDecoderReady()).  For example, at 10 MS/s the available rates
- * near 25 kHz are those whose decimation divides the 50,000-sample overlap, so 25 and 50 kHz are available and 12,
- * 12.5 and 30 kHz aren't.  Other channels, and decoders without a channel filter, get at least 50 kHz with a wide
- * mask, as from a polyphase channel, and filter as usual.
+ * that on with the startup sample rate event, and the decoder then skips its own baseband filter.  The rates
+ * available depend on the tuner rate: the decimation must divide the hop and the overlap, so at 10 MS/s 10, 16, 20,
+ * 25 and 50 kHz are available but 12, 12.5 and 30 kHz aren't, and at 2.048 MS/s 25.6 kHz is available but 25 kHz
+ * isn't.  Every decoder works at whatever rate it receives, so the channel can be delivered at any available rate
+ * that the decoder uses without decimating (ChannelFilter.isUndecimated()) and at which the decoder's filter fits the
+ * overlap's length limit: the filter's own rate if available, otherwise the lowest such rate above it, otherwise the
+ * highest below it (OverlapSaveChannelSource.getDecoderReadyOutputSize()).  The length limit is the overlap's 5 ms
+ * at the output rate, so in practice it limits the decoder filter's transition band, whatever the rate: NXDN 4800's
+ * 125 Hz transition doesn't fit at any rate.  Other channels, and decoders without a channel filter, get at least
+ * 50 kHz with a wide mask, as from a polyphase channel, and filter as usual.
  *
  * <h2>Threads</h2>
  *

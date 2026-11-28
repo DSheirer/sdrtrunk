@@ -23,7 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
+import io.github.dsheirer.module.decode.am.DecodeConfigAM;
+import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog.Bandwidth;
+import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -323,25 +326,37 @@ public class OverlapSaveChannelTest
      * Decoder-ready channel (production mask: the decoder's own filter cascaded with a Kaiser low-pass): across the
      * decoder's pass band the response follows the decoder's own filter within 0.02 dB, and tones from 8.5 to 16.5 kHz
      * either side of the channel center (the adjacent channel beyond the decoder's transition band) are rejected by at
-     * least 120 dB, for P25 Phase 1 LSM, NBFM, P25 Phase 2 and the FM demodulator module.  The channel is on a bin,
-     * so that the mask is centered on the channel and the decoder filter's response applies as designed.
+     * least 120 dB.  At 2.4 MS/s (25 kHz): P25 Phase 1 LSM, NBFM, P25 Phase 2 and the FM demodulator module.  At rates
+     * other than the filter's own: LSM at 2.048 MS/s (25.6 kHz), NXDN 9600 at 10 MS/s (25 kHz in place of 24 kHz) and
+     * AM 6 kHz at 10 MS/s (16 kHz in place of 12.5 kHz).  AM 6 kHz at 16 kHz and NBFM 7.5 kHz at 25 kHz have long
+     * decoder filters that leave the Kaiser filter 23 and 13 taps, so its transition band starts at the decoder's pass
+     * edge.  With 13 taps it adds less beyond the pass band, so for NBFM 7.5 kHz the adjacent band is rejected by at
+     * least 90 dB.  The channel is on a bin, so that the mask is centered on the channel and the decoder filter's
+     * response applies as designed.
      */
     @Test
     void decoderReadyMaskCascadesDecoderFilter()
     {
         double channelOffset = 300000.0;
-        List<ChannelSpecification> specifications = List.of(
-            new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, LSM_FILTER),
+        ChannelSpecification lsm = new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, LSM_FILTER);
+        List<ChannelSpecification> specifications = List.of(lsm,
             new io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM().getChannelSpecification(),
             new io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2().getChannelSpecification(),
-            new io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard().getChannelSpecification());
+            new io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard().getChannelSpecification(),
+            lsm, nxdn(TransmissionMode.M9600), am(Bandwidth.BW_6_0), nbfm(Bandwidth.BW_7_5));
+        double[] sampleRates = {SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, SAMPLE_RATE, 2048000.0, 10000000.0, 10000000.0,
+            SAMPLE_RATE};
+        double[] outputRates = {25000.0, 25000.0, 25000.0, 25000.0, 25600.0, 25000.0, 16000.0, 25000.0};
+        double[] rejections = {120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 120.0, 90.0};
 
-        for(ChannelSpecification specification : specifications)
+        for(int x = 0; x < specifications.size(); x++)
         {
+            ChannelSpecification specification = specifications.get(x);
+            double sampleRate = sampleRates[x];
             ChannelSpecification.ChannelFilter filter = specification.getChannelFilter();
-            assertTrue(OverlapSaveChannelSource.isDecoderReady(OverlapSaveChannelizer.create(SAMPLE_RATE),
+            assertTrue(OverlapSaveChannelSource.isDecoderReady(OverlapSaveChannelizer.create(sampleRate),
                 specification));
-            double reference = toneGain(specification, channelOffset, 0.0);
+            double reference = toneGain(specification, sampleRate, channelOffset, 0.0);
             float[] taps = null;
             double rate = 0;
 
@@ -349,26 +364,27 @@ public class OverlapSaveChannelTest
             {
                 if(taps == null)
                 {
-                    OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(SAMPLE_RATE);
+                    OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(sampleRate);
                     rate = OverlapSaveChannelSource.createChannel(channelizer, channelOffset, specification)
                         .getOutputSampleRate();
+                    assertEquals(outputRates[x], rate, 0.001, "output rate at " + sampleRate);
                     taps = filter.getTaps(rate);
                 }
 
                 double expected = response(taps, tone, rate) / response(taps, 0.0, rate);
-                double measured = toneGain(specification, channelOffset, tone) / reference;
+                double measured = toneGain(specification, sampleRate, channelOffset, tone) / reference;
                 assertEquals(20.0 * Math.log10(expected), 20.0 * Math.log10(measured), 0.02, "pass band at " + tone +
-                    " Hz, filter pass " + filter.passFrequency());
+                    " Hz, filter pass " + filter.passFrequency() + " at " + sampleRate);
             }
 
             for(double distance = 8500.0; distance <= 16500.0; distance += 1000.0)
             {
                 for(double sign : new double[]{1.0, -1.0})
                 {
-                    double gain = toneGain(specification, channelOffset, sign * distance);
+                    double gain = toneGain(specification, sampleRate, channelOffset, sign * distance);
                     double rejection = -20.0 * Math.log10(gain / reference);
-                    assertTrue(rejection >= 120.0, "adjacent band rejection " + rejection + " dB at " +
-                        sign * distance + " Hz, filter pass " + filter.passFrequency());
+                    assertTrue(rejection >= rejections[x], "adjacent band rejection " + rejection + " dB at " +
+                        sign * distance + " Hz, filter pass " + filter.passFrequency() + " at " + sampleRate);
                 }
             }
         }
@@ -377,14 +393,15 @@ public class OverlapSaveChannelTest
     /**
      * RMS output amplitude of a production decoder-ready channel for a unit tone at the offset from the channel.
      */
-    private static double toneGain(ChannelSpecification specification, double channelOffset, double tone)
+    private static double toneGain(ChannelSpecification specification, double sampleRate, double channelOffset,
+                                   double tone)
     {
-        OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(SAMPLE_RATE);
+        OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(sampleRate);
         OverlapSaveChannel channel = OverlapSaveChannelSource.createChannel(channelizer, channelOffset, specification);
         Collector collector = new Collector();
         channel.setListener(collector);
         channelizer.addChannel(channel);
-        drive(channelizer, new ToneSource(SAMPLE_RATE, new double[]{channelOffset + tone}, new double[]{1.0}), 6);
+        drive(channelizer, new ToneSource(sampleRate, new double[]{channelOffset + tone}, new double[]{1.0}), 6);
         double[][] samples = collector.samples(1);
         double power = 0;
 
@@ -544,15 +561,15 @@ public class OverlapSaveChannelTest
     }
 
     /**
-     * A channel is decoder-ready only when the channelizer delivers the filter's sample rate exactly and the decoder's
-     * filter fits the overlap at that rate.  Otherwise the source falls back to the wide 50 kHz channel, unflagged.
+     * A channel is decoder-ready at an available rate that the decoder uses without decimating, where the decoder's
+     * filter fits the overlap: the filter's own rate if available, otherwise the lowest qualifying rate above it.
+     * Otherwise the source falls back to the wide 50 kHz channel, unflagged.
      */
     @Test
-    void decoderReadyNeedsExactRateAndFilterLength()
+    void decoderReadyRateAndFilterLength()
     {
         TunerChannel tunerChannel = new TunerChannel(851012500, 12500);
-        ChannelSpecification.ChannelFilter nxdn4800 = NXDNDecoder.getChannelFilter(12000.0, 3000.0, 3125.0);
-        ChannelSpecification nxdn = new ChannelSpecification(12000.0, 6250, 3000.0, 3125.0, nxdn4800);
+        ChannelSpecification nxdn4800 = nxdn(TransmissionMode.M4800);
         ChannelSpecification lsm = new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, LSM_FILTER);
 
         //2.4 MS/s: 12 kHz is available (decimation 200 divides the 12,000-sample overlap), but the 61-tap limit there
@@ -560,26 +577,69 @@ public class OverlapSaveChannelTest
         OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(SAMPLE_RATE);
         int outputSize = OverlapSaveChannel.getOutputSize(channelizer, 12000.0);
         assertEquals(12000.0, outputSize * channelizer.getBinWidth(), 0.001);
-        assertTrue(nxdn4800.getTaps(12000.0).length > OverlapSaveChannel.getMaximumFilterLength(channelizer,
-            outputSize));
-        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn));
-        assertTrue(OverlapSaveChannelSource.isDecoderReady(channelizer, lsm));
+        assertTrue(nxdn4800.getChannelFilter().getTaps(12000.0).length >
+            OverlapSaveChannel.getMaximumFilterLength(channelizer, outputSize));
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn4800));
+        assertEquals(25000.0, getDecoderReadyRate(channelizer, lsm), 0.001);
 
-        //10 MS/s: 12 kHz isn't available (decimation 833.3), so NXDN 4800 gets the wide channel
+        //10 MS/s: NXDN 4800's filter is too long at every rate it accepts (its 125 Hz transition), so it gets the wide
+        //channel.  NXDN 9600 gets 25 kHz and AM 6 kHz gets 16 kHz, since 24 and 12.5 kHz aren't available.  AM 3 kHz's
+        //filter is too long at every rate it accepts.
         channelizer = OverlapSaveChannelizer.create(10000000.0);
-        assertTrue(Math.abs(OverlapSaveChannel.getOutputSize(channelizer, 12000.0) * channelizer.getBinWidth() -
-            12000.0) > 1.0);
-        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn));
-        assertTrue(OverlapSaveChannelSource.isDecoderReady(channelizer, lsm));
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn4800));
+        assertEquals(25000.0, getDecoderReadyRate(channelizer, lsm), 0.001);
+        assertEquals(25000.0, getDecoderReadyRate(channelizer, nxdn(TransmissionMode.M9600)), 0.001);
+        assertEquals(16000.0, getDecoderReadyRate(channelizer, am(Bandwidth.BW_6_0)), 0.001);
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, am(Bandwidth.BW_3_0)));
 
-        OverlapSaveChannelSource source = new OverlapSaveChannelSource(null, tunerChannel, nxdn, channelizer,
+        OverlapSaveChannelSource source = new OverlapSaveChannelSource(null, tunerChannel, nxdn4800, channelizer,
             851000000, "test", null);
         assertFalse(source.isChannelFiltered());
         assertEquals(50000.0, source.getSampleRate(), 0.001);
 
+        source = new OverlapSaveChannelSource(null, tunerChannel, am(Bandwidth.BW_6_0), channelizer, 851000000,
+            "test", null);
+        assertTrue(source.isChannelFiltered());
+        assertEquals(16000.0, source.getSampleRate(), 0.001);
+
+        //2.048 MS/s: 25 kHz isn't available, so 25.6 kHz
+        channelizer = OverlapSaveChannelizer.create(2048000.0);
+        assertEquals(25600.0, getDecoderReadyRate(channelizer, lsm), 0.001);
+        source = new OverlapSaveChannelSource(null, tunerChannel, lsm, channelizer, 851000000, "test", null);
+        assertTrue(source.isChannelFiltered());
+        assertEquals(25600.0, source.getSampleRate(), 0.001);
+
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, null));
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer,
             new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0)));
+    }
+
+    private static double getDecoderReadyRate(OverlapSaveChannelizer channelizer, ChannelSpecification specification)
+    {
+        return OverlapSaveChannelSource.getDecoderReadyOutputSize(channelizer, specification) *
+            channelizer.getBinWidth();
+    }
+
+    private static ChannelSpecification nxdn(TransmissionMode mode)
+    {
+        DecodeConfigNXDN config = new DecodeConfigNXDN();
+        config.setTransmissionMode(mode);
+        return config.getChannelSpecification();
+    }
+
+    private static ChannelSpecification nbfm(Bandwidth bandwidth)
+    {
+        io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM config =
+            new io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM();
+        config.setBandwidth(bandwidth);
+        return config.getChannelSpecification();
+    }
+
+    private static ChannelSpecification am(Bandwidth bandwidth)
+    {
+        DecodeConfigAM config = new DecodeConfigAM();
+        config.setBandwidth(bandwidth);
+        return config.getChannelSpecification();
     }
 
     /**

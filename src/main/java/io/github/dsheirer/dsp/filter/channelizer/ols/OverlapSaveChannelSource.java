@@ -112,8 +112,8 @@ public class OverlapSaveChannelSource extends TunerChannelSource implements Over
         if(!mChannelFiltered && channelSpecification != null && channelSpecification.hasChannelFilter())
         {
             LOGGER.info("Overlap-save channel [" + tunerChannel.getFrequency() + "] can't apply the decoder's " +
-                "channel filter at [" + channelSpecification.getChannelFilter().sampleRate() + "] - using a wide " +
-                "channel filter and the decoder's own filter");
+                "channel filter at any rate that the decoder uses without decimating - using a wide channel filter " +
+                "and the decoder's own filter");
         }
 
         mChannel = createChannel(channelizer, tunerChannel.getFrequency() - tunerFrequency, channelSpecification);
@@ -132,51 +132,82 @@ public class OverlapSaveChannelSource extends TunerChannelSource implements Over
     }
 
     /**
-     * Indicates if the channelizer can deliver a decoder-ready channel for the specification: the specification has a
-     * channel filter, the channelizer provides the filter's sample rate exactly (the output size must divide the FFT
-     * size into a decimation that divides the hop and the overlap, so not every rate is available at every tuner
-     * sample rate), and the decoder's filter is no longer than the overlap allows at that rate.
+     * Indicates if the channelizer can deliver a decoder-ready channel for the specification
+     * (getDecoderReadyOutputSize()).
      * @param channelizer providing the block parameters
      * @param channelSpecification of the consumer, or null
      * @return true if createChannel() applies the specification's channel filter
      */
     public static boolean isDecoderReady(OverlapSaveChannelizer channelizer, ChannelSpecification channelSpecification)
     {
+        return getDecoderReadyOutputSize(channelizer, channelSpecification) > 0;
+    }
+
+    /**
+     * Output size of a decoder-ready channel for the specification.  The specification must have a channel filter, and
+     * the channel's sample rate must be one that the channelizer provides (the output size must divide the FFT size
+     * into a decimation that divides the hop and the overlap, so not every rate is available at every tuner sample
+     * rate), one that the decoder uses without decimating (ChannelFilter.isUndecimated()), and one at which the
+     * decoder's filter is no longer than the overlap allows.  The rate is the filter's own sample rate when that
+     * qualifies, otherwise the lowest qualifying rate above it, otherwise the highest below it.
+     * @param channelizer providing the block parameters
+     * @param channelSpecification of the consumer, or null
+     * @return output size, in bins, or 0 if the channelizer can't deliver a decoder-ready channel
+     */
+    public static int getDecoderReadyOutputSize(OverlapSaveChannelizer channelizer,
+                                                ChannelSpecification channelSpecification)
+    {
         ChannelSpecification.ChannelFilter filter = channelSpecification != null ?
             channelSpecification.getChannelFilter() : null;
 
         if(filter == null)
         {
+            return 0;
+        }
+
+        int preferred = Math.max(1, (int)Math.ceil(filter.sampleRate() / channelizer.getBinWidth() - 1E-9));
+
+        for(int size = preferred; size <= channelizer.getFFTSize(); size++)
+        {
+            if(isDecoderReady(channelizer, filter, size))
+            {
+                return size;
+            }
+        }
+
+        for(int size = preferred - 1; size > 0; size--)
+        {
+            if(isDecoderReady(channelizer, filter, size))
+            {
+                return size;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Indicates if a channel of the output size can apply the decoder's channel filter.
+     */
+    private static boolean isDecoderReady(OverlapSaveChannelizer channelizer, ChannelSpecification.ChannelFilter filter,
+                                          int outputSize)
+    {
+        if(!OverlapSaveChannel.isValidOutputSize(channelizer, outputSize))
+        {
             return false;
         }
 
-        int outputSize;
-
-        try
-        {
-            outputSize = OverlapSaveChannel.getOutputSize(channelizer, filter.sampleRate());
-        }
-        catch(IllegalArgumentException iae)
-        {
-            return false;
-        }
-
-        double outputRate = outputSize * channelizer.getBinWidth();
-
-        if(Math.abs(outputRate - filter.sampleRate()) > filter.sampleRate() * 1E-9)
-        {
-            return false;
-        }
-
-        return filter.getTaps(outputRate).length <= OverlapSaveChannel.getMaximumFilterLength(channelizer, outputSize);
+        double rate = outputSize * channelizer.getBinWidth();
+        return filter.isUndecimated(rate) &&
+            filter.getTaps(rate).length <= OverlapSaveChannel.getMaximumFilterLength(channelizer, outputSize);
     }
 
     /**
      * Creates the channel slice for a consumer's channel specification.  When the channelizer can apply the
-     * specification's channel filter (isDecoderReady()), the channel is at the filter's sample rate and its filter is
-     * the decoder's own filter cascaded with a Kaiser low-pass just outside the decoder's pass band, which keeps the
-     * response that the decoder is tuned to and adds stop band attenuation.  Otherwise the channel has a wide filter at
-     * a sample rate of at least 50 kHz.
+     * specification's channel filter (getDecoderReadyOutputSize()), the channel is at that output size's sample rate
+     * and its filter is the decoder's own filter, designed at that rate, cascaded with a Kaiser low-pass just outside
+     * the decoder's pass band, which keeps the response that the decoder is tuned to and adds stop band attenuation.
+     * Otherwise the channel has a wide filter at a sample rate of at least 50 kHz.
      * @param channelizer providing the block parameters
      * @param frequencyOffset of the channel from the tuner center in Hertz
      * @param channelSpecification of the consumer, or null
@@ -185,11 +216,12 @@ public class OverlapSaveChannelSource extends TunerChannelSource implements Over
     public static OverlapSaveChannel createChannel(OverlapSaveChannelizer channelizer, double frequencyOffset,
                                                    ChannelSpecification channelSpecification)
     {
-        ChannelSpecification.ChannelFilter filter = isDecoderReady(channelizer, channelSpecification) ?
-            channelSpecification.getChannelFilter() : null;
-        double minimumRate = filter != null ? filter.sampleRate() : Math.max(MINIMUM_SAMPLE_RATE,
-            channelSpecification != null ? channelSpecification.getMinimumSampleRate() : 0.0);
-        int outputSize = OverlapSaveChannel.getOutputSize(channelizer, minimumRate);
+        int decoderReadySize = getDecoderReadyOutputSize(channelizer, channelSpecification);
+        ChannelSpecification.ChannelFilter filter = decoderReadySize > 0 ? channelSpecification.getChannelFilter() :
+            null;
+        int outputSize = decoderReadySize > 0 ? decoderReadySize : OverlapSaveChannel.getOutputSize(channelizer,
+            Math.max(MINIMUM_SAMPLE_RATE, channelSpecification != null ?
+                channelSpecification.getMinimumSampleRate() : 0.0));
         double outputRate = outputSize * channelizer.getBinWidth();
         int maximumLength = OverlapSaveChannel.getMaximumFilterLength(channelizer, outputSize);
         float[] taps;
@@ -203,10 +235,25 @@ public class OverlapSaveChannelSource extends TunerChannelSource implements Over
             float[] decoderTaps = filter.getTaps(outputRate);
             int kaiserLength = maximumLength - decoderTaps.length + 1;
             double transition = filter.stopFrequency() - filter.passFrequency();
+            double kaiserPass = filter.passFrequency() + transition / 4.0;
             double kaiserStop = Math.min(filter.stopFrequency() + transition / 2.0, outputRate / 2.0);
-            taps = kaiserLength >= 3 ? OverlapSaveChannel.convolve(decoderTaps, OverlapSaveChannel.designFilter(
-                outputRate, filter.passFrequency() + transition / 4.0, kaiserStop, ATTENUATION, kaiserLength)) :
-                decoderTaps;
+
+            //When the decoder's filter leaves the Kaiser filter too few taps for that transition band, the band widens
+            //about its center.  Where that would reach into the decoder's pass band, the band starts at the decoder's
+            //pass edge instead and widens upward, and if that puts the cutoff past the output Nyquist edge there's no
+            //Kaiser filter, only the decoder's own.
+            double widest = getKaiserTransition(outputRate, kaiserLength);
+            double center = (kaiserPass + kaiserStop) / 2.0;
+
+            if(center - widest / 2.0 < filter.passFrequency())
+            {
+                kaiserPass = filter.passFrequency();
+                kaiserStop = kaiserPass + widest;
+            }
+
+            taps = kaiserLength >= 3 && (kaiserPass + kaiserStop) / 2.0 < outputRate / 2.0 ?
+                OverlapSaveChannel.convolve(decoderTaps, OverlapSaveChannel.designFilter(outputRate, kaiserPass,
+                kaiserStop, ATTENUATION, kaiserLength)) : decoderTaps;
         }
         else
         {
@@ -215,6 +262,17 @@ public class OverlapSaveChannelSource extends TunerChannelSource implements Over
         }
 
         return new OverlapSaveChannel(channelizer, frequencyOffset, outputSize, taps, 1.0f);
+    }
+
+    /**
+     * Narrowest transition band, in Hertz, that a Kaiser filter of the length meets the attenuation over (the length
+     * estimate of OverlapSaveChannel.designFilter(), solved for the transition at the odd length it uses).
+     */
+    private static double getKaiserTransition(double sampleRate, int length)
+    {
+        int odd = length % 2 == 0 ? length - 1 : length;
+        return odd > 1 ? (ATTENUATION - 7.95) / (2.285 * (odd - 1)) * sampleRate / (2.0 * Math.PI) :
+            Double.POSITIVE_INFINITY;
     }
 
     /**
