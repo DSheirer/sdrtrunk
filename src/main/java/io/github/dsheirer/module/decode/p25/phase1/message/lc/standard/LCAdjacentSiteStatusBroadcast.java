@@ -40,6 +40,11 @@ import java.util.List;
 public class LCAdjacentSiteStatusBroadcast extends LinkControlWord implements IFrequencyBandReceiver
 {
     private static final IntField LRA = IntField.length8(OCTET_1_BIT_8);
+    //Octet 2 bits 7-4 (AABF-D 7.3.15)
+    private static final int CONVENTIONAL_CHANNEL_FLAG = 16;
+    private static final int SITE_FAILURE_FLAG = 17;
+    private static final int VALID_INFORMATION_FLAG = 18;
+    private static final int ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG = 19;
     private static final IntField SYSTEM = IntField.length12(OCTET_2_BIT_16 + 4);
     private static final IntField RFSS = IntField.length8(OCTET_4_BIT_32);
     private static final IntField SITE = IntField.length8(OCTET_5_BIT_40);
@@ -54,6 +59,7 @@ public class LCAdjacentSiteStatusBroadcast extends LinkControlWord implements IF
     private Identifier mSite;
     private IBandChannelDescriptor mChannel;
     private SystemServiceClass mSystemServiceClass;
+    private List<String> mSiteFlags;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -74,8 +80,71 @@ public class LCAdjacentSiteStatusBroadcast extends LinkControlWord implements IF
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
+        sb.append(" FLAGS ").append(getSiteFlags());
+        sb.append(" SERVICES ").append(getSystemServiceClass());
         return sb.toString();
+    }
+
+    /**
+     * Indicates if the channel is a conventional repeater channel
+     */
+    public boolean isConventionalChannel()
+    {
+        return getMessage().get(CONVENTIONAL_CHANNEL_FLAG);
+    }
+
+    /**
+     * Indicates if the site is in a failure condition
+     */
+    public boolean isFailedConditionSite()
+    {
+        return getMessage().get(SITE_FAILURE_FLAG);
+    }
+
+    /**
+     * Indicates if the site information is valid
+     */
+    public boolean isValidSiteInformation()
+    {
+        return getMessage().get(VALID_INFORMATION_FLAG);
+    }
+
+    /**
+     * Indicates if the site has an active network connection to the RFSS controller
+     */
+    public boolean isActiveNetworkConnectionToRfssControllerSite()
+    {
+        return getMessage().get(ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG);
+    }
+
+    public List<String> getSiteFlags()
+    {
+        if(mSiteFlags == null)
+        {
+            mSiteFlags = new ArrayList<>();
+
+            if(isConventionalChannel())
+            {
+                mSiteFlags.add("CONVENTIONAL CHANNEL");
+            }
+
+            if(isFailedConditionSite())
+            {
+                mSiteFlags.add("FAILURE CONDITION");
+            }
+
+            if(isValidSiteInformation())
+            {
+                mSiteFlags.add("VALID INFORMATION");
+            }
+
+            if(isActiveNetworkConnectionToRfssControllerSite())
+            {
+                mSiteFlags.add("ACTIVE RFSS CONNECTION");
+            }
+        }
+
+        return mSiteFlags;
     }
 
     public Identifier getLocationRegistrationArea()

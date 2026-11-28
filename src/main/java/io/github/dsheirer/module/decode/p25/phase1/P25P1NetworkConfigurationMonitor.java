@@ -511,7 +511,7 @@ public class P25P1NetworkConfigurationMonitor
                 neighbors.row(null, format(lc.getSystem(), 3), null, format(lc.getRfss(), 2),
                     format(lc.getSite(), 2), format(lc.getLocationRegistrationArea(), 2), lc.getChannel(),
                     ActivitySummary.mhz(lc.getChannel().getDownlinkFrequency()),
-                    ActivitySummary.mhz(lc.getChannel().getUplinkFrequency()));
+                    ActivitySummary.mhz(lc.getChannel().getUplinkFrequency()), lc.getSiteFlags());
             }
             if(mLCNeighborSitesExplicit.containsKey(site))
             {
@@ -519,7 +519,7 @@ public class P25P1NetworkConfigurationMonitor
                 neighbors.row(null, null, null, format(lce.getRfss(), 2), format(lce.getSite(), 2),
                     format(lce.getLocationRegistrationArea(), 2), lce.getChannel(),
                     ActivitySummary.mhz(lce.getChannel().getDownlinkFrequency()),
-                    ActivitySummary.mhz(lce.getChannel().getUplinkFrequency()));
+                    ActivitySummary.mhz(lce.getChannel().getUplinkFrequency()), lce.getSiteFlags());
             }
             if(mTSBKNeighborSites.containsKey(site))
             {
