@@ -830,8 +830,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         if(mChannel.isStandardChannel())
                         {
                             MutableIdentifierCollection mic2 = getIdentifierCollectionForUser(cgu.getGroupAddress2(), message.getTimestamp());
-                            mic2.update(cgu.getChannel1());
-                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel1(), cgu.getServiceOptions2(), mic2,
+                            mic2.update(cgu.getChannel2());
+                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel2(), cgu.getServiceOptions2(), mic2,
                                     mac.getOpcode(), message.getTimestamp(), mac.toString());
                         }
                     }
@@ -843,8 +843,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         if(mChannel.isStandardChannel())
                         {
                             MutableIdentifierCollection mic3 = getIdentifierCollectionForUser(cgu.getGroupAddress3(), message.getTimestamp());
-                            mic3.update(cgu.getChannel1());
-                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel1(), cgu.getServiceOptions3(), mic3,
+                            mic3.update(cgu.getChannel3());
+                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel3(), cgu.getServiceOptions3(), mic3,
                                     mac.getOpcode(), message.getTimestamp(), mac.toString());
                         }
                     }
@@ -870,8 +870,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         if(mChannel.isStandardChannel())
                         {
                             MutableIdentifierCollection mic2 = getIdentifierCollectionForUser(cgu.getGroupAddress2(), message.getTimestamp());
-                            mic2.update(cgu.getChannel1());
-                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel1(), cgu.getServiceOptions2(), mic2,
+                            mic2.update(cgu.getChannel2());
+                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel2(), cgu.getServiceOptions2(), mic2,
                                     mac.getOpcode(), message.getTimestamp(), mac.toString());
                         }
                     }
@@ -900,8 +900,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         if(mChannel.isStandardChannel())
                         {
                             MutableIdentifierCollection mic2 = getIdentifierCollectionForUser(cgu.getGroupAddress2(), message.getTimestamp());
-                            mic2.update(cgu.getChannel1());
-                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel1(), serviceOptions, mic2,
+                            mic2.update(cgu.getChannel2());
+                            mTrafficChannelManager.processP2ChannelUpdate(cgu.getChannel2(), serviceOptions, mic2,
                                     mac.getOpcode(), message.getTimestamp(), mac.toString());
                         }
                     }
