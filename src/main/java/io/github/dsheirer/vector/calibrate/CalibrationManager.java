@@ -111,7 +111,7 @@ public class CalibrationManager
 
             manager.removeStaleSettings();
             manager.checkEnvironment();
-            mLog.info(manager.getSummary());
+            manager.logStatus();
             sInstance = manager;
         }
 
@@ -397,7 +397,7 @@ public class CalibrationManager
 
     /**
      * Calibrates each uncalibrated calibration.  A calibration that fails is logged and left uncalibrated, so it uses
-     * the scalar implementation, and the remaining calibrations continue.  Logs the summary when finished.
+     * the scalar implementation, and the remaining calibrations continue.  Logs the summary at debug level when finished.
      */
     public void calibrate()
     {
@@ -433,7 +433,30 @@ public class CalibrationManager
         }
 
         mLog.info("Calibration Complete!" + (failed > 0 ? "  [" + failed + "] calibrations failed." : ""));
-        mLog.info(getSummary());
+        mLog.debug(getSummary());
+    }
+
+    /**
+     * Logs a one-line calibration status at info level and the per-calibration summary at debug level.
+     */
+    private void logStatus()
+    {
+        int pending = getUncalibrated().size();
+        int total = getCalibrationTypes().size();
+
+        if(pending == 0)
+        {
+            mLog.info("Vector calibrations loaded for [" + total + "] operations");
+        }
+        else
+        {
+            mLog.info("Vector calibrations pending for [" + pending + " of " + total + "] operations");
+        }
+
+        if(mLog.isDebugEnabled())
+        {
+            mLog.debug(getSummary());
+        }
     }
 
     /**
