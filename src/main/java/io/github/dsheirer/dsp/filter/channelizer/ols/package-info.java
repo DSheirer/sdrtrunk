@@ -119,7 +119,7 @@
  * down): the filter's own rate if available, otherwise the lowest such rate above it, otherwise the highest below it
  * down to 80% of the filter's own (OverlapSaveChannelSource.getDecoderReadyOutputSize()).  The length limit is the
  * overlap's 5 ms at the output rate, so in practice it limits the decoder filter's transition band, whatever the rate:
- * NXDN 4800's 125 Hz transition doesn't fit at any rate.  When the decoder's filter leaves the Kaiser filter only a few
+ * a 125 Hz transition doesn't fit at any rate.  When the decoder's filter leaves the Kaiser filter only a few
  * taps, the Kaiser filter's transition band starts at the decoder's pass edge and is wider, so it adds less attenuation
  * near the decoder's stop edge.  Other channels, and decoders without a channel filter, get at least 50 kHz with a wide
  * mask, as from a polyphase channel, and filter as usual.

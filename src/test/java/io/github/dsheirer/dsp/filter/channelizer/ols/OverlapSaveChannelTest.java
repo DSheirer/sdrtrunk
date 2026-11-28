@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog.Bandwidth;
 import io.github.dsheirer.module.decode.nxdn.DecodeConfigNXDN;
+import io.github.dsheirer.module.decode.nxdn.NXDNDecoder;
 import io.github.dsheirer.module.decode.nxdn.layer3.type.TransmissionMode;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.sample.Listener;
@@ -579,30 +580,32 @@ public class OverlapSaveChannelTest
     void decoderReadyRateAndFilterLength()
     {
         TunerChannel tunerChannel = new TunerChannel(851012500, 12500);
-        ChannelSpecification nxdn4800 = nxdn(TransmissionMode.M4800);
+        //A decoder filter with a 125 Hz transition (NXDN's design and rate rule, 3000/3125 Hz), too long to fit
+        ChannelSpecification narrow = new ChannelSpecification(12000.0, 6250, 3000.0, 3125.0,
+            NXDNDecoder.getChannelFilter(12000.0, 3000.0, 3125.0, TransmissionMode.M4800.getSymbolRate()));
         ChannelSpecification lsm = new ChannelSpecification(24000.0, 12500, 5750.0, 6500.0, LSM_FILTER);
 
         //2.4 MS/s: 12 kHz is available (decimation 200 divides the 12,000-sample overlap), but the 61-tap limit there
-        //is shorter than the NXDN 4800 filter
+        //is shorter than the narrow filter
         OverlapSaveChannelizer channelizer = OverlapSaveChannelizer.create(SAMPLE_RATE);
         int outputSize = OverlapSaveChannel.getOutputSize(channelizer, 12000.0);
         assertEquals(12000.0, outputSize * channelizer.getBinWidth(), 0.001);
-        assertTrue(nxdn4800.getChannelFilter().getTaps(12000.0).length >
+        assertTrue(narrow.getChannelFilter().getTaps(12000.0).length >
             OverlapSaveChannel.getMaximumFilterLength(channelizer, outputSize));
-        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn4800));
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, narrow));
         assertEquals(25000.0, getDecoderReadyRate(channelizer, lsm), 0.001);
 
-        //10 MS/s: NXDN 4800's filter is too long at every rate it accepts (its 125 Hz transition), so it gets the wide
+        //10 MS/s: the narrow filter is too long at every rate it accepts (its 125 Hz transition), so it gets the wide
         //channel.  NXDN 9600 gets 25 kHz and AM 6 kHz gets 16 kHz, since 24 and 12.5 kHz aren't available.  AM 3 kHz's
         //filter is too long at every rate it accepts.
         channelizer = OverlapSaveChannelizer.create(10000000.0);
-        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, nxdn4800));
+        assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, narrow));
         assertEquals(25000.0, getDecoderReadyRate(channelizer, lsm), 0.001);
         assertEquals(25000.0, getDecoderReadyRate(channelizer, nxdn(TransmissionMode.M9600)), 0.001);
         assertEquals(16000.0, getDecoderReadyRate(channelizer, am(Bandwidth.BW_6_0)), 0.001);
         assertFalse(OverlapSaveChannelSource.isDecoderReady(channelizer, am(Bandwidth.BW_3_0)));
 
-        OverlapSaveChannelSource source = new OverlapSaveChannelSource(null, tunerChannel, nxdn4800, channelizer,
+        OverlapSaveChannelSource source = new OverlapSaveChannelSource(null, tunerChannel, narrow, channelizer,
             851000000, "test", null);
         assertFalse(source.isChannelFiltered());
         assertEquals(50000.0, source.getSampleRate(), 0.001);
