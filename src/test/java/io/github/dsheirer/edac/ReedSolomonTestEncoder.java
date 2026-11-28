@@ -21,13 +21,12 @@ package io.github.dsheirer.edac;
 
 /**
  * Systematic encoder for the P25 RS(63,35,29) code (and codes shortened from it) for unit tests.  Parity symbols are
- * at indices 0-27 and message symbols at indices 28-62, with generator polynomial roots alpha^1 through alpha^28.
+ * at indices 0-27 and message symbols at indices 28-62, with generator polynomial roots alpha^1 through alpha^28.  The
+ * RS(63,47,17) code (and codes shortened from it) is encoded the same way with 16 parity symbols.
  */
 public class ReedSolomonTestEncoder
 {
     private static final int N = 63;
-    private static final int K = 35;
-    private static final int PARITY = N - K;
     private static final int[] EXP = new int[63];
     private static final int[] LOG = new int[64];
 
@@ -60,10 +59,22 @@ public class ReedSolomonTestEncoder
      */
     public static int[] encode(int[] message)
     {
-        int[] generator = new int[PARITY + 1];
+        return encode(message, 28);
+    }
+
+    /**
+     * Encodes the message symbols.
+     * @param message symbols (63 - parity), where trailing zero symbols represent a shortened code
+     * @param parity symbol count: 28 for RS(63,35,29) or 16 for RS(63,47,17)
+     * @return codeword (63 symbols)
+     */
+    public static int[] encode(int[] message, int parity)
+    {
+        int k = N - parity;
+        int[] generator = new int[parity + 1];
         generator[0] = 1;
 
-        for(int i = 1; i <= PARITY; i++)
+        for(int i = 1; i <= parity; i++)
         {
             int root = EXP[i % 63];
 
@@ -75,26 +86,26 @@ public class ReedSolomonTestEncoder
             generator[0] = multiply(generator[0], root);
         }
 
-        //Remainder of x^28 * m(x) divided by g(x)
+        //Remainder of x^parity * m(x) divided by g(x)
         int[] remainder = new int[N];
-        System.arraycopy(message, 0, remainder, PARITY, K);
+        System.arraycopy(message, 0, remainder, parity, k);
 
-        for(int i = N - 1; i >= PARITY; i--)
+        for(int i = N - 1; i >= parity; i--)
         {
             int coefficient = remainder[i];
 
             if(coefficient != 0)
             {
-                for(int j = 0; j <= PARITY; j++)
+                for(int j = 0; j <= parity; j++)
                 {
-                    remainder[i - PARITY + j] ^= multiply(generator[j], coefficient);
+                    remainder[i - parity + j] ^= multiply(generator[j], coefficient);
                 }
             }
         }
 
         int[] codeword = new int[N];
-        System.arraycopy(remainder, 0, codeword, 0, PARITY);
-        System.arraycopy(message, 0, codeword, PARITY, K);
+        System.arraycopy(remainder, 0, codeword, 0, parity);
+        System.arraycopy(message, 0, codeword, parity, k);
         return codeword;
     }
 }
