@@ -40,6 +40,7 @@ import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotificat
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.health.HealthMonitor;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
@@ -150,6 +151,12 @@ public class ProcessingChain implements Listener<ChannelEvent>
         addModule(mChannelState);
         addModule(mDecodeEventHistory);
         addModule(mMessageHistory);
+
+        //How well the channel is heard, for node health reports (a traffic channel counts toward its control channel).
+        if(channel.isStandardChannel())
+        {
+            addModule(new HealthMonitor(channel));
+        }
     }
 
     /**

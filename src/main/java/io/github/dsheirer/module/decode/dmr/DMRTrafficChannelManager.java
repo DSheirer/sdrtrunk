@@ -28,6 +28,9 @@ import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.health.CallOutcome;
+import io.github.dsheirer.health.CallOutcomes;
+import io.github.dsheirer.health.HealthRegistry;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
@@ -120,6 +123,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
      *
      * @param parentChannel that owns this traffic channel manager
      */
+    private CallOutcomes mCallOutcomes;
+    /** The call each traffic channel was requested for, by frequency, until it starts or is rejected. */
+    private final Map<Long,String> mRequestedCalls = new ConcurrentHashMap<>();
+
     public DMRTrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
@@ -391,10 +398,15 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         try
         {
             boolean allocated = mAllocatedChannelFrequencyMap.containsKey(channel.getDownlinkFrequency());
+            String callKey = CallOutcomes.key(channel.getDownlinkFrequency() > 0 ? channel.getDownlinkFrequency() :
+                channel.getChannelNumber(), channel.getTimeslot());
+            Identifier to = identifierCollection.getToIdentifier();
+            boolean newCall = calls().isNewCall(callKey, to != null ? to.getValue() : null, timestamp);
 
             if(allocated)
             {
                 //Note: if traffic channel is allocated then do nothing & let the channel maintain its own event state
+                calls().tally(callKey, newCall, CallOutcome.RECORDED);
             }
             else
             {
@@ -461,6 +473,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                         event.setDetails(event.getDetails() + " - " + NO_FREQUENCY);
                     }
 
+                    calls().tally(callKey, newCall, CallOutcome.NO_FREQUENCY);
                     broadcast(event);
                     return;
                 }
@@ -476,6 +489,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                         event.setDetails(event.getDetails() + " - " + DATA_CALL_IGNORED);
                     }
 
+                    calls().tally(callKey, newCall, CallOutcome.DATA);
                     broadcast(event);
                     return;
                 }
@@ -498,6 +512,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                     ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(trafficChannel, channel,
                             identifierCollection, this);
                     request.setStartTimestamp(timestamp);
+                    //Counted as recorded before the request: one no tuner can take is rejected while it's posted, and
+                    //the rejection moves the call to noSource.
+                    calls().tally(callKey, newCall, CallOutcome.RECORDED);
+                    mRequestedCalls.put(frequency, callKey);
                     getInterModuleEventBus().post(request);
                 }
                 else
@@ -510,6 +528,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                     {
                         event.setDetails(event.getDetails() + " - " + MAX_TRAFFIC_CHANNELS_EXCEEDED);
                     }
+
+                    calls().tally(callKey, newCall, CallOutcome.NO_RECORDER);
                 }
 
                 broadcast(event);
@@ -526,6 +546,20 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         }
     }
 
+
+    /**
+     * Calls this control channel announced and what became of each, for node health reports.  Made at the first grant:
+     * a DMR channel that never grants a call (conventional) has no calls counted, and is reported as a channel.
+     */
+    private CallOutcomes calls()
+    {
+        if(mCallOutcomes == null)
+        {
+            mCallOutcomes = new CallOutcomes(HealthRegistry.getInstance().calls(mParentChannel));
+        }
+
+        return mCallOutcomes;
+    }
 
     /**
      * Creates a call event type description for the specified opcode and service options
@@ -778,6 +812,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             {
                 mCallEventsTS1.remove(frequency);
                 mCallEventsTS2.remove(frequency);
+                mRequestedCalls.remove(frequency);
+                calls().forget(frequency);
             }
             finally
             {
@@ -795,6 +831,10 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
             try
             {
+                //Only the call the traffic channel was requested for: the other timeslot's last call (on an earlier
+                //traffic channel, or this one before it stopped) was counted already.
+                calls().rejected(mRequestedCalls.remove(frequency));
+
                 IDecodeEvent event = mCallEventsTS1.get(frequency);
 
                 if(event instanceof DecodeEvent decodeEvent1)

@@ -31,6 +31,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.settings.CalibrateRequest;
 import io.github.dsheirer.gui.settings.calibration.CalibrationDialog;
 import io.github.dsheirer.gui.theme.ThemeManager;
+import io.github.dsheirer.health.HealthRegistry;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
@@ -131,6 +132,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mTunerManager = new TunerManager(mSettings);
         mTunerManager.start();
+        HealthRegistry.getInstance().setTunerManager(mTunerManager);
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mSettings);

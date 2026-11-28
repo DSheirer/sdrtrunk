@@ -32,6 +32,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
     private TextField mHostTextField;
     private GridPane mEditorPane;
     private ToggleSwitch mTestEnabledToggleSwitch;
+    private ToggleSwitch mHealthReportsToggleSwitch;
     private IntegerTextField mTestIntervalTextField;
 
     /**
@@ -72,6 +74,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         getMaxAgeTextField().setDisable(item == null);
         getTestEnabledToggleSwitch().setDisable(item == null);
         getTestIntervalTextField().setDisable(item == null);
+        getHealthReportsToggleSwitch().setDisable(item == null);
 
         if(item != null)
         {
@@ -81,6 +84,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getMaxAgeTextField().set((int)(item.getMaximumRecordingAge() / 1000));
             getTestEnabledToggleSwitch().setSelected(item.isTestEnabled());
             getTestIntervalTextField().set(item.getTestInterval());
+            getHealthReportsToggleSwitch().setSelected(item.isHealthReports());
         }
         else
         {
@@ -90,6 +94,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getMaxAgeTextField().set(0);
             getTestEnabledToggleSwitch().setSelected(false);
             getTestIntervalTextField().set(15);
+            getHealthReportsToggleSwitch().setSelected(true);
         }
 
         modifiedProperty().set(false);
@@ -112,6 +117,7 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
             getItem().setTestEnabled(getTestEnabledToggleSwitch().isSelected());
             getItem().setTestInterval(getTestIntervalTextField().get());
+            getItem().setHealthReports(getHealthReportsToggleSwitch().isSelected());
         }
 
         super.save();
@@ -214,6 +220,16 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             GridPane.setConstraints(getTestIntervalTextField(), 4, row);
             mEditorPane.getChildren().add(getTestIntervalTextField());
 
+            Label healthReportsLabel = new Label("Send Health Reports");
+            healthReportsLabel.setLabelFor(getHealthReportsToggleSwitch());
+            healthReportsLabel.setTooltip(getHealthReportsTooltip());
+            GridPane.setHalignment(healthReportsLabel, HPos.RIGHT);
+            GridPane.setConstraints(healthReportsLabel, 0, ++row);
+            mEditorPane.getChildren().add(healthReportsLabel);
+
+            GridPane.setConstraints(getHealthReportsToggleSwitch(), 1, row);
+            mEditorPane.getChildren().add(getHealthReportsToggleSwitch());
+
             GridPane.setConstraints(getTestButton(), 1, ++row);
             mEditorPane.getChildren().add(getTestButton());
         }
@@ -280,6 +296,32 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         }
 
         return mTestEnabledToggleSwitch;
+    }
+
+    private ToggleSwitch getHealthReportsToggleSwitch()
+    {
+        if(mHealthReportsToggleSwitch == null)
+        {
+            mHealthReportsToggleSwitch = new AccessibleToggleSwitch();
+            mHealthReportsToggleSwitch.setDisable(true);
+            mHealthReportsToggleSwitch.setTooltip(getHealthReportsTooltip());
+            mHealthReportsToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mHealthReportsToggleSwitch;
+    }
+
+    private static Tooltip getHealthReportsTooltip()
+    {
+        Tooltip tooltip = new Tooltip("Every 5 minutes, tell Broadcastify how well this node hears the systems it " +
+            "uploads: whether it's decoding the control channel and the calls it missed. Totals only: no talkgroups, " +
+            "radio IDs or audio.\n\nLeave it on: without reports, Broadcastify can't compare this node with others " +
+            "uploading the same system (it may get a lower priority or be left out), and can't tell you about " +
+            "outages, problems or trends on it.");
+        tooltip.setWrapText(true);
+        tooltip.setMaxWidth(420);
+        return tooltip;
     }
 
     private IntegerTextField getTestIntervalTextField()

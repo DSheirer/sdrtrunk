@@ -46,6 +46,7 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
     private StringProperty mApiKey = new SimpleStringProperty();
     private BooleanProperty mTestEnabled= new SimpleBooleanProperty(false);
     private IntegerProperty mTestInterval = new SimpleIntegerProperty(15);
+    private BooleanProperty mHealthReports = new SimpleBooleanProperty(true);
 
     /**
      * Constructor for faster jackson
@@ -160,11 +161,60 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
         mTestInterval.set(interval);
     }
 
+    /**
+     * Send node health reports: every 5 minutes, how well this node hears the systems it uploads.  On by default,
+     * including for playlists saved before the setting existed.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "health_reports")
+    public boolean isHealthReports()
+    {
+        return mHealthReports.get();
+    }
+
+    public void setHealthReports(boolean enabled)
+    {
+        mHealthReports.set(enabled);
+    }
+
+    public BooleanProperty healthReportsProperty()
+    {
+        return mHealthReports;
+    }
+
+    /**
+     * Where node health reports go: the upload server's call-health beside its call-upload, or null when the upload
+     * server's address doesn't end in call-upload.  The development endpoint (call-upload-dev) has none: Broadcastify
+     * takes health reports at api.broadcastify.com/call-health only, and a development node's reports would be taken
+     * as a production node's.
+     */
+    public static String getHealthUrl(String uploadHost)
+    {
+        if(uploadHost == null)
+        {
+            return null;
+        }
+
+        String host = uploadHost.trim();
+
+        while(host.endsWith("/"))
+        {
+            host = host.substring(0, host.length() - 1);
+        }
+
+        if(host.endsWith("/call-upload"))
+        {
+            return host.substring(0, host.length() - "call-upload".length()) + "call-health";
+        }
+
+        return null;
+    }
+
     @Override
     public BroadcastConfiguration copyOf()
     {
         BroadcastifyCallConfiguration copy = new BroadcastifyCallConfiguration();
         copy.setSystemID(getSystemID());
+        copy.setHealthReports(isHealthReports());
         return copy;
     }
 }

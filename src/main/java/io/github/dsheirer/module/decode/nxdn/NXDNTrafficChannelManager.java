@@ -26,6 +26,9 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.health.CallOutcome;
+import io.github.dsheirer.health.CallTally;
+import io.github.dsheirer.health.HealthRegistry;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -104,6 +107,8 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      *
      * @param parentChannel configuration for the parent channel
      */
+    private CallTally mCallTally;
+
     public NXDNTrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
@@ -364,6 +369,7 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                 if(mIgnoreDataCalls)
                 {
                     tracker.prefixDetails("IGNORED DATA");
+                    tallyCall(true, tracker, CallOutcome.DATA);
                 }
                 else
                 {
@@ -376,12 +382,17 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                         if(traffic != null)
                         {
-                            requestTrafficChannelStart(traffic, channel, ic, tracker, timestamp);
+                            startAndTally(true, traffic, channel, ic, tracker, timestamp);
                         }
                         else
                         {
                             tracker.addDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED + " " + tracker.getEvent().getDetails());
+                            tallyCall(true, tracker, CallOutcome.NO_RECORDER);
                         }
+                    }
+                    else
+                    {
+                        tallyCall(true, tracker, channel.isValid() ? CallOutcome.RECORDED : CallOutcome.NO_FREQUENCY);
                     }
                 }
 
@@ -570,9 +581,9 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param identifiers for the call
      * @param channel for the call
      */
-    private void processVoiceCall(List<Identifier> identifiers, NXDNChannel channel, CallType callType,
-                                  EncryptionKeyIdentifier encryption, long timestamp, VoiceCallOption vco,
-                                  CallTimer callTimer)
+    void processVoiceCall(List<Identifier> identifiers, NXDNChannel channel, CallType callType,
+                          EncryptionKeyIdentifier encryption, long timestamp, VoiceCallOption vco,
+                          CallTimer callTimer)
     {
         mLock.lock();
 
@@ -637,10 +648,13 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
             }
 
             boolean ignoreEncrypted = mIgnoreEncryptedCalls && encryption.isEncrypted();
+            //A placeholder channel (duplicate traffic) counts only toward a call already counted.
+            boolean counted = !(channel instanceof NXDNChannelFake) || tracker.getCallOutcome() != null;
 
             if(ignoreEncrypted)
             {
                 tracker.prefixDetails("IGNORED ENCRYPTED");
+                tallyCall(counted, tracker, CallOutcome.ENCRYPTED);
             }
             else if(!tracker.isTrafficChannelAllocated() && channel != null && channel.isValid() &&
                     channel.getDownlinkFrequency() != getCurrentControlFrequency() &&
@@ -651,12 +665,20 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                 if(traffic != null)
                 {
-                    requestTrafficChannelStart(traffic, channel, ic, tracker, timestamp);
+                    startAndTally(counted, traffic, channel, ic, tracker, timestamp);
                 }
                 else
                 {
                     tracker.addDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED + " " + tracker.getEvent().getDetails());
+                    tallyCall(counted, tracker, CallOutcome.NO_RECORDER);
                 }
+            }
+            else
+            {
+                //Followed already (a traffic channel runs on it, or it's the control channel's own), or a channel the
+                //channel map doesn't give a frequency for.
+                tallyCall(counted, tracker, channel != null && channel.isValid() && frequency > 0 ?
+                    CallOutcome.RECORDED : CallOutcome.NO_FREQUENCY);
             }
 
             broadcast(tracker);
@@ -676,8 +698,9 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
      * @param ic containing identifiers for the call
      * @param tracker to update with channel allocation flag
      */
-    private void requestTrafficChannelStart(Channel trafficChannel, NXDNChannel nxdnChannel,
-                                            IdentifierCollection ic, NXDNChannelEventTracker tracker, long timestamp)
+    private boolean requestTrafficChannelStart(Channel trafficChannel, NXDNChannel nxdnChannel,
+                                               IdentifierCollection ic, NXDNChannelEventTracker tracker,
+                                               long timestamp)
     {
         if(nxdnChannel != null && nxdnChannel.getDownlinkFrequency() > 0 && getInterModuleEventBus() != null)
         {
@@ -690,13 +713,59 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
                     nxdnChannel, ic, this);
             startChannelRequest.setStartTimestamp(timestamp);
             startChannelRequest.addPreloadDataContent(new NXDNChannelInfoPreloadData(mChannelAccessInformation, mChannelFrequencies));
-            getInterModuleEventBus().post(startChannelRequest);
+            //Allocated before the request: a request no tuner can take is rejected while it's posted, and the
+            //rejection clears this.
             tracker.setTrafficChannelAllocated(true);
+            getInterModuleEventBus().post(startChannelRequest);
+            return true;
         }
         else
         {
             //Return the channel to the traffic channel pool if we didn't start it.
             mAvailableTrafficChannelQueue.add(trafficChannel);
+            return false;
+        }
+    }
+
+    /**
+     * Calls this control channel announced and what became of each, for node health reports.  Asked for at the first
+     * call: an NXDN channel that never announces one (conventional) has no calls counted, and is reported as a channel.
+     */
+    private CallTally calls()
+    {
+        if(mCallTally == null)
+        {
+            mCallTally = HealthRegistry.getInstance().calls(mParentChannel);
+        }
+
+        return mCallTally;
+    }
+
+    /**
+     * Counts a call by what has become of it so far, for node health reports.
+     * @param counted false for a call heard only on a placeholder channel, not counted
+     */
+    private void tallyCall(boolean counted, NXDNChannelEventTracker tracker, CallOutcome outcome)
+    {
+        if(counted && tracker != null)
+        {
+            tracker.tally(calls(), outcome);
+        }
+    }
+
+    /**
+     * Starts a traffic channel for a call and counts the call as recorded.  It's counted before the request, because a
+     * request no tuner can take is rejected while it's made (the rejection moves the call to noSource).  A request
+     * that can't be made (no frequency) says so.
+     */
+    private void startAndTally(boolean counted, Channel trafficChannel, NXDNChannel nxdnChannel,
+                               IdentifierCollection ic, NXDNChannelEventTracker tracker, long timestamp)
+    {
+        tallyCall(counted, tracker, CallOutcome.RECORDED);
+
+        if(!requestTrafficChannelStart(trafficChannel, nxdnChannel, ic, tracker, timestamp))
+        {
+            tallyCall(counted, tracker, CallOutcome.NO_FREQUENCY);
         }
     }
 
@@ -878,6 +947,11 @@ public class NXDNTrafficChannelManager extends TrafficChannelManager implements 
 
                                         if(tracker != null)
                                         {
+                                            if(tracker.getCallOutcome() == CallOutcome.RECORDED)
+                                            {
+                                                tracker.tally(calls(), CallOutcome.NO_SOURCE);
+                                            }
+
                                             if(!tracker.getEvent().getDetails().contains(CHANNEL_START_REJECTED))
                                             {
                                                 tracker.addDetails(CHANNEL_START_REJECTED + " " + channelEvent.getDescription() +
